@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -30,6 +30,17 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_insquery
@@ -44,24 +55,24 @@
 
 typedef struct query_class
   {
-   DEFCLASS *cls;
-   struct defmodule *theModule;
+   Defclass *cls;
+   Defmodule *theModule;
    struct query_class *chain,*nxt;
   } QUERY_CLASS;
 
 typedef struct query_soln
   {
-   INSTANCE_TYPE **soln;
+   Instance **soln;
    struct query_soln *nxt;
   } QUERY_SOLN;
 
 typedef struct query_core
   {
-   INSTANCE_TYPE **solns;
-   EXPRESSION *query,*action;
+   Instance **solns;
+   Expression *query,*action;
    QUERY_SOLN *soln_set,*soln_bottom;
    unsigned soln_size,soln_cnt;
-   DATA_OBJECT *result;
+   UDFValue *result;
   } QUERY_CORE;
 
 typedef struct query_stack
@@ -73,8 +84,8 @@ typedef struct query_stack
 #define INSTANCE_QUERY_DATA 31
 
 struct instanceQueryData
-  { 
-   SYMBOL_HN *QUERY_DELIMETER_SYMBOL;
+  {
+   CLIPSLexeme *QUERY_DELIMITER_SYMBOL;
    QUERY_CORE *QueryCore;
    QUERY_STACK *QueryCoreStack;
    bool AbortQuery;
@@ -82,17 +93,17 @@ struct instanceQueryData
 
 #define InstanceQueryData(theEnv) ((struct instanceQueryData *) GetEnvironmentData(theEnv,INSTANCE_QUERY_DATA))
 
-#define QUERY_DELIMETER_STRING     "(QDS)"
+#define QUERY_DELIMITER_STRING     "(QDS)"
 
-   void                           SetupQuery(void *);
-   void                           GetQueryInstance(UDFContext *,CLIPSValue *);
-   void                           GetQueryInstanceSlot(UDFContext *,CLIPSValue *);
-   void                           AnyInstances(UDFContext *,CLIPSValue *);
-   void                           QueryFindInstance(UDFContext *,CLIPSValue *);
-   void                           QueryFindAllInstances(UDFContext *,CLIPSValue *);
-   void                           QueryDoForInstance(UDFContext *,CLIPSValue *);
-   void                           QueryDoForAllInstances(UDFContext *,CLIPSValue *);
-   void                           DelayedQueryDoForAllInstances(UDFContext *,CLIPSValue *);
+   void                           SetupQuery(Environment *);
+   void                           GetQueryInstance(Environment *,UDFContext *,UDFValue *);
+   void                           GetQueryInstanceSlot(Environment *,UDFContext *,UDFValue *);
+   void                           AnyInstances(Environment *,UDFContext *,UDFValue *);
+   void                           QueryFindInstance(Environment *,UDFContext *,UDFValue *);
+   void                           QueryFindAllInstances(Environment *,UDFContext *,UDFValue *);
+   void                           QueryDoForInstance(Environment *,UDFContext *,UDFValue *);
+   void                           QueryDoForAllInstances(Environment *,UDFContext *,UDFValue *);
+   void                           DelayedQueryDoForAllInstances(Environment *,UDFContext *,UDFValue *);
 
 #endif /* INSTANCE_SET_QUERIES */
 

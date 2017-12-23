@@ -1,9 +1,9 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/01/16            */
    /*                                                     */
-   /*        SYMBOL CONSTRUCT COMPILER HEADER FILE        */
+   /*        SYMBOL_TYPE CONSTRUCT COMPILER HEADER FILE        */
    /*******************************************************/
 
 /*************************************************************/
@@ -31,6 +31,13 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_symblcmp
@@ -43,11 +50,11 @@
 
 #include "symbol.h"
 
-   void                     PrintSymbolReference(void *,FILE *,SYMBOL_HN *);
-   void                     PrintFloatReference(void *,FILE *,FLOAT_HN *);
-   void                     PrintIntegerReference(void *,FILE *,INTEGER_HN *);
-   void                     PrintBitMapReference(void *,FILE *,BITMAP_HN *);
-   void                     AtomicValuesToCode(void *,const char *,const char *,char *);
+   void                     PrintSymbolReference(Environment *,FILE *,CLIPSLexeme *);
+   void                     PrintFloatReference(Environment *,FILE *,CLIPSFloat *);
+   void                     PrintIntegerReference(Environment *,FILE *,CLIPSInteger *);
+   void                     PrintBitMapReference(Environment *,FILE *,CLIPSBitMap *);
+   void                     AtomicValuesToCode(Environment *,const char *,const char *,char *);
 
 #endif /* _H_symblcmp */
 

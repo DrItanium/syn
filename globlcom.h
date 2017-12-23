@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*            DEFGLOBAL COMMANDS HEADER FILE           */
    /*******************************************************/
@@ -30,6 +30,19 @@
 /*                                                           */
 /*            Converted API macros to function calls.        */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_globlcom
@@ -38,13 +51,13 @@
 
 #define _H_globlcom
 
-   void                           DefglobalCommandDefinitions(void *);
-   void                           SetResetGlobalsCommand(UDFContext *,CLIPSValue *);
-   bool                           EnvSetResetGlobals(void *,bool);
-   void                           GetResetGlobalsCommand(UDFContext *,CLIPSValue *);
-   bool                           EnvGetResetGlobals(void *);
-   void                           ShowDefglobalsCommand(UDFContext *,CLIPSValue *);
-   void                           EnvShowDefglobals(void *,const char *,void *);
+   void                           DefglobalCommandDefinitions(Environment *);
+   void                           SetResetGlobalsCommand(Environment *,UDFContext *,UDFValue *);
+   bool                           SetResetGlobals(Environment *,bool);
+   void                           GetResetGlobalsCommand(Environment *,UDFContext *,UDFValue *);
+   bool                           GetResetGlobals(Environment *);
+   void                           ShowDefglobalsCommand(Environment *,UDFContext *,UDFValue *);
+   void                           ShowDefglobals(Environment *,const char *,Defmodule *);
 
 #endif /* _H_globlcom */
 

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*        FACT RHS PATTERN PARSER HEADER MODULE        */
    /*******************************************************/
@@ -23,6 +23,15 @@
 /*            being executed during fact assertions via      */
 /*            Increment/DecrementClearReadyLocks API.        */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_factrhs
@@ -36,11 +45,11 @@
 #include "scanner.h"
 #include "symbol.h"
 
-   struct expr                   *BuildRHSAssert(void *,const char *,struct token *,bool *,bool,bool,const char *);
-   struct expr                   *GetAssertArgument(void *,const char *,struct token *,bool *,int,bool,bool *);
-   struct expr                   *GetRHSPattern(void *,const char *,struct token *,bool *,bool,
-                                                       bool,bool,int);
-   struct fact                   *StringToFact(void *,const char *);
+   struct expr                   *BuildRHSAssert(Environment *,const char *,struct token *,bool *,bool,bool,const char *);
+   struct expr                   *GetAssertArgument(Environment *,const char *,struct token *,bool *,TokenType,bool,bool *);
+   struct expr                   *GetRHSPattern(Environment*,const char *,struct token *,bool *,bool,
+                                                       bool,bool,TokenType);
+   Fact                          *StringToFact(Environment *,const char *);
 
 #endif /* _H_factrhs */
 

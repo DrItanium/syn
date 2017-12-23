@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  11/10/17            */
    /*                                                     */
    /*          MISCELLANEOUS FUNCTIONS HEADER FILE        */
    /*******************************************************/
@@ -46,23 +46,35 @@
 /*                                                           */
 /*            Combined BASIC_IO and EXT_IO compilation       */
 /*            flags into the IO_FUNCTIONS compilation flag.  */
-/*                                                           */    
+/*                                                           */
 /*            Removed code associated with HELP_FUNCTIONS    */
 /*            and EMACS_EDITOR compiler flags.               */
-/*                                                           */    
+/*                                                           */
 /*            Added operating-system function.               */
-/*                                                           */ 
+/*                                                           */
 /*            Added new function (for future use).           */
-/*                                                           */ 
+/*                                                           */
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
+/*                                                           */
+/*      6.31: Added local-time and gm-time functions.        */
 /*                                                           */
 /*      6.40: Refactored code to reduce header dependencies  */
 /*            in sysdep.c.                                   */
 /*                                                           */
-/*            Fact ?var:slot reference support.              */
+/*            Removed LOCALE definition.                     */
 /*                                                           */
-/*            Added local-time and gm-time functions.        */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
+/*            Added get-error, set-error, and clear-error    */
+/*            functions.                                     */
 /*                                                           */
 /*************************************************************/
 
@@ -72,38 +84,42 @@
 
 #define _H_miscfun
 
-   void                           MiscFunctionDefinitions(void *);
-   void                           CreateFunction(UDFContext *,CLIPSValue *);
-   void                           SetgenFunction(UDFContext *,CLIPSValue *);
-   void                           GensymFunction(UDFContext *,CLIPSValue *);
-   void                           GensymStarFunction(UDFContext *,CLIPSValue *);
-   void                           RandomFunction(UDFContext *,CLIPSValue *);
-   void                           SeedFunction(UDFContext *,CLIPSValue *);
-   void                           LengthFunction(UDFContext *,CLIPSValue *);
-   void                           ConserveMemCommand(UDFContext *,CLIPSValue *);
-   void                           ReleaseMemCommand(UDFContext *,CLIPSValue *);
-   void                           MemUsedCommand(UDFContext *,CLIPSValue *);
-   void                           MemRequestsCommand(UDFContext *,CLIPSValue *);
-   void                           OptionsCommand(UDFContext *,CLIPSValue *);
-   void                           OperatingSystemFunction(UDFContext *,CLIPSValue *);
-   void                           ExpandFuncCall(UDFContext *,CLIPSValue *);
-   void                           DummyExpandFuncMultifield(UDFContext *,CLIPSValue *);
-   void                           CauseEvaluationError(UDFContext *,CLIPSValue *);
-   void                           SetSORCommand(UDFContext *,CLIPSValue *);
-   void                           GetSORCommand(UDFContext *,CLIPSValue *);
-   void                           GetFunctionRestrictions(UDFContext *,CLIPSValue *);
-   void                           AproposCommand(UDFContext *,CLIPSValue *);
-   void                           GensymStar(void *,CLIPSValue *);
-   void                           GetFunctionListFunction(UDFContext *,CLIPSValue *);
-   void                           FuncallFunction(UDFContext *,CLIPSValue *);
-   void                           NewFunction(UDFContext *,CLIPSValue *);
-   void                           CallFunction(UDFContext *,CLIPSValue *);
-   void                           TimerFunction(UDFContext *,CLIPSValue *);
-   void                           TimeFunction(UDFContext *,CLIPSValue *);
-   void                           SystemCommand(UDFContext *,CLIPSValue *);
-   void                           SlotValueFunction(UDFContext *,CLIPSValue *);
-   void                           LocalTimeFunction(UDFContext *,CLIPSValue *);
-   void                           GMTimeFunction(UDFContext *,CLIPSValue *);
+   void                           MiscFunctionDefinitions(Environment *);
+   void                           ExitCommand(Environment *,UDFContext *,UDFValue *);
+   void                           CreateFunction(Environment *,UDFContext *,UDFValue *);
+   void                           SetgenFunction(Environment *,UDFContext *,UDFValue *);
+   void                           GensymFunction(Environment *,UDFContext *,UDFValue *);
+   void                           GensymStarFunction(Environment *,UDFContext *,UDFValue *);
+   void                           RandomFunction(Environment *,UDFContext *,UDFValue *);
+   void                           SeedFunction(Environment *,UDFContext *,UDFValue *);
+   void                           LengthFunction(Environment *,UDFContext *,UDFValue *);
+   void                           ConserveMemCommand(Environment *,UDFContext *,UDFValue *);
+   void                           ReleaseMemCommand(Environment *,UDFContext *,UDFValue *);
+   void                           MemUsedCommand(Environment *,UDFContext *,UDFValue *);
+   void                           MemRequestsCommand(Environment *,UDFContext *,UDFValue *);
+   void                           OptionsCommand(Environment *,UDFContext *,UDFValue *);
+   void                           OperatingSystemFunction(Environment *,UDFContext *,UDFValue *);
+   void                           ExpandFuncCall(Environment *,UDFContext *,UDFValue *);
+   void                           DummyExpandFuncMultifield(Environment *,UDFContext *,UDFValue *);
+   void                           CauseEvaluationError(Environment *,UDFContext *,UDFValue *);
+   void                           SetSORCommand(Environment *,UDFContext *,UDFValue *);
+   void                           GetSORCommand(Environment *,UDFContext *,UDFValue *);
+   void                           GetFunctionRestrictions(Environment *,UDFContext *,UDFValue *);
+   void                           AproposCommand(Environment *,UDFContext *,UDFValue *);
+   void                           GensymStar(Environment *,UDFValue *);
+   void                           GetFunctionListFunction(Environment *,UDFContext *,UDFValue *);
+   void                           FuncallFunction(Environment *,UDFContext *,UDFValue *);
+   void                           NewFunction(Environment *,UDFContext *,UDFValue *);
+   void                           CallFunction(Environment *,UDFContext *,UDFValue *);
+   void                           TimerFunction(Environment *,UDFContext *,UDFValue *);
+   void                           TimeFunction(Environment *,UDFContext *,UDFValue *);
+   void                           SystemCommand(Environment *,UDFContext *,UDFValue *);
+   void                           LocalTimeFunction(Environment *,UDFContext *,UDFValue *);
+   void                           GMTimeFunction(Environment *,UDFContext *,UDFValue *);
+   void                           GetErrorFunction(Environment *,UDFContext *,UDFValue *);
+   void                           ClearErrorFunction(Environment *,UDFContext *,UDFValue *);
+   void                           SetErrorFunction(Environment *,UDFContext *,UDFValue *);
+   void                           SetErrorValue(Environment *,TypeHeader *);
 
 #endif /* _H_miscfun */
 

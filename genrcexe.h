@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -27,6 +27,17 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_genrcexe
@@ -41,18 +52,17 @@
 #include "expressn.h"
 #include "genrcfun.h"
 
-   void                           GenericDispatch(void *,DEFGENERIC *,DEFMETHOD *,DEFMETHOD *,EXPRESSION *,DATA_OBJECT *);
-   void                           UnboundMethodErr(void *);
-   bool                           IsMethodApplicable(void *,DEFMETHOD *);
+   void                           GenericDispatch(Environment *,Defgeneric *,Defmethod *,Defmethod *,Expression *,UDFValue *);
+   void                           UnboundMethodErr(Environment *,const char *);
+   bool                           IsMethodApplicable(Environment *,Defmethod *);
 
-   bool                           NextMethodP(void *);
-   void                           NextMethodPCommand(UDFContext *,CLIPSValue *);
+   bool                           NextMethodP(Environment *);
+   void                           NextMethodPCommand(Environment *,UDFContext *,UDFValue *);
+   void                           CallNextMethod(Environment *,UDFContext *,UDFValue *);
+   void                           CallSpecificMethod(Environment *,UDFContext *,UDFValue *);
+   void                           OverrideNextMethod(Environment *,UDFContext *,UDFValue *);
 
-   void                           CallNextMethod(UDFContext *,CLIPSValue *);
-   void                           CallSpecificMethod(UDFContext *,CLIPSValue *);
-   void                           OverrideNextMethod(UDFContext *,CLIPSValue *);
-
-   void                           GetGenericCurrentArgument(UDFContext *,CLIPSValue *);
+   void                           GetGenericCurrentArgument(Environment *,UDFContext *,UDFValue *);
 
 #endif /* DEFGENERIC_CONSTRUCT */
 

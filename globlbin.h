@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*             DEFGLOBAL BINARY HEADER FILE            */
    /*******************************************************/
@@ -21,6 +21,10 @@
 /*                                                           */
 /*            Moved WatchGlobals global to defglobalData.    */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_globlbin
@@ -36,7 +40,7 @@
 struct bsaveDefglobal
   {
    struct bsaveConstructHeader header;
-   long initial;
+   unsigned long initial;
   };
 
 struct bsaveDefglobalModule
@@ -47,19 +51,19 @@ struct bsaveDefglobalModule
 #define GLOBLBIN_DATA 60
 
 struct defglobalBinaryData
-  { 
-   struct defglobal *DefglobalArray;
-   long NumberOfDefglobals;
+  {
+   Defglobal *DefglobalArray;
+   unsigned long NumberOfDefglobals;
    struct defglobalModule *ModuleArray;
-   long NumberOfDefglobalModules;
+   unsigned long NumberOfDefglobalModules;
   };
-  
+
 #define DefglobalBinaryData(theEnv) ((struct defglobalBinaryData *) GetEnvironmentData(theEnv,GLOBLBIN_DATA))
 
-#define DefglobalPointer(i) ((struct defglobal *) (&DefglobalBinaryData(theEnv)->DefglobalArray[i]))
+#define DefglobalPointer(i) (&DefglobalBinaryData(theEnv)->DefglobalArray[i])
 
-   void                           DefglobalBinarySetup(void *);
-   void                          *BloadDefglobalModuleReference(void *,int);
+   void                           DefglobalBinarySetup(Environment *);
+   void                          *BloadDefglobalModuleReference(Environment *,unsigned long);
 
 #endif /* _H_globlbin */
 

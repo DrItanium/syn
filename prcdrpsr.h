@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/18/16            */
    /*                                                     */
    /*       PROCEDURAL FUNCTIONS PARSER HEADER FILE       */
    /*******************************************************/
@@ -34,6 +34,17 @@
 /*            Fixed linkage issue when BLOAD_ONLY compiler   */
 /*            flag is set to 1.                              */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_prcdrpsr
@@ -46,24 +57,20 @@
 
 struct BindInfo
   {
-   struct symbolHashNode *name;
+   CLIPSLexeme *name;
    CONSTRAINT_RECORD *constraints;
    struct BindInfo *next;
   };
 
-#if (! RUN_TIME)
-   void                           ProceduralFunctionParsers(void *);
-   struct BindInfo               *GetParsedBindNames(void *);
-   void                           SetParsedBindNames(void *,struct BindInfo *);
-   void                           ClearParsedBindNames(void *);
-   bool                           ParsedBindNamesEmpty(void *);
-#endif
-#if (! BLOAD_ONLY) && (! RUN_TIME)
-   int                            SearchParsedBindNames(void *,struct symbolHashNode *);
-   int                            CountParsedBindNames(void *);
-   void                           RemoveParsedBindName(void *,struct symbolHashNode *);
-   struct constraintRecord       *FindBindConstraints(void *,struct symbolHashNode *);
-#endif
+   void                           ProceduralFunctionParsers(Environment *);
+   struct BindInfo               *GetParsedBindNames(Environment *);
+   void                           SetParsedBindNames(Environment *,struct BindInfo *);
+   void                           ClearParsedBindNames(Environment *);
+   bool                           ParsedBindNamesEmpty(Environment *);
+   unsigned short                 SearchParsedBindNames(Environment *,CLIPSLexeme *);
+   unsigned short                 CountParsedBindNames(Environment *);
+   void                           RemoveParsedBindName(Environment *,CLIPSLexeme *);
+   struct constraintRecord       *FindBindConstraints(Environment *,CLIPSLexeme *);
 
 #endif /* _H_prcdrpsr */
 

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/01/16            */
    /*                                                     */
    /*             DEFMODULE PARSER HEADER FILE            */
    /*******************************************************/
@@ -26,6 +26,15 @@
 /*            Fixed linkage issue when DEFMODULE_CONSTRUCT   */
 /*            compiler flag is set to 0.                     */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_modulpsr
@@ -34,23 +43,26 @@
 
 #define _H_modulpsr
 
-struct portConstructItem
-  {
-   const char *constructName;
-   int typeExpected;
-   struct portConstructItem *next;
-  };
+struct portConstructItem;
 
 #include "evaluatn.h"
 #include "moduldef.h"
 #include "symbol.h"
+#include "scanner.h"
 
-   void                           SetNumberOfDefmodules(void *,long);
-   void                           AddAfterModuleDefinedFunction(void *,const char *,void (*)(void *),int);
-   bool                           ParseDefmodule(void *,const char *);
-   void                           AddPortConstructItem(void *,const char *,int);
-   struct portConstructItem      *ValidPortConstructItem(void *,const char *);
-   bool                           FindImportExportConflict(void *,const char *,struct defmodule *,const char *);
+struct portConstructItem
+  {
+   const char *constructName;
+   TokenType typeExpected;
+   struct portConstructItem *next;
+  };
+
+   void                           SetNumberOfDefmodules(Environment *,unsigned short);
+   void                           AddAfterModuleDefinedFunction(Environment *,const char *,VoidCallFunction *,int,void *);
+   bool                           ParseDefmodule(Environment *,const char *);
+   void                           AddPortConstructItem(Environment *,const char *,TokenType);
+   struct portConstructItem      *ValidPortConstructItem(Environment *,const char *);
+   bool                           FindImportExportConflict(Environment *,const char *,Defmodule *,const char *);
 
 #endif /* _H_modulpsr */
 

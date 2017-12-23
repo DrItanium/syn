@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -22,6 +22,13 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_dffnxcmp
@@ -36,9 +43,9 @@
 
 #include "dffnxfun.h"
 
-   void                           SetupDeffunctionCompiler(void *);
-   void                           PrintDeffunctionReference(void *,FILE *,DEFFUNCTION *,int,int);
-   void                           DeffunctionCModuleReference(void *,FILE *,int,int,int);
+   void                           SetupDeffunctionCompiler(Environment *);
+   void                           PrintDeffunctionReference(Environment *,FILE *,Deffunction *,unsigned,unsigned);
+   void                           DeffunctionCModuleReference(Environment *,FILE *,unsigned long,unsigned int,unsigned int);
 
 #endif /* DEFFUNCTION_CONSTRUCT && CONSTRUCT_COMPILER && (! RUN_TIME) */
 

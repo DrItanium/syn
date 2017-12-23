@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  07/30/16             */
    /*                                                     */
    /*                USER FUNCTIONS MODULE                */
    /*******************************************************/
@@ -22,6 +22,9 @@
 /*      6.30: Removed conditional code for unsupported       */
 /*            compilers/operating systems (IBM_MCW,          */
 /*            MAC_MCW, and IBM_TBC).                         */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
 /*                                                           */
 /*************************************************************/
 
@@ -48,8 +51,7 @@
 #include "clips.h"
 #include "maya.h"
 
-void UserFunctions(void);
-void EnvUserFunctions(void *);
+void UserFunctions(Environment *);
 
 /*********************************************************/
 /* UserFunctions: Informs the expert system environment  */
@@ -60,24 +62,7 @@ void EnvUserFunctions(void *);
 /*   this function can be deleted from this file and     */
 /*   included in another file.                           */
 /*********************************************************/
-void UserFunctions()
-  {
-   // Use of UserFunctions is deprecated.
-   // Use EnvUserFunctions instead.
-  }
-
-/***********************************************************/
-/* EnvUserFunctions: Informs the expert system environment */
-/*   of any user defined functions. In the default case,   */
-/*   there are no user defined functions. To define        */
-/*   functions, either this function must be replaced by   */
-/*   a function with the same name within this file, or    */
-/*   this function can be deleted from this file and       */
-/*   included in another file.                             */
-/***********************************************************/
-void EnvUserFunctions(
-  void *environment)
-  {
-      InstallMayaExtensions(environment);
-  }
-
+void UserFunctions(Environment *env)
+{
+	InstallMayaExtensions(env);
+}

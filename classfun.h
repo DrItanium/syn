@@ -1,9 +1,9 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  11/01/16            */
    /*                                                     */
-   /*                                                     */
+   /*             CLASS FUNCTIONS HEADER FILE             */
    /*******************************************************/
 
 /*************************************************************/
@@ -30,11 +30,20 @@
 /*                                                           */
 /*            Used genstrcpy and genstrcat instead of strcpy */
 /*            and strcat.                                    */
-/*                                                           */             
+/*                                                           */
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
-/*      6.40: Removed initial-object support.                */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Removed initial-object support.                */
 /*                                                           */
 /*************************************************************/
 
@@ -45,87 +54,92 @@
 #define _H_classfun
 
 #include "object.h"
+#include "scanner.h"
 
 #define TestTraversalID(traversalRecord,id) TestBitMap(traversalRecord,id)
 #define SetTraversalID(traversalRecord,id) SetBitMap(traversalRecord,id)
 #define ClearTraversalID(traversalRecord,id) ClearBitMap(traversalRecord,id)
 
-#define CLASS_TABLE_HASH_SIZE     167
-#define SLOT_NAME_TABLE_HASH_SIZE 167
+#define CLASS_TABLE_HASH_SIZE     167 // TBD Larger?
+#define SLOT_NAME_TABLE_HASH_SIZE 167 // TBD Larger?
 
 #define ISA_ID  0
 #define NAME_ID 1
 
-void IncrementDefclassBusyCount(void *,void *);
-void DecrementDefclassBusyCount(void *,void *);
-bool InstancesPurge(void *theEnv);
+#define SLOT_NAME_NOT_FOUND USHRT_MAX
+
+   void                           IncrementDefclassBusyCount(Environment *,Defclass *);
+   void                           DecrementDefclassBusyCount(Environment *,Defclass *);
+   bool                           InstancesPurge(Environment *,void *);
 
 #if ! RUN_TIME
-void InitializeClasses(void *);
+   void                           InitializeClasses(Environment *);
 #endif
-SLOT_DESC *FindClassSlot(DEFCLASS *,SYMBOL_HN *);
-void ClassExistError(void *,const char *,const char *);
-void DeleteClassLinks(void *,CLASS_LINK *);
-void PrintClassName(void *,const char *,DEFCLASS *,bool);
+   SlotDescriptor                *FindClassSlot(Defclass *,CLIPSLexeme *);
+   void                           ClassExistError(Environment *,const char *,const char *);
+   void                           DeleteClassLinks(Environment *,CLASS_LINK *);
+   void                           PrintClassName(Environment *,const char *,Defclass *,bool,bool);
 
 #if DEBUGGING_FUNCTIONS || ((! BLOAD_ONLY) && (! RUN_TIME))
-void PrintPackedClassLinks(void *,const char *,const char *,PACKED_CLASS_LINKS *);
+   void                           PrintPackedClassLinks(Environment *,const char *,const char *,PACKED_CLASS_LINKS *);
 #endif
 
 #if ! RUN_TIME
-void PutClassInTable(void *,DEFCLASS *);
-void RemoveClassFromTable(void *,DEFCLASS *);
-void AddClassLink(void *,PACKED_CLASS_LINKS *,DEFCLASS *,int);
-void DeleteSubclassLink(void *,DEFCLASS *,DEFCLASS *);
-void DeleteSuperclassLink(void *,DEFCLASS *,DEFCLASS *);
-DEFCLASS *NewClass(void *,SYMBOL_HN *);
-void DeletePackedClassLinks(void *,PACKED_CLASS_LINKS *,bool);
-void AssignClassID(void *,DEFCLASS *);
-SLOT_NAME *AddSlotName(void *,SYMBOL_HN *,int,bool);
-void DeleteSlotName(void *,SLOT_NAME *);
-void RemoveDefclass(void *,void *);
-void InstallClass(void *,DEFCLASS *,bool);
+   void                           PutClassInTable(Environment *,Defclass *);
+   void                           RemoveClassFromTable(Environment *,Defclass *);
+   void                           AddClassLink(Environment *,PACKED_CLASS_LINKS *,Defclass *,bool,unsigned int);
+   void                           DeleteSubclassLink(Environment *,Defclass *,Defclass *);
+   void                           DeleteSuperclassLink(Environment *,Defclass *,Defclass *);
+   Defclass                      *NewClass(Environment *,CLIPSLexeme *);
+   void                           DeletePackedClassLinks(Environment *,PACKED_CLASS_LINKS *,bool);
+   void                           AssignClassID(Environment *,Defclass *);
+   SLOT_NAME                     *AddSlotName(Environment *,CLIPSLexeme *,unsigned short,bool);
+   void                           DeleteSlotName(Environment *,SLOT_NAME *);
+   void                           RemoveDefclass(Environment *,Defclass *);
+   void                           InstallClass(Environment *,Defclass *,bool);
 #endif
-void DestroyDefclass(void *,void *);
+   void                           DestroyDefclass(Environment *,Defclass *);
 
 #if (! BLOAD_ONLY) && (! RUN_TIME)
-bool IsClassBeingUsed(DEFCLASS *);
-bool RemoveAllUserClasses(void *);
-bool DeleteClassUAG(void *,DEFCLASS *);
-void MarkBitMapSubclasses(char *,DEFCLASS *,int);
+   bool                           IsClassBeingUsed(Defclass *);
+   bool                           RemoveAllUserClasses(Environment *);
+   bool                           DeleteClassUAG(Environment *,Defclass *);
+   void                           MarkBitMapSubclasses(char *,Defclass *,int);
 #endif
 
-short FindSlotNameID(void *,SYMBOL_HN *);
-SYMBOL_HN *FindIDSlotName(void *,int);
-SLOT_NAME *FindIDSlotNameHash(void *,int);
-int GetTraversalID(void *);
-void ReleaseTraversalID(void *);
-unsigned HashClass(SYMBOL_HN *);
+   unsigned short                 FindSlotNameID(Environment *,CLIPSLexeme *);
+   CLIPSLexeme                   *FindIDSlotName(Environment *,unsigned short);
+   SLOT_NAME                     *FindIDSlotNameHash(Environment *,unsigned short); 
+   int                            GetTraversalID(Environment *);
+   void                           ReleaseTraversalID(Environment *);
+   unsigned int                   HashClass(CLIPSLexeme *);
 
 #define DEFCLASS_DATA 21
 
 #define PRIMITIVE_CLASSES 9
 
+#include "classcom.h"
+
 struct defclassData
-  { 
-   struct construct *DefclassConstruct;
-   int DefclassModuleIndex;
-   ENTITY_RECORD DefclassEntityRecord;
-   DEFCLASS *PrimitiveClassMap[PRIMITIVE_CLASSES];
-   DEFCLASS **ClassIDMap;
-   DEFCLASS **ClassTable;
+  {
+   Construct *DefclassConstruct;
+   unsigned DefclassModuleIndex;
+   EntityRecord DefclassEntityRecord;
+   Defclass *PrimitiveClassMap[PRIMITIVE_CLASSES];
+   Defclass **ClassIDMap;
+   Defclass **ClassTable;
    unsigned short MaxClassID;
    unsigned short AvailClassID;
    SLOT_NAME **SlotNameTable;
-   SYMBOL_HN *ISA_SYMBOL;
-   SYMBOL_HN *NAME_SYMBOL;
+   CLIPSLexeme *ISA_SYMBOL;
+   CLIPSLexeme *NAME_SYMBOL;
 #if DEBUGGING_FUNCTIONS
-   unsigned WatchInstances;
-   unsigned WatchSlots;
+   bool WatchInstances;
+   bool WatchSlots;
 #endif
    unsigned short CTID;
    struct token ObjectParseToken;
-   unsigned short ClassDefaultsMode;
+   ClassDefaultsMode ClassDefaultsModeValue;
   };
 
 #define DefclassData(theEnv) ((struct defclassData *) GetEnvironmentData(theEnv,DEFCLASS_DATA))

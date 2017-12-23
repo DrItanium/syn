@@ -1,9 +1,9 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
-   /*                                                     */
+   /*     CLASS INFO PROGRAMMATIC ACCESS HEADER FILE      */
    /*******************************************************/
 
 /*************************************************************/
@@ -30,6 +30,19 @@
 /*                                                           */
 /*            Converted API macros to function calls.        */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_classinf
@@ -40,38 +53,38 @@
 
 #include "evaluatn.h"
 
-   void                           ClassAbstractPCommand(UDFContext *,CLIPSValue *);
+   void                           ClassAbstractPCommand(Environment *,UDFContext *,UDFValue *);
 #if DEFRULE_CONSTRUCT
-   void                           ClassReactivePCommand(UDFContext *,CLIPSValue *);
+   void                           ClassReactivePCommand(Environment *,UDFContext *,UDFValue *);
 #endif
-   void                          *ClassInfoFnxArgs(UDFContext *,const char *,bool *);
-   void                           ClassSlotsCommand(UDFContext *,CLIPSValue *);
-   void                           ClassSuperclassesCommand(UDFContext *,CLIPSValue *);
-   void                           ClassSubclassesCommand(UDFContext *,CLIPSValue *);
-   void                           GetDefmessageHandlersListCmd(UDFContext *,CLIPSValue *);
-   void                           SlotFacetsCommand(UDFContext *,CLIPSValue *);
-   void                           SlotSourcesCommand(UDFContext *,CLIPSValue *);
-   void                           SlotTypesCommand(UDFContext *,CLIPSValue *);
-   void                           SlotAllowedValuesCommand(UDFContext *,CLIPSValue *);
-   void                           SlotAllowedClassesCommand(UDFContext *,CLIPSValue *);
-   void                           SlotRangeCommand(UDFContext *,CLIPSValue *);
-   void                           SlotCardinalityCommand(UDFContext *,CLIPSValue *);
-   bool                           EnvClassAbstractP(void *,void *);
+   Defclass                      *ClassInfoFnxArgs(UDFContext *,const char *,bool *);
+   void                           ClassSlotsCommand(Environment *,UDFContext *,UDFValue *);
+   void                           ClassSuperclassesCommand(Environment *,UDFContext *,UDFValue *);
+   void                           ClassSubclassesCommand(Environment *,UDFContext *,UDFValue *);
+   void                           GetDefmessageHandlersListCmd(Environment *,UDFContext *,UDFValue *);
+   void                           SlotFacetsCommand(Environment *,UDFContext *,UDFValue *);
+   void                           SlotSourcesCommand(Environment *,UDFContext *,UDFValue *);
+   void                           SlotTypesCommand(Environment *,UDFContext *,UDFValue *);
+   void                           SlotAllowedValuesCommand(Environment *,UDFContext *,UDFValue *);
+   void                           SlotAllowedClassesCommand(Environment *,UDFContext *,UDFValue *);
+   void                           SlotRangeCommand(Environment *,UDFContext *,UDFValue *);
+   void                           SlotCardinalityCommand(Environment *,UDFContext *,UDFValue *);
+   bool                           ClassAbstractP(Defclass *);
 #if DEFRULE_CONSTRUCT
-   bool                           EnvClassReactiveP(void *,void *);
+   bool                           ClassReactiveP(Defclass *);
 #endif
-   void                           EnvClassSlots(void *,void *,DATA_OBJECT *,bool);
-   void                           EnvGetDefmessageHandlerList(void *,void *,DATA_OBJECT *,bool);
-   void                           EnvClassSuperclasses(void *,void *,DATA_OBJECT *,bool);
-   void                           EnvClassSubclasses(void *,void *,DATA_OBJECT *,bool);
-   void                           ClassSubclassAddresses(void *,void *,DATA_OBJECT *,bool);
-   void                           EnvSlotFacets(void *,void *,const char *,DATA_OBJECT *);
-   void                           EnvSlotSources(void *,void *,const char *,DATA_OBJECT *);
-   void                           EnvSlotTypes(void *,void *,const char *,DATA_OBJECT *);
-   void                           EnvSlotAllowedValues(void *,void *,const char *,DATA_OBJECT *);
-   void                           EnvSlotAllowedClasses(void *,void *,const char *,DATA_OBJECT *);
-   void                           EnvSlotRange(void *,void *,const char *,DATA_OBJECT *);
-   void                           EnvSlotCardinality(void *,void *,const char *,DATA_OBJECT *);
+   void                           ClassSlots(Defclass *,CLIPSValue *,bool);
+   void                           GetDefmessageHandlerList(Environment *,Defclass *,CLIPSValue *,bool);
+   void                           ClassSuperclasses(Defclass *,CLIPSValue *,bool);
+   void                           ClassSubclasses(Defclass *,CLIPSValue *,bool);
+   void                           ClassSubclassAddresses(Environment *,Defclass *,UDFValue *,bool);
+   bool                           SlotFacets(Defclass *,const char *,CLIPSValue *);
+   bool                           SlotSources(Defclass *,const char *,CLIPSValue *);
+   bool                           SlotTypes(Defclass *,const char *,CLIPSValue *);
+   bool                           SlotAllowedValues(Defclass *,const char *,CLIPSValue *);
+   bool                           SlotAllowedClasses(Defclass *,const char *,CLIPSValue *);
+   bool                           SlotRange(Defclass *,const char *,CLIPSValue *);
+   bool                           SlotCardinality(Defclass *,const char *,CLIPSValue *);
 
 #endif /* _H_classinf */
 

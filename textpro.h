@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*             TEXT PROCESSING HEADER FILE             */
    /*******************************************************/
@@ -32,7 +32,7 @@
 /*                                                           */
 /*            Used genstrcpy and genstrncpy instead of       */
 /*            strcpy and strncpy.                            */
-/*                                                           */             
+/*                                                           */
 /*            Support for long long integers.                */
 /*                                                           */
 /*            Changed integer type/precision.                */
@@ -43,6 +43,15 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_textpro
@@ -52,13 +61,13 @@
 #define _H_textpro
 
 #if TEXTPRO_FUNCTIONS
-   void                           FetchCommand(UDFContext *,CLIPSValue *);
-   void                           PrintRegionCommand(UDFContext *,CLIPSValue *);
-   void                           GetRegionCommand(UDFContext *,CLIPSValue *);
-   void                           TossCommand(UDFContext *,CLIPSValue *);
+   void                           FetchCommand(Environment *,UDFContext *,UDFValue *);
+   void                           PrintRegionCommand(Environment *,UDFContext *,UDFValue *);
+   void                           GetRegionCommand(Environment *,UDFContext *,UDFValue *);
+   void                           TossCommand(Environment *,UDFContext *,UDFValue *);
 #endif
 
-   void                           HelpFunctionDefinitions(void *);
+   void                           HelpFunctionDefinitions(Environment *);
 
 #endif /* _H_textpro */
 

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  08/25/16             */
    /*                                                     */
    /*              PREDICATE FUNCTIONS MODULE             */
    /*******************************************************/
@@ -30,6 +30,15 @@
 /*            compilers/operating systems (IBM_MCW and       */
 /*            MAC_MCW).                                      */
 /*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #include <stdio.h>
@@ -49,36 +58,36 @@
 /*   math and predicate functions.                */
 /**************************************************/
 void PredicateFunctionDefinitions(
-  void *theEnv)
+  Environment *theEnv)
   {
 #if ! RUN_TIME
-   EnvAddUDF(theEnv,"not", "b", NotFunction, "NotFunction",   1,1,          NULL,NULL);
-   EnvAddUDF(theEnv,"and", "b", AndFunction, "AndFunction",   2,UNBOUNDED , NULL,NULL);
-   EnvAddUDF(theEnv,"or",  "b", OrFunction,  "OrFunction",    2,UNBOUNDED , NULL,NULL);
+   AddUDF(theEnv,"not","b",1,1,NULL,NotFunction,"NotFunction",NULL);
+   AddUDF(theEnv,"and","b",2,UNBOUNDED ,NULL,AndFunction,"AndFunction",NULL);
+   AddUDF(theEnv,"or","b",2,UNBOUNDED ,NULL,OrFunction,"OrFunction",NULL);
 
-   EnvAddUDF(theEnv,"eq",  "b", EqFunction,  "EqFunction",  2, UNBOUNDED, NULL, NULL);
-   EnvAddUDF(theEnv,"neq", "b", NeqFunction, "NeqFunction", 2, UNBOUNDED, NULL, NULL);
+   AddUDF(theEnv,"eq","b",2,UNBOUNDED,NULL,EqFunction,"EqFunction",NULL);
+   AddUDF(theEnv,"neq","b",2,UNBOUNDED,NULL,NeqFunction,"NeqFunction",NULL);
 
-   EnvAddUDF(theEnv,"<=", "b", LessThanOrEqualFunction,    "LessThanOrEqualFunction",    2,UNBOUNDED , "ld",NULL);
-   EnvAddUDF(theEnv,">=", "b", GreaterThanOrEqualFunction, "GreaterThanOrEqualFunction", 2,UNBOUNDED , "ld",NULL);
-   EnvAddUDF(theEnv,"<",  "b", LessThanFunction,           "LessThanFunction",           2,UNBOUNDED , "ld",NULL);
-   EnvAddUDF(theEnv,">",  "b", GreaterThanFunction,        "GreaterThanFunction",        2,UNBOUNDED , "ld",NULL);
-   EnvAddUDF(theEnv,"=",  "b", NumericEqualFunction,       "NumericEqualFunction",       2,UNBOUNDED , "ld",NULL);
-   EnvAddUDF(theEnv,"<>", "b", NumericNotEqualFunction,    "NumericNotEqualFunction",    2,UNBOUNDED , "ld",NULL);
-   EnvAddUDF(theEnv,"!=", "b", NumericNotEqualFunction,    "NumericNotEqualFunction",    2,UNBOUNDED , "ld",NULL);
+   AddUDF(theEnv,"<=","b",2,UNBOUNDED ,"ld",LessThanOrEqualFunction,"LessThanOrEqualFunction",NULL);
+   AddUDF(theEnv,">=","b",2,UNBOUNDED ,"ld",GreaterThanOrEqualFunction,"GreaterThanOrEqualFunction",NULL);
+   AddUDF(theEnv,"<","b",2,UNBOUNDED ,"ld",LessThanFunction,"LessThanFunction",NULL);
+   AddUDF(theEnv,">","b",2,UNBOUNDED ,"ld",GreaterThanFunction,"GreaterThanFunction",NULL);
+   AddUDF(theEnv,"=","b",2,UNBOUNDED ,"ld",NumericEqualFunction,"NumericEqualFunction",NULL);
+   AddUDF(theEnv,"<>","b",2,UNBOUNDED ,"ld",NumericNotEqualFunction,"NumericNotEqualFunction",NULL);
+   AddUDF(theEnv,"!=","b",2,UNBOUNDED ,"ld",NumericNotEqualFunction,"NumericNotEqualFunction",NULL);
 
-   EnvAddUDF(theEnv,"symbolp",     "b",  SymbolpFunction,     "SymbolpFunction", 1,1,NULL,NULL);
-   EnvAddUDF(theEnv,"wordp",       "b",  SymbolpFunction,     "SymbolpFunction", 1,1,NULL,NULL);  // TBD Remove?
-   EnvAddUDF(theEnv,"stringp",     "b",  StringpFunction,     "StringpFunction", 1,1,NULL,NULL);
-   EnvAddUDF(theEnv,"lexemep",     "b",  LexemepFunction,     "LexemepFunction", 1,1,NULL,NULL);
-   EnvAddUDF(theEnv,"numberp",     "b",  NumberpFunction,     "NumberpFunction", 1,1,NULL,NULL);
-   EnvAddUDF(theEnv,"integerp",    "b",  IntegerpFunction,    "IntegerpFunction", 1,1,NULL,NULL);
-   EnvAddUDF(theEnv,"floatp",      "b",  FloatpFunction,      "FloatpFunction", 1,1,NULL,NULL);
-   EnvAddUDF(theEnv,"oddp",        "b",  OddpFunction,        "OddpFunction", 1,1,"l", NULL);
-   EnvAddUDF(theEnv,"evenp",       "b",  EvenpFunction,       "EvenpFunction",  1,1,"l", NULL);
-   EnvAddUDF(theEnv,"multifieldp", "b",  MultifieldpFunction, "MultifieldpFunction", 1,1,NULL,NULL);
-   EnvAddUDF(theEnv,"sequencep",   "b",  MultifieldpFunction, "MultifieldpFunction", 1,1,NULL,NULL); // TBD Remove?
-   EnvAddUDF(theEnv,"pointerp",    "b",  PointerpFunction,    "PointerpFunction", 1,1,NULL,NULL);
+   AddUDF(theEnv,"symbolp","b",1,1,NULL,SymbolpFunction,"SymbolpFunction",NULL);
+   AddUDF(theEnv,"wordp","b",1,1,NULL,SymbolpFunction,"SymbolpFunction",NULL);  // TBD Remove?
+   AddUDF(theEnv,"stringp","b",1,1,NULL,StringpFunction,"StringpFunction",NULL);
+   AddUDF(theEnv,"lexemep","b",1,1,NULL,LexemepFunction,"LexemepFunction",NULL);
+   AddUDF(theEnv,"numberp","b",1,1,NULL,NumberpFunction,"NumberpFunction",NULL);
+   AddUDF(theEnv,"integerp","b",1,1,NULL,IntegerpFunction,"IntegerpFunction",NULL);
+   AddUDF(theEnv,"floatp","b",1,1,NULL,FloatpFunction,"FloatpFunction",NULL);
+   AddUDF(theEnv,"oddp","b",1,1,"l",OddpFunction,"OddpFunction",NULL);
+   AddUDF(theEnv,"evenp","b",1,1,"l",EvenpFunction,"EvenpFunction",NULL);
+   AddUDF(theEnv,"multifieldp","b",1,1,NULL,MultifieldpFunction,"MultifieldpFunction",NULL);
+   AddUDF(theEnv,"sequencep","b",1,1,NULL,MultifieldpFunction,"MultifieldpFunction",NULL); // TBD Remove?
+   AddUDF(theEnv,"pointerp","b",1,1,NULL,PointerpFunction,"PointerpFunction",NULL);
 #else
 #if MAC_XCD
 #pragma unused(theEnv)
@@ -91,22 +100,22 @@ void PredicateFunctionDefinitions(
 /*   for the eq function.           */
 /************************************/
 void EqFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   DATA_OBJECT item, nextItem;
-   int numArgs, i;
+   UDFValue item, nextItem;
+   unsigned int numArgs, i;
    struct expr *theExpression;
-   Environment *theEnv = UDFContextEnvironment(context);
 
    /*====================================*/
    /* Determine the number of arguments. */
    /*====================================*/
 
-   numArgs = EnvRtnArgCount(theEnv);
+   numArgs = UDFArgumentCount(context);
    if (numArgs == 0)
      {
-      mCVSetBoolean(returnValue,false);
+      returnValue->lexemeValue = FalseSymbol(theEnv);
       return;
      }
 
@@ -120,7 +129,7 @@ void EqFunction(
 
    /*=====================================*/
    /* Compare all arguments to the first. */
-   /* If any are the same, return false.  */
+   /* If any are the same, return FALSE.  */
    /*=====================================*/
 
    theExpression = GetNextArgument(theExpression);
@@ -128,23 +137,23 @@ void EqFunction(
      {
       EvaluateExpression(theEnv,theExpression,&nextItem);
 
-      if (GetType(nextItem) != GetType(item))
+      if (nextItem.header->type != item.header->type)
         {
-         mCVSetBoolean(returnValue,false);
+         returnValue->lexemeValue = FalseSymbol(theEnv);
          return;
         }
 
-      if (GetType(nextItem) == MULTIFIELD)
+      if (nextItem.header->type == MULTIFIELD_TYPE)
         {
          if (MultifieldDOsEqual(&nextItem,&item) == false)
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
       else if (nextItem.value != item.value)
         {
-         mCVSetBoolean(returnValue,false);
+         returnValue->lexemeValue = FalseSymbol(theEnv);
          return;
         }
 
@@ -153,10 +162,10 @@ void EqFunction(
 
    /*=====================================*/
    /* All of the arguments were different */
-   /* from the first. Return true.        */
+   /* from the first. Return TRUE.        */
    /*=====================================*/
 
-   mCVSetBoolean(returnValue,true);
+   returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 /*************************************/
@@ -164,22 +173,22 @@ void EqFunction(
 /*   for the neq function.           */
 /*************************************/
 void NeqFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   DATA_OBJECT item, nextItem;
-   int numArgs, i;
+   UDFValue item, nextItem;
+   unsigned int numArgs, i;
    struct expr *theExpression;
-   Environment *theEnv = UDFContextEnvironment(context);
 
    /*====================================*/
    /* Determine the number of arguments. */
    /*====================================*/
 
-   numArgs = EnvRtnArgCount(theEnv);
+   numArgs = UDFArgumentCount(context);
    if (numArgs == 0)
      {
-      mCVSetBoolean(returnValue,false);
+      returnValue->lexemeValue = FalseSymbol(theEnv);
       return;
      }
 
@@ -193,7 +202,7 @@ void NeqFunction(
 
    /*=====================================*/
    /* Compare all arguments to the first. */
-   /* If any are different, return false. */
+   /* If any are different, return FALSE. */
    /*=====================================*/
 
    for (i = 2, theExpression = GetNextArgument(theExpression);
@@ -201,29 +210,29 @@ void NeqFunction(
         i++, theExpression = GetNextArgument(theExpression))
      {
       EvaluateExpression(theEnv,theExpression,&nextItem);
-      if (GetType(nextItem) != GetType(item))
+      if (nextItem.header->type != item.header->type)
         { continue; }
-      else if (nextItem.type == MULTIFIELD)
+      else if (nextItem.header->type == MULTIFIELD_TYPE)
         {
          if (MultifieldDOsEqual(&nextItem,&item) == true)
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
       else if (nextItem.value == item.value)
         {
-         mCVSetBoolean(returnValue,false);
+         returnValue->lexemeValue = FalseSymbol(theEnv);
          return;
         }
      }
 
    /*=====================================*/
    /* All of the arguments were identical */
-   /* to the first. Return true.          */
+   /* to the first. Return TRUE.          */
    /*=====================================*/
 
-   mCVSetBoolean(returnValue,true);
+   returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 /*****************************************/
@@ -231,18 +240,19 @@ void NeqFunction(
 /*   for the stringp function.           */
 /*****************************************/
 void StringpFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue item;
+   UDFValue item;
 
-   if (! UDFFirstArgument(context,ANY_TYPE,&item))
+   if (! UDFFirstArgument(context,ANY_TYPE_BITS,&item))
      { return; }
 
-   if (mCVIsType(&item,STRING_TYPE))
-     { mCVSetBoolean(returnValue,true); }
+   if (CVIsType(&item,STRING_BIT))
+     { returnValue->lexemeValue = TrueSymbol(theEnv); }
    else
-     { mCVSetBoolean(returnValue,false); }
+     { returnValue->lexemeValue = FalseSymbol(theEnv); }
   }
 
 /*****************************************/
@@ -250,18 +260,19 @@ void StringpFunction(
 /*   for the symbolp function.           */
 /*****************************************/
 void SymbolpFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue item;
+   UDFValue item;
 
-   if (! UDFFirstArgument(context,ANY_TYPE,&item))
+   if (! UDFFirstArgument(context,ANY_TYPE_BITS,&item))
      { return; }
 
-   if (mCVIsType(&item,SYMBOL_TYPE))
-     { mCVSetBoolean(returnValue,true); }
+   if (CVIsType(&item,SYMBOL_BIT))
+     { returnValue->lexemeValue = TrueSymbol(theEnv); }
    else
-     { mCVSetBoolean(returnValue,false); }
+     { returnValue->lexemeValue = FalseSymbol(theEnv); }
   }
 
 /*****************************************/
@@ -269,18 +280,19 @@ void SymbolpFunction(
 /*   for the lexemep function.           */
 /*****************************************/
 void LexemepFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue item;
+   UDFValue item;
 
-   if (! UDFFirstArgument(context,ANY_TYPE,&item))
+   if (! UDFFirstArgument(context,ANY_TYPE_BITS,&item))
      { return; }
 
-   if (mCVIsType(&item,LEXEME_TYPES))
-     { mCVSetBoolean(returnValue,true); }
+   if (CVIsType(&item,LEXEME_BITS))
+     { returnValue->lexemeValue = TrueSymbol(theEnv); }
    else
-     { mCVSetBoolean(returnValue,false); }
+     { returnValue->lexemeValue = FalseSymbol(theEnv); }
   }
 
 /*****************************************/
@@ -288,18 +300,19 @@ void LexemepFunction(
 /*   for the numberp function.           */
 /*****************************************/
 void NumberpFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue item;
+   UDFValue item;
 
-   if (! UDFFirstArgument(context,ANY_TYPE,&item))
+   if (! UDFFirstArgument(context,ANY_TYPE_BITS,&item))
      { return; }
 
-   if (mCVIsType(&item,NUMBER_TYPES))
-     { mCVSetBoolean(returnValue,true); }
+   if (CVIsType(&item,NUMBER_BITS))
+     { returnValue->lexemeValue = TrueSymbol(theEnv); }
    else
-     { mCVSetBoolean(returnValue,false); }
+     { returnValue->lexemeValue = FalseSymbol(theEnv); }
   }
 
 /****************************************/
@@ -307,18 +320,19 @@ void NumberpFunction(
 /*   for the floatp function.           */
 /****************************************/
 void FloatpFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue item;
+   UDFValue item;
 
-   if (! UDFFirstArgument(context,ANY_TYPE,&item))
+   if (! UDFFirstArgument(context,ANY_TYPE_BITS,&item))
      { return; }
 
-   if (mCVIsType(&item,FLOAT_TYPE))
-     { mCVSetBoolean(returnValue,true); }
+   if (CVIsType(&item,FLOAT_BIT))
+     { returnValue->lexemeValue = TrueSymbol(theEnv); }
    else
-     { mCVSetBoolean(returnValue,false); }
+     { returnValue->lexemeValue = FalseSymbol(theEnv); }
   }
 
 /******************************************/
@@ -326,18 +340,19 @@ void FloatpFunction(
 /*   for the integerp function.           */
 /******************************************/
 void IntegerpFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue item;
+   UDFValue item;
 
-   if (! UDFFirstArgument(context,ANY_TYPE,&item))
+   if (! UDFFirstArgument(context,ANY_TYPE_BITS,&item))
      { return; }
 
-   if (mCVIsType(&item,INTEGER_TYPE))
-     { mCVSetBoolean(returnValue,true); }
+   if (CVIsType(&item,INTEGER_BIT))
+     { returnValue->lexemeValue = TrueSymbol(theEnv); }
    else
-     { mCVSetBoolean(returnValue,false); }
+     { returnValue->lexemeValue = FalseSymbol(theEnv); }
   }
 
 /*********************************************/
@@ -345,18 +360,19 @@ void IntegerpFunction(
 /*   for the multifieldp function.           */
 /*********************************************/
 void MultifieldpFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue item;
+   UDFValue item;
 
-   if (! UDFFirstArgument(context,ANY_TYPE,&item))
+   if (! UDFFirstArgument(context,ANY_TYPE_BITS,&item))
      { return; }
 
-   if (mCVIsType(&item,MULTIFIELD_TYPE))
-     { mCVSetBoolean(returnValue,true); }
+   if (CVIsType(&item,MULTIFIELD_BIT))
+     { returnValue->lexemeValue = TrueSymbol(theEnv); }
    else
-     { mCVSetBoolean(returnValue,false); }
+     { returnValue->lexemeValue = FalseSymbol(theEnv); }
   }
 
 /******************************************/
@@ -364,18 +380,19 @@ void MultifieldpFunction(
 /*   for the pointerp function.           */
 /******************************************/
 void PointerpFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue item;
+   UDFValue item;
 
-   if (! UDFFirstArgument(context,ANY_TYPE,&item))
+   if (! UDFFirstArgument(context,ANY_TYPE_BITS,&item))
      { return; }
 
-   if (mCVIsType(&item,EXTERNAL_ADDRESS_TYPE))
-     { mCVSetBoolean(returnValue,true); }
+   if (CVIsType(&item,EXTERNAL_ADDRESS_BIT))
+     { returnValue->lexemeValue = TrueSymbol(theEnv); }
    else
-     { mCVSetBoolean(returnValue,false); }
+     { returnValue->lexemeValue = FalseSymbol(theEnv); }
   }
 
 /***********************************/
@@ -383,21 +400,19 @@ void PointerpFunction(
 /*   for the not function.         */
 /***********************************/
 void NotFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   DATA_OBJECT result;
+   UDFValue theArg;
 
-   if (! UDFFirstArgument(context,ANY_TYPE,&result))
+   if (! UDFFirstArgument(context,ANY_TYPE_BITS,&theArg))
      { return; }
 
-   if (mCVIsFalseSymbol(&result))
-     {
-      mCVSetBoolean(returnValue,true);
-      return;
-     }
-
-   mCVSetBoolean(returnValue,false);
+   if (theArg.value == FalseSymbol(theEnv))
+     { returnValue->lexemeValue = TrueSymbol(theEnv); }
+   else
+     { returnValue->lexemeValue = FalseSymbol(theEnv); }
   }
 
 /*************************************/
@@ -405,24 +420,25 @@ void NotFunction(
 /*   for the and function.           */
 /*************************************/
 void AndFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   DATA_OBJECT result;
+   UDFValue theArg;
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,ANY_TYPE,&result))
+      if (! UDFNextArgument(context,ANY_TYPE_BITS,&theArg))
         { return; }
-        
-      if (mCVIsFalseSymbol(&result))
+
+      if (theArg.value == FalseSymbol(theEnv))
         {
-         mCVSetBoolean(returnValue,false);
+         returnValue->lexemeValue = FalseSymbol(theEnv);
          return;
         }
      }
 
-   mCVSetBoolean(returnValue,true);
+   returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 /************************************/
@@ -430,24 +446,25 @@ void AndFunction(
 /*   for the or function.           */
 /************************************/
 void OrFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   DATA_OBJECT result;
+   UDFValue theArg;
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,ANY_TYPE,&result))
+      if (! UDFNextArgument(context,ANY_TYPE_BITS,&theArg))
         { return; }
-        
-      if (! mCVIsFalseSymbol(&result))
+
+      if (theArg.value != FalseSymbol(theEnv))
         {
-         mCVSetBoolean(returnValue,true);
+         returnValue->lexemeValue = TrueSymbol(theEnv);
          return;
         }
      }
 
-   mCVSetBoolean(returnValue,false);
+   returnValue->lexemeValue = FalseSymbol(theEnv);
   }
 
 /*****************************************/
@@ -455,54 +472,55 @@ void OrFunction(
 /*   routine for the <= function.        */
 /*****************************************/
 void LessThanOrEqualFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   DATA_OBJECT rv1, rv2;
+   UDFValue rv1, rv2;
 
    /*=========================*/
    /* Get the first argument. */
    /*=========================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,&rv1))
+   if (! UDFFirstArgument(context,NUMBER_BITS,&rv1))
      { return; }
 
    /*====================================================*/
    /* Compare each of the subsequent arguments to its    */
-   /* predecessor. If any is greater, then return false. */
+   /* predecessor. If any is greater, then return FALSE. */
    /*====================================================*/
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&rv2))
+      if (! UDFNextArgument(context,NUMBER_BITS,&rv2))
         { return; }
 
-      if (mCVIsType(&rv1,INTEGER_TYPE) && mCVIsType(&rv2,INTEGER_TYPE))
+      if (CVIsType(&rv1,INTEGER_BIT) && CVIsType(&rv2,INTEGER_BIT))
         {
-         if (mCVToInteger(&rv1) > mCVToInteger(&rv2))
+         if (rv1.integerValue->contents > rv2.integerValue->contents)
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
       else
         {
-         if (mCVToFloat(&rv1) > mCVToFloat(&rv2))
+         if (CVCoerceToFloat(&rv1) > CVCoerceToFloat(&rv2))
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
 
-      CVSetCLIPSValue(&rv1,&rv2);
+      rv1.value = rv2.value;
      }
 
    /*======================================*/
    /* Each argument was less than or equal */
-   /* to its predecessor. Return true.     */
+   /* to its predecessor. Return TRUE.     */
    /*======================================*/
 
-   mCVSetBoolean(returnValue,true);
+   returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 /********************************************/
@@ -510,16 +528,17 @@ void LessThanOrEqualFunction(
 /*   routine for the >= function.           */
 /********************************************/
 void GreaterThanOrEqualFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   DATA_OBJECT rv1, rv2;
+   UDFValue rv1, rv2;
 
    /*=========================*/
    /* Get the first argument. */
    /*=========================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,&rv1))
+   if (! UDFFirstArgument(context,NUMBER_BITS,&rv1))
      { return; }
 
    /*===================================================*/
@@ -529,35 +548,35 @@ void GreaterThanOrEqualFunction(
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&rv2))
+      if (! UDFNextArgument(context,NUMBER_BITS,&rv2))
         { return; }
 
-      if (mCVIsType(&rv1,INTEGER_TYPE) && mCVIsType(&rv2,INTEGER_TYPE))
+      if (CVIsType(&rv1,INTEGER_BIT) && CVIsType(&rv2,INTEGER_BIT))
         {
-         if (mCVToInteger(&rv1) < mCVToInteger(&rv2))
+         if (rv1.integerValue->contents < rv2.integerValue->contents)
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
       else
         {
-         if (mCVToFloat(&rv1) < mCVToFloat(&rv2))
+         if (CVCoerceToFloat(&rv1) < CVCoerceToFloat(&rv2))
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
 
-      CVSetCLIPSValue(&rv1,&rv2);
+      rv1.value = rv2.value;
      }
 
    /*=========================================*/
    /* Each argument was greater than or equal */
-   /* to its predecessor. Return true.        */
+   /* to its predecessor. Return TRUE.        */
    /*=========================================*/
 
-   mCVSetBoolean(returnValue,true);
+   returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 /**********************************/
@@ -565,55 +584,56 @@ void GreaterThanOrEqualFunction(
 /*   routine for the < function.  */
 /**********************************/
 void LessThanFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue rv1, rv2;
+   UDFValue rv1, rv2;
 
    /*=========================*/
    /* Get the first argument. */
    /*=========================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,&rv1))
+   if (! UDFFirstArgument(context,NUMBER_BITS,&rv1))
      { return; }
-   
+
    /*==========================================*/
    /* Compare each of the subsequent arguments */
    /* to its predecessor. If any is greater or */
-   /* equal, then return false.                */
+   /* equal, then return FALSE.                */
    /*==========================================*/
-   
+
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&rv2))
+      if (! UDFNextArgument(context,NUMBER_BITS,&rv2))
         { return; }
-        
-      if (mCVIsType(&rv1,INTEGER_TYPE) && mCVIsType(&rv2,INTEGER_TYPE))
+
+      if (CVIsType(&rv1,INTEGER_BIT) && CVIsType(&rv2,INTEGER_BIT))
         {
-         if (mCVToInteger(&rv1) >= mCVToInteger(&rv2))
+         if (rv1.integerValue->contents >= rv2.integerValue->contents)
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
       else
         {
-         if (mCVToFloat(&rv1) >= mCVToFloat(&rv2))
+         if (CVCoerceToFloat(&rv1) >= CVCoerceToFloat(&rv2))
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
-        
-      CVSetCLIPSValue(&rv1,&rv2);
+
+      rv1.value = rv2.value;
      }
 
    /*=================================*/
    /* Each argument was less than its */
-   /* predecessor. Return true.       */
+   /* predecessor. Return TRUE.       */
    /*=================================*/
 
-   mCVSetBoolean(returnValue,true);
+   returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 /*************************************/
@@ -621,55 +641,56 @@ void LessThanFunction(
 /*   routine for the > function.     */
 /*************************************/
 void GreaterThanFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue rv1, rv2;
+   UDFValue rv1, rv2;
 
    /*=========================*/
    /* Get the first argument. */
    /*=========================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,&rv1))
+   if (! UDFFirstArgument(context,NUMBER_BITS,&rv1))
      { return; }
-   
+
    /*==========================================*/
    /* Compare each of the subsequent arguments */
    /* to its predecessor. If any is lesser or  */
-   /* equal, then return false.                */
+   /* equal, then return FALSE.                */
    /*==========================================*/
-   
+
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&rv2))
+      if (! UDFNextArgument(context,NUMBER_BITS,&rv2))
         { return; }
-        
-      if (mCVIsType(&rv1,INTEGER_TYPE) && mCVIsType(&rv2,INTEGER_TYPE))
+
+      if (CVIsType(&rv1,INTEGER_BIT) && CVIsType(&rv2,INTEGER_BIT))
         {
-         if (mCVToInteger(&rv1) <= mCVToInteger(&rv2))
+         if (rv1.integerValue->contents <= rv2.integerValue->contents)
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
       else
         {
-         if (mCVToFloat(&rv1) <= mCVToFloat(&rv2))
+         if (CVCoerceToFloat(&rv1) <= CVCoerceToFloat(&rv2))
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
-        
-      CVSetCLIPSValue(&rv1,&rv2);
+
+      rv1.value = rv2.value;
      }
 
-   /*=================================*/
-   /* Each argument was less than its */
-   /* predecessor. Return true.       */
-   /*=================================*/
+   /*================================*/
+   /* Each argument was greater than */
+   /* its predecessor. Return TRUE.  */
+   /*================================*/
 
-   mCVSetBoolean(returnValue,true);
+   returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 /**************************************/
@@ -677,52 +698,53 @@ void GreaterThanFunction(
 /*   routine for the = function.      */
 /**************************************/
 void NumericEqualFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue rv1, rv2;
+   UDFValue rv1, rv2;
 
    /*=========================*/
    /* Get the first argument. */
    /*=========================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,&rv1))
+   if (! UDFFirstArgument(context,NUMBER_BITS,&rv1))
      { return; }
 
    /*=================================================*/
    /* Compare each of the subsequent arguments to the */
-   /* first. If any is unequal, then return false.    */
+   /* first. If any is unequal, then return FALSE.    */
    /*=================================================*/
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&rv2))
+      if (! UDFNextArgument(context,NUMBER_BITS,&rv2))
         { return; }
-        
-      if (mCVIsType(&rv1,INTEGER_TYPE) && mCVIsType(&rv2,INTEGER_TYPE))
+
+      if (CVIsType(&rv1,INTEGER_BIT) && CVIsType(&rv2,INTEGER_BIT))
         {
-         if (mCVToInteger(&rv1) != mCVToInteger(&rv2))
+         if (rv1.integerValue->contents != rv2.integerValue->contents)
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
       else
         {
-         if (mCVToFloat(&rv1) != mCVToFloat(&rv2))
+         if (CVCoerceToFloat(&rv1) != CVCoerceToFloat(&rv2))
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
      }
-     
+
    /*=================================*/
    /* All arguments were equal to the */
-   /* first argument. Return true.    */
+   /* first argument. Return TRUE.    */
    /*=================================*/
 
-   mCVSetBoolean(returnValue,true);
+   returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 /*****************************************/
@@ -730,52 +752,53 @@ void NumericEqualFunction(
 /*   routine for the <> function.        */
 /*****************************************/
 void NumericNotEqualFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue rv1, rv2;
+   UDFValue rv1, rv2;
 
    /*=========================*/
    /* Get the first argument. */
    /*=========================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,&rv1))
+   if (! UDFFirstArgument(context,NUMBER_BITS,&rv1))
      { return; }
 
    /*=================================================*/
    /* Compare each of the subsequent arguments to the */
-   /* first. If any is equal, then return false.      */
+   /* first. If any is equal, then return FALSE.      */
    /*=================================================*/
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&rv2))
+      if (! UDFNextArgument(context,NUMBER_BITS,&rv2))
         { return; }
-        
-      if (mCVIsType(&rv1,INTEGER_TYPE) && mCVIsType(&rv2,INTEGER_TYPE))
+
+      if (CVIsType(&rv1,INTEGER_BIT) && CVIsType(&rv2,INTEGER_BIT))
         {
-         if (mCVToInteger(&rv1) == mCVToInteger(&rv2))
+         if (rv1.integerValue->contents == rv2.integerValue->contents)
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
       else
         {
-         if (mCVToFloat(&rv1) == mCVToFloat(&rv2))
+         if (CVCoerceToFloat(&rv1) == CVCoerceToFloat(&rv2))
            {
-            mCVSetBoolean(returnValue,false);
+            returnValue->lexemeValue = FalseSymbol(theEnv);
             return;
            }
         }
      }
-     
+
    /*===================================*/
    /* All arguments were unequal to the */
-   /* first argument. Return true.      */
+   /* first argument. Return TRUE.      */
    /*===================================*/
 
-   mCVSetBoolean(returnValue,true);
+   returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 /**************************************/
@@ -783,28 +806,29 @@ void NumericNotEqualFunction(
 /*   for the oddp function.           */
 /**************************************/
 void OddpFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue item;
-   CLIPSInteger num, halfnum;
-      
+   UDFValue item;
+   long long num, halfnum;
+
    /*===========================================*/
    /* Check for the correct types of arguments. */
    /*===========================================*/
- 
-   if (! UDFFirstArgument(context,INTEGER_TYPE,&item))
+
+   if (! UDFFirstArgument(context,INTEGER_BIT,&item))
      { return; }
-    
+
    /*===========================*/
    /* Compute the return value. */
    /*===========================*/
-   
-   num = mCVToInteger(&item);
+
+   num = item.integerValue->contents;
    halfnum = (num / 2) * 2;
 
-   if (num == halfnum) mCVSetBoolean(returnValue,false);
-   else mCVSetBoolean(returnValue,true);
+   if (num == halfnum) returnValue->lexemeValue = FalseSymbol(theEnv);
+   else returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 /***************************************/
@@ -812,28 +836,29 @@ void OddpFunction(
 /*   for the evenp function.           */
 /***************************************/
 void EvenpFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue item;
-   CLIPSInteger num, halfnum;
-   
+   UDFValue item;
+   long long num, halfnum;
+
    /*===========================================*/
    /* Check for the correct types of arguments. */
    /*===========================================*/
-     
-   if (! UDFFirstArgument(context,INTEGER_TYPE,&item))
+
+   if (! UDFFirstArgument(context,INTEGER_BIT,&item))
      { return; }
 
    /*===========================*/
    /* Compute the return value. */
    /*===========================*/
-   
-   num = mCVToInteger(&item);
+
+   num = item.integerValue->contents;;
    halfnum = (num / 2) * 2;
-   
-   if (num != halfnum) mCVSetBoolean(returnValue,false);
-   else mCVSetBoolean(returnValue,true);
+
+   if (num != halfnum) returnValue->lexemeValue = FalseSymbol(theEnv);
+   else returnValue->lexemeValue = TrueSymbol(theEnv);
   }
 
 

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                FACT BUILD HEADER FILE               */
    /*******************************************************/
@@ -25,7 +25,16 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
-/*      6.40: Removed initial-fact support.                  */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Removed initial-fact support.                  */
 /*                                                           */
 /*************************************************************/
 
@@ -38,8 +47,8 @@
 #include "scanner.h"
 #include "symbol.h"
 
-   bool                           FactPatternParserFind(SYMBOL_HN *);
-   struct lhsParseNode           *FactPatternParse(void *,const char *,struct token *);
-   struct lhsParseNode           *SequenceRestrictionParse(void *,const char *,struct token *);
+   bool                           FactPatternParserFind(CLIPSLexeme *);
+   struct lhsParseNode           *FactPatternParse(Environment *,const char *,struct token *);
+   struct lhsParseNode           *SequenceRestrictionParse(Environment *,const char *,struct token *);
 
 #endif /* _H_factlhs */

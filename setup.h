@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/23/17            */
    /*                                                     */
    /*                  SETUP HEADER FILE                  */
    /*******************************************************/
@@ -76,9 +76,17 @@
 /*                                                           */
 /*            Removed support for BLOCK_MEMORY.              */
 /*                                                           */
-/*      6.40: ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*      6.40: Removed globle definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
 /*                                                           */
 /*            Removed VAX_VMS support.                       */
+/*                                                           */
+/*            UDF redesign.                                  */
 /*                                                           */
 /*************************************************************/
 
@@ -88,14 +96,34 @@
 
 #define _H_setup
 
+#include "os_shim.h"
+
 /****************************************************************/
 /* -------------------- COMPILER FLAGS ------------------------ */
 /****************************************************************/
-#include "os_shim.h"
+
 /*********************************************************************/
 /* Flag denoting the environment in which the executable is to run.  */
 /* Only one of these flags should be turned on (set to 1) at a time. */
 /*********************************************************************/
+
+#ifndef LINUX
+#define LINUX   0   /* Tested with Ubuntu 16.04, Debian 9.1, */
+#endif              /* Fedora 26, Mint 18, and CentOS 7.     */
+
+#ifndef DARWIN
+#define DARWIN  0   /* Darwin Mac OS 10.12 with Console */
+#endif
+
+#ifndef MAC_XCD
+#define MAC_XCD 0   /* MacOS 10.12 with Xcode 8.3 */
+#endif
+
+#ifndef WIN_MVC
+#define WIN_MVC 0   /* Windows 7 or 10, with Visual Studio 2015 */
+#endif
+
+/* The following are untested: */
 
 #ifndef UNIX_V
 #define UNIX_V  0   /* UNIX System V, 4.2bsd, or HP Unix, presumably with gcc */
@@ -104,24 +132,6 @@
 #ifndef UNIX_7
 #define UNIX_7  0   /* UNIX System III Version 7 or Sun Unix, presumably with gcc */
 #endif
-
-#ifndef LINUX
-#define LINUX   0   /* Untested, presumably with gcc */
-#endif
-
-#ifndef DARWIN
-#define DARWIN  0   /* Darwin Mac OS 10.10.2, presumably with gcc or Xcode 6.2 with Console */
-#endif
-
-#ifndef MAC_XCD
-#define MAC_XCD 0   /* MacOS 10.10.2, with Xcode 6.2 and Cocoa GUI */
-#endif
-
-#ifndef WIN_MVC
-#define WIN_MVC 0   /* Windows 7, with Visual Studio 2013 */
-#endif
-
-/* The following are unsupported: */
 
 #ifndef WIN_GCC
 #define WIN_GCC 0   /* Windows XP, with DJGPP 3.21 */
@@ -139,7 +149,7 @@
 #endif
 #endif
 
-#if WIN_MVC
+#if WIN_MVC || WIN_GCC
 #define IBM 1
 #else
 #define IBM 0
@@ -369,7 +379,7 @@
 /********************************************************************/
 
 #ifndef CONSTRUCT_COMPILER
-#define  CONSTRUCT_COMPILER 0
+#define  CONSTRUCT_COMPILER 1
 #endif
 
 #if CONSTRUCT_COMPILER

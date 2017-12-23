@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -22,6 +22,15 @@
 /*      6.30: Added support for hashed memories and other    */
 /*            join network changes.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_objrtgen
@@ -35,15 +44,15 @@
 #include "expressn.h"
 #include "reorder.h"
 
-   void             ReplaceGetJNObjectValue(void *,EXPRESSION *,struct lhsParseNode *,int);
-   EXPRESSION      *GenGetJNObjectValue(void *,struct lhsParseNode *,int);
-   EXPRESSION      *ObjectJNVariableComparison(void *,struct lhsParseNode *,struct lhsParseNode *,bool);
-   EXPRESSION      *GenObjectPNConstantCompare(void *,struct lhsParseNode *);
-   void             ReplaceGetPNObjectValue(void *,EXPRESSION *,struct lhsParseNode *);
-   EXPRESSION      *GenGetPNObjectValue(void *,struct lhsParseNode *); 
-   EXPRESSION      *ObjectPNVariableComparison(void *,struct lhsParseNode *,struct lhsParseNode *);
-   void             GenObjectLengthTest(void *,struct lhsParseNode *);
-   void             GenObjectZeroLengthTest(void *,struct lhsParseNode *);
+   void             ReplaceGetJNObjectValue(Environment *,Expression *,struct lhsParseNode *,int);
+   Expression      *GenGetJNObjectValue(Environment *,struct lhsParseNode *,int);
+   Expression      *ObjectJNVariableComparison(Environment *,struct lhsParseNode *,struct lhsParseNode *,bool);
+   Expression      *GenObjectPNConstantCompare(Environment *,struct lhsParseNode *);
+   void             ReplaceGetPNObjectValue(Environment *,Expression *,struct lhsParseNode *);
+   Expression      *GenGetPNObjectValue(Environment *,struct lhsParseNode *);
+   Expression      *ObjectPNVariableComparison(Environment *,struct lhsParseNode *,struct lhsParseNode *);
+   void             GenObjectLengthTest(Environment *,struct lhsParseNode *);
+   void             GenObjectZeroLengthTest(Environment *,struct lhsParseNode *);
 
 #endif /* DEFRULE_CONSTRUCT && OBJECT_SYSTEM && (! RUN_TIME) && (! BLOAD_ONLY) */
 

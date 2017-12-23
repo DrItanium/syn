@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  07/30/16             */
    /*                                                     */
    /*                DEFFACTS PARSER MODULE               */
    /*******************************************************/
@@ -30,6 +30,13 @@
 /*            imported modules are search when locating a    */
 /*            named construct.                               */
 /*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #include "setup.h"
@@ -46,6 +53,9 @@
 #include "envrnmnt.h"
 #include "factrhs.h"
 #include "memalloc.h"
+#include "modulutl.h"
+#include "pprint.h"
+#include "prntutil.h"
 #include "router.h"
 
 #include "dffctpsr.h"
@@ -57,13 +67,13 @@
 /*   deffacts keyword has been found.                       */
 /************************************************************/
 bool ParseDeffacts(
-  void *theEnv,
+  Environment *theEnv,
   const char *readSource)
   {
 #if (! RUN_TIME) && (! BLOAD_ONLY)
-   SYMBOL_HN *deffactsName;
+   CLIPSLexeme *deffactsName;
    struct expr *temp;
-   struct deffacts *newDeffacts;
+   Deffacts *newDeffacts;
    bool deffactsError;
    struct token inputToken;
 
@@ -86,7 +96,7 @@ bool ParseDeffacts(
    if ((Bloaded(theEnv) == true) && (! ConstructData(theEnv)->CheckSyntaxMode))
      {
       CannotLoadWithBloadMessage(theEnv,"deffacts");
-      return(true);
+      return true;
      }
 #endif
 
@@ -95,9 +105,10 @@ bool ParseDeffacts(
    /*============================*/
 
    deffactsName = GetConstructNameAndComment(theEnv,readSource,&inputToken,"deffacts",
-                                             EnvFindDeffactsInModule,EnvUndeffacts,"$",true,
+                                             (FindConstructFunction *) FindDeffactsInModule,
+                                             (DeleteConstructFunction *) Undeffacts,"$",true,
                                              true,true,false);
-   if (deffactsName == NULL) { return(true); }
+   if (deffactsName == NULL) { return true; }
 
    /*===============================================*/
    /* Parse the list of facts in the deffacts body. */
@@ -105,13 +116,13 @@ bool ParseDeffacts(
 
    temp = BuildRHSAssert(theEnv,readSource,&inputToken,&deffactsError,false,false,"deffacts");
 
-   if (deffactsError == true) { return(true); }
+   if (deffactsError == true) { return true; }
 
    if (ExpressionContainsVariables(temp,false))
      {
       LocalVariableErrorMessage(theEnv,"a deffacts construct");
       ReturnExpression(theEnv,temp);
-      return(true);
+      return true;
      }
 
    SavePPBuffer(theEnv,"\n");
@@ -124,7 +135,7 @@ bool ParseDeffacts(
    if (ConstructData(theEnv)->CheckSyntaxMode)
      {
       ReturnExpression(theEnv,temp);
-      return(false);
+      return false;
      }
 
    /*==========================*/
@@ -133,21 +144,17 @@ bool ParseDeffacts(
 
    ExpressionInstall(theEnv,temp);
    newDeffacts = get_struct(theEnv,deffacts);
-   newDeffacts->header.name = deffactsName;
-   IncrementSymbolCount(deffactsName);
-   newDeffacts->assertList = PackExpression(theEnv,temp);
-   newDeffacts->header.whichModule = (struct defmoduleItemHeader *)
-                              GetModuleItem(theEnv,NULL,FindModuleItem(theEnv,"deffacts")->moduleIndex);
+   IncrementLexemeCount(deffactsName);
+   InitializeConstructHeader(theEnv,"deffacts",DEFFACTS,&newDeffacts->header,deffactsName);
 
-   newDeffacts->header.next = NULL;
-   newDeffacts->header.usrData = NULL;
+   newDeffacts->assertList = PackExpression(theEnv,temp);
    ReturnExpression(theEnv,temp);
 
    /*=======================================================*/
    /* Save the pretty print representation of the deffacts. */
    /*=======================================================*/
 
-   if (EnvGetConserveMemory(theEnv) == true)
+   if (GetConserveMemory(theEnv) == true)
      { newDeffacts->header.ppForm = NULL; }
    else
      { newDeffacts->header.ppForm = CopyPPBuffer(theEnv); }
@@ -164,7 +171,7 @@ bool ParseDeffacts(
    /* Return false to indicate the deffacts was successfully parsed. */
    /*================================================================*/
 
-   return(false);
+   return false;
   }
 
 #endif /* DEFFACTS_CONSTRUCT */

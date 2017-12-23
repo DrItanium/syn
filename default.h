@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*            DEFAULT ATTRIBUTE HEADER FILE            */
    /*******************************************************/
@@ -19,12 +19,23 @@
 /* Revision History:                                         */
 /*                                                           */
 /*      6.24: Support for deftemplate-slot-default-value     */
-/*            function.                                      */ 
+/*            function.                                      */
 /*                                                           */
 /*      6.30: Support for long long integers.                */
 /*                                                           */
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
+/*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
 /*                                                           */
 /*************************************************************/
 
@@ -37,8 +48,8 @@
 #include "constrnt.h"
 #include "evaluatn.h"
 
-   void                           DeriveDefaultFromConstraints(void *,CONSTRAINT_RECORD *,DATA_OBJECT *,bool,bool);
-   struct expr                   *ParseDefault(void *,const char *,bool,bool,bool,bool *,bool *,bool *);
+   void                           DeriveDefaultFromConstraints(Environment *,CONSTRAINT_RECORD *,UDFValue *,bool,bool);
+   struct expr                   *ParseDefault(Environment *,const char *,bool,bool,bool,bool *,bool *,bool *);
 
 #endif /* _H_default */
 

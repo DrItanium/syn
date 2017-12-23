@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*             DEFRULE COMMANDS HEADER FILE            */
    /*******************************************************/
@@ -47,6 +47,19 @@
 /*                                                           */
 /*            Converted API macros to function calls.        */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_rulecom
@@ -59,7 +72,7 @@
 
 struct joinInformation
   {
-   int whichCE;
+   unsigned short whichCE;
    struct joinNode *theJoin;
    int patternBegin;
    int patternEnd;
@@ -68,31 +81,36 @@ struct joinInformation
    struct joinNode *nextJoin;
   };
 
-#define VERBOSE  0
-#define SUCCINCT 1
-#define TERSE    2
+typedef enum
+  {
+   VERBOSE,
+   SUCCINCT,
+   TERSE
+  } Verbosity;
 
-   bool                           EnvGetBetaMemoryResizing(void *);
-   bool                           EnvSetBetaMemoryResizing(void *,bool);
-   void                           GetBetaMemoryResizingCommand(UDFContext *,CLIPSValue *);
-   void                           SetBetaMemoryResizingCommand(UDFContext *,CLIPSValue *);
-   void                           EnvMatches(void *,void *,int,DATA_OBJECT *);
-   void                           EnvJoinActivity(void *,void *,int,DATA_OBJECT *);
-   void                           DefruleCommands(void *);
-   void                           MatchesCommand(UDFContext *,CLIPSValue *);
-   void                           JoinActivityCommand(UDFContext *,CLIPSValue *);
-   void                           TimetagFunction(UDFContext *,CLIPSValue *);
-   long                           EnvAlphaJoinCount(void *,void *);
-   long                           EnvBetaJoinCount(void *,void *);
-   struct joinInformation        *EnvCreateJoinArray(void *,long);
-   void                           EnvFreeJoinArray(void *,struct joinInformation *,long);
-   void                           EnvAlphaJoins(void *,void *,long,struct joinInformation *);
-   void                           EnvBetaJoins(void *,void *,long,struct joinInformation *);
-   void                           JoinActivityResetCommand(UDFContext *,CLIPSValue *);
+   bool                           GetBetaMemoryResizing(Environment *);
+   bool                           SetBetaMemoryResizing(Environment *,bool);
+   void                           GetBetaMemoryResizingCommand(Environment *,UDFContext *,UDFValue *);
+   void                           SetBetaMemoryResizingCommand(Environment *,UDFContext *,UDFValue *);
+   void                           Matches(Defrule *,Verbosity,CLIPSValue *);
+   void                           JoinActivity(Environment *,Defrule *,int,UDFValue *);
+   void                           DefruleCommands(Environment *);
+   void                           MatchesCommand(Environment *,UDFContext *,UDFValue *);
+   void                           JoinActivityCommand(Environment *,UDFContext *,UDFValue *);
+   void                           TimetagFunction(Environment *,UDFContext *,UDFValue *);
+   unsigned short                 AlphaJoinCount(Environment *,Defrule *);
+   unsigned short                 BetaJoinCount(Environment *,Defrule *);
+   struct joinInformation        *CreateJoinArray(Environment *,unsigned short);
+   void                           FreeJoinArray(Environment *,struct joinInformation *,unsigned short);
+   void                           AlphaJoins(Environment *,Defrule *,unsigned short,struct joinInformation *);
+   void                           BetaJoins(Environment *,Defrule *,unsigned short,struct joinInformation *);
+   void                           JoinActivityResetCommand(Environment *,UDFContext *,UDFValue *);
+   void                           GetFocusFunction(Environment *,UDFContext *,UDFValue *);
+   Defmodule                     *GetFocus(Environment *);
 #if DEVELOPER
-   void                           ShowJoinsCommand(UDFContext *,CLIPSValue *);
-   void                           RuleComplexityCommand(UDFContext *,CLIPSValue *);
-   void                           ShowAlphaHashTable(UDFContext *,CLIPSValue *);
+   void                           ShowJoinsCommand(Environment *,UDFContext *,UDFValue *);
+   void                           RuleComplexityCommand(Environment *,UDFContext *,UDFValue *);
+   void                           ShowAlphaHashTable(Environment *,UDFContext *,UDFValue *);
 #endif
 
 #endif /* _H_rulecom */

@@ -22,6 +22,7 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef __MAYA_H__
 #define __MAYA_H__
+#include "clips.h"
 // header for maya includes and such
-void InstallMayaExtensions(void* theEnv); 
+void InstallMayaExtensions(Environment* theEnv); 
 #endif // end __MAYA_H__

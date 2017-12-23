@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  10/18/16             */
    /*                                                     */
    /*            CONSTRAINT OPERATIONS MODULE             */
    /*******************************************************/
@@ -20,14 +20,21 @@
 /*                                                           */
 /*      6.24: Added allowed-classes slot facet.              */
 /*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
+/*                                                           */
 /*************************************************************/
 
 #include "setup.h"
 
 #include <stdio.h>
 #include <stdlib.h>
-
-#if (! RUN_TIME)
 
 #include "constant.h"
 #include "constrnt.h"
@@ -46,50 +53,48 @@
 /* LOCAL INTERNAL FUNCTION DEFINITIONS */
 /***************************************/
 
-   static void                     IntersectNumericExpressions(void *,
+   static void                     IntersectNumericExpressions(Environment *,
                                                                CONSTRAINT_RECORD *,
                                                                CONSTRAINT_RECORD *,
                                                                CONSTRAINT_RECORD *,bool);
-   static void                     IntersectAllowedValueExpressions(void *,
+   static void                     IntersectAllowedValueExpressions(Environment *,
                                                                     CONSTRAINT_RECORD *,
                                                                     CONSTRAINT_RECORD *,
                                                                     CONSTRAINT_RECORD *);
-   static void                     IntersectAllowedClassExpressions(void *,
+   static void                     IntersectAllowedClassExpressions(Environment *,
                                                                     CONSTRAINT_RECORD *,
                                                                     CONSTRAINT_RECORD *,
                                                                     CONSTRAINT_RECORD *);
    static bool                     FindItemInExpression(int,void *,bool,struct expr *);
    static void                     UpdateRestrictionFlags(CONSTRAINT_RECORD *);
-#if (! BLOAD_ONLY)
-   static void                     UnionRangeMinMaxValueWithList(void *,
+   static void                     UnionRangeMinMaxValueWithList(Environment *,
                                                                  struct expr *,
                                                                  struct expr *,
                                                                  struct expr **,
                                                                  struct expr **);
-   static void                     UnionNumericExpressions(void *,
+   static void                     UnionNumericExpressions(Environment *,
                                                          CONSTRAINT_RECORD *,
                                                          CONSTRAINT_RECORD *,
                                                          CONSTRAINT_RECORD *,bool);
-   static struct expr             *AddToUnionList(void *,
+   static struct expr             *AddToUnionList(Environment *,
                                                   struct expr *,struct expr *,
                                                   CONSTRAINT_RECORD *);
-   static void                     UnionAllowedValueExpressions(void *,
+   static void                     UnionAllowedValueExpressions(Environment *,
                                                                 CONSTRAINT_RECORD *,
                                                                 CONSTRAINT_RECORD *,
                                                                 CONSTRAINT_RECORD *);
-   static void                     UnionAllowedClassExpressions(void *,
+   static void                     UnionAllowedClassExpressions(Environment *,
                                                                 CONSTRAINT_RECORD *,
                                                                 CONSTRAINT_RECORD *,
                                                                 CONSTRAINT_RECORD *);
    static bool                     RestrictionOnType(int,CONSTRAINT_RECORD *);
-#endif
 
 /**************************************************************/
 /* IntersectConstraints: Creates a new constraint record that */
 /*   is the intersection of two other constraint records.     */
 /**************************************************************/
 struct constraintRecord *IntersectConstraints(
-  void *theEnv,
+  Environment *theEnv,
   CONSTRAINT_RECORD *c1,
   CONSTRAINT_RECORD *c2)
   {
@@ -234,7 +239,7 @@ struct constraintRecord *IntersectConstraints(
 /*   intersection of two allowed-values lists.   */
 /*************************************************/
 static void IntersectAllowedValueExpressions(
-  void *theEnv,
+  Environment *theEnv,
   CONSTRAINT_RECORD *constraint1,
   CONSTRAINT_RECORD *constraint2,
   CONSTRAINT_RECORD *newConstraint)
@@ -292,13 +297,13 @@ static void IntersectAllowedValueExpressions(
 
    newConstraint->restrictionList = theHead;
   }
-  
+
 /*************************************************/
 /* IntersectAllowedClassExpressions: Creates the */
 /*   intersection of two allowed-classes lists.  */
 /*************************************************/
 static void IntersectAllowedClassExpressions(
-  void *theEnv,
+  Environment *theEnv,
   CONSTRAINT_RECORD *constraint1,
   CONSTRAINT_RECORD *constraint2,
   CONSTRAINT_RECORD *newConstraint)
@@ -312,7 +317,7 @@ static void IntersectAllowedClassExpressions(
    /* each value to a list if it satisfies the   */
    /* restrictions for both constraint records.  */
    /*============================================*/
-   
+
    for (theList1 = constraint1->classList;
         theList1 != NULL;
         theList1 = theList1->nextArg)
@@ -356,13 +361,13 @@ static void IntersectAllowedClassExpressions(
 
    newConstraint->classList = theHead;
   }
-  
+
 /*********************************************************/
 /* IntersectNumericExpressions: Creates the intersection */
 /*   of two range or two min/max-fields constraints.     */
 /*********************************************************/
 static void IntersectNumericExpressions(
-  void *theEnv,
+  Environment *theEnv,
   CONSTRAINT_RECORD *constraint1,
   CONSTRAINT_RECORD *constraint2,
   CONSTRAINT_RECORD *newConstraint,
@@ -565,19 +570,19 @@ static void UpdateRestrictionFlags(
      }
 
    if ((rv->symbolRestriction) && (rv->symbolsAllowed))
-     { rv->symbolsAllowed = FindItemInExpression(SYMBOL,NULL,false,rv->restrictionList); }
+     { rv->symbolsAllowed = FindItemInExpression(SYMBOL_TYPE,NULL,false,rv->restrictionList); }
 
    if ((rv->stringRestriction)  && (rv->stringsAllowed))
-     { rv->stringsAllowed = FindItemInExpression(STRING,NULL,false,rv->restrictionList); }
+     { rv->stringsAllowed = FindItemInExpression(STRING_TYPE,NULL,false,rv->restrictionList); }
 
    if ((rv->floatRestriction) && (rv->floatsAllowed))
-     { rv->floatsAllowed = FindItemInExpression(FLOAT,NULL,false,rv->restrictionList); }
+     { rv->floatsAllowed = FindItemInExpression(FLOAT_TYPE,NULL,false,rv->restrictionList); }
 
    if ((rv->integerRestriction) && (rv->integersAllowed))
-     { rv->integersAllowed = FindItemInExpression(INTEGER,NULL,false,rv->restrictionList); }
+     { rv->integersAllowed = FindItemInExpression(INTEGER_TYPE,NULL,false,rv->restrictionList); }
 
    if ((rv->instanceNameRestriction) && (rv->instanceNamesAllowed))
-     { rv->instanceNamesAllowed = FindItemInExpression(INSTANCE_NAME,NULL,false,rv->restrictionList); }
+     { rv->instanceNamesAllowed = FindItemInExpression(INSTANCE_NAME_TYPE,NULL,false,rv->restrictionList); }
   }
 
 /*************************************************************/
@@ -596,17 +601,15 @@ static bool FindItemInExpression(
      {
       if (theList->type == theType)
         {
-         if (! useValue) return(true);
-         else if (theList->value == theValue) return(true);
+         if (! useValue) return true;
+         else if (theList->value == theValue) return true;
         }
 
       theList = theList->nextArg;
      }
 
-   return(false);
+   return false;
   }
-
-#if (! BLOAD_ONLY)
 
 /**************************************************/
 /* RestrictionOnType: Determines if a restriction */
@@ -617,19 +620,19 @@ static bool RestrictionOnType(
   int theType,
   CONSTRAINT_RECORD *theConstraint)
   {
-   if (theConstraint == NULL) return(false);
+   if (theConstraint == NULL) return false;
 
    if ((theConstraint->anyRestriction) ||
-       (theConstraint->symbolRestriction && (theType == SYMBOL)) ||
-       (theConstraint->stringRestriction && (theType == STRING)) ||
-       (theConstraint->floatRestriction && (theType == FLOAT)) ||
-       (theConstraint->integerRestriction && (theType == INTEGER)) ||
-       (theConstraint->classRestriction && ((theType == INSTANCE_ADDRESS) ||
-                                            (theType == INSTANCE_NAME))) ||
-       (theConstraint->instanceNameRestriction && (theType == INSTANCE_NAME)))
-     { return(true); }
+       (theConstraint->symbolRestriction && (theType == SYMBOL_TYPE)) ||
+       (theConstraint->stringRestriction && (theType == STRING_TYPE)) ||
+       (theConstraint->floatRestriction && (theType == FLOAT_TYPE)) ||
+       (theConstraint->integerRestriction && (theType == INTEGER_TYPE)) ||
+       (theConstraint->classRestriction && ((theType == INSTANCE_ADDRESS_TYPE) ||
+                                            (theType == INSTANCE_NAME_TYPE))) ||
+       (theConstraint->instanceNameRestriction && (theType == INSTANCE_NAME_TYPE)))
+     { return true; }
 
-   return(false);
+   return false;
   }
 
 /**********************************************************/
@@ -637,7 +640,7 @@ static bool RestrictionOnType(
 /*   is the union of two other constraint records.        */
 /**********************************************************/
 struct constraintRecord *UnionConstraints(
-  void *theEnv,
+  Environment *theEnv,
   CONSTRAINT_RECORD *c1,
   CONSTRAINT_RECORD *c2)
   {
@@ -756,7 +759,7 @@ struct constraintRecord *UnionConstraints(
 /*   two range or two min/max-fields constraints. */
 /**************************************************/
 static void UnionNumericExpressions(
-  void *theEnv,
+  Environment *theEnv,
   CONSTRAINT_RECORD *constraint1,
   CONSTRAINT_RECORD *constraint2,
   CONSTRAINT_RECORD *newConstraint,
@@ -877,7 +880,7 @@ static void UnionNumericExpressions(
 /*   pair of values with a list of such values.          */
 /*********************************************************/
 static void UnionRangeMinMaxValueWithList(
-  void *theEnv,
+  Environment *theEnv,
   struct expr *addmin,
   struct expr *addmax,
   struct expr **theMinList,
@@ -1032,7 +1035,7 @@ static void UnionRangeMinMaxValueWithList(
 /*   of two sets of allowed-classes expressions.   */
 /***************************************************/
 static void UnionAllowedClassExpressions(
-  void *theEnv,
+  Environment *theEnv,
   CONSTRAINT_RECORD *constraint1,
   CONSTRAINT_RECORD *constraint2,
   CONSTRAINT_RECORD *newConstraint)
@@ -1050,7 +1053,7 @@ static void UnionAllowedClassExpressions(
 /*   of two sets of allowed value expressions.     */
 /***************************************************/
 static void UnionAllowedValueExpressions(
-  void *theEnv,
+  Environment *theEnv,
   CONSTRAINT_RECORD *constraint1,
   CONSTRAINT_RECORD *constraint2,
   CONSTRAINT_RECORD *newConstraint)
@@ -1069,7 +1072,7 @@ static void UnionAllowedValueExpressions(
 /*   value added satisfies the constraints for the list.    */
 /************************************************************/
 static struct expr *AddToUnionList(
-  void *theEnv,
+  Environment *theEnv,
   struct expr *theList1,
   struct expr *theHead,
   CONSTRAINT_RECORD *theConstraint)
@@ -1126,13 +1129,15 @@ static struct expr *AddToUnionList(
    return(theHead);
   }
 
+#if (! BLOAD_ONLY)
+
 /****************************************************/
 /* RemoveConstantFromConstraint: Removes a constant */
 /*   value (including any duplicates) from the      */
 /*   restriction list of a constraint record.       */
 /****************************************************/
 void RemoveConstantFromConstraint(
-  void *theEnv,
+  Environment *theEnv,
   int theType,
   void *theValue,
   CONSTRAINT_RECORD *theConstraint)
@@ -1169,9 +1174,3 @@ void RemoveConstantFromConstraint(
   }
 
 #endif /* (! BLOAD_ONLY) */
-
-#endif /* (! RUN_TIME) */
-
-
-
-

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  11/01/16             */
    /*                                                     */
    /*               CLASS INITIALIZATION MODULE           */
    /*******************************************************/
@@ -41,7 +41,16 @@
 /*            imported modules are search when locating a     */
 /*            named construct.                                */
 /*                                                            */
-/*      6.40: Removed initial-object support.                 */
+/*      6.40: Pragma once and other inclusion changes.        */
+/*                                                            */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
+/*            Removed initial-object support.                 */
 /*                                                            */
 /**************************************************************/
 
@@ -98,6 +107,7 @@
 #if RUN_TIME
 #include "insfun.h"
 #include "msgfun.h"
+#include "pattern.h"
 #endif
 
 #include "classini.h"
@@ -116,20 +126,20 @@
    =========================================
    ***************************************** */
 
-static void SetupDefclasses(void *);
-static void DeallocateDefclassData(void *);
+   static void                    SetupDefclasses(Environment *);
+   static void                    DeallocateDefclassData(Environment *);
 
 #if (! RUN_TIME)
-static void DestroyDefclassAction(void *,struct constructHeader *,void *);
-static DEFCLASS *AddSystemClass(void *,const char *,DEFCLASS *);
-static void *AllocateModule(void *);
-static void  ReturnModule(void *,void *);
+   static void                    DestroyDefclassAction(Environment *,ConstructHeader *,void *);
+   static Defclass               *AddSystemClass(Environment *,const char *,Defclass *);
+   static void                   *AllocateModule(Environment *);
+   static void                    ReturnModule(Environment *,void *);
 #else
-static void SearchForHashedPatternNodes(void *,OBJECT_PATTERN_NODE *);
+   static void                    SearchForHashedPatternNodes(Environment *,OBJECT_PATTERN_NODE *);
 #endif
 
 #if (! BLOAD_ONLY) && (! RUN_TIME) && DEFMODULE_CONSTRUCT
-static void UpdateDefclassesScope(void *);
+   static void                    UpdateDefclassesScope(Environment *,void *);
 #endif
 
 /* =========================================
@@ -148,25 +158,25 @@ static void UpdateDefclassesScope(void *);
   NOTES        : Order of setup calls is important
  **********************************************************/
 void SetupObjectSystem(
-  void *theEnv)
-  {   
-   ENTITY_RECORD defclassEntityRecord = { "DEFCLASS_PTR", DEFCLASS_PTR,1,0,0,
+  Environment *theEnv)
+  {
+   EntityRecord defclassEntityRecord = { "DEFCLASS_PTR", DEFCLASS_PTR,1,0,0,
                                               NULL,NULL,NULL,NULL,NULL,
-                                              DecrementDefclassBusyCount,
-                                              IncrementDefclassBusyCount,
+                                              (EntityBusyCountFunction *) DecrementDefclassBusyCount,
+                                              (EntityBusyCountFunction *) IncrementDefclassBusyCount,
                                               NULL,NULL,NULL,NULL,NULL };
 
    AllocateEnvironmentData(theEnv,DEFCLASS_DATA,sizeof(struct defclassData),NULL);
    AddEnvironmentCleanupFunction(theEnv,"defclasses",DeallocateDefclassData,-500);
 
-   memcpy(&DefclassData(theEnv)->DefclassEntityRecord,&defclassEntityRecord,sizeof(struct entityRecord));   
+   memcpy(&DefclassData(theEnv)->DefclassEntityRecord,&defclassEntityRecord,sizeof(struct entityRecord));
 
 #if ! RUN_TIME
-   DefclassData(theEnv)->ClassDefaultsMode = CONVENIENCE_MODE;
-   DefclassData(theEnv)->ISA_SYMBOL = (SYMBOL_HN *) EnvAddSymbol(theEnv,SUPERCLASS_RLN);
-   IncrementSymbolCount(DefclassData(theEnv)->ISA_SYMBOL);
-   DefclassData(theEnv)->NAME_SYMBOL = (SYMBOL_HN *) EnvAddSymbol(theEnv,NAME_RLN);
-   IncrementSymbolCount(DefclassData(theEnv)->NAME_SYMBOL);
+   DefclassData(theEnv)->ClassDefaultsModeValue = CONVENIENCE_MODE;
+   DefclassData(theEnv)->ISA_SYMBOL = CreateSymbol(theEnv,SUPERCLASS_RLN);
+   IncrementLexemeCount(DefclassData(theEnv)->ISA_SYMBOL);
+   DefclassData(theEnv)->NAME_SYMBOL = CreateSymbol(theEnv,NAME_RLN);
+   IncrementLexemeCount(DefclassData(theEnv)->NAME_SYMBOL);
 #endif
 
    SetupDefclasses(theEnv);
@@ -193,21 +203,21 @@ void SetupObjectSystem(
    SetupObjectPatternStuff(theEnv);
 #endif
   }
-  
+
 /***************************************************/
 /* DeallocateDefclassData: Deallocates environment */
 /*    data for the defclass construct.             */
 /***************************************************/
 static void DeallocateDefclassData(
-  void *theEnv)
+  Environment *theEnv)
   {
-#if ! RUN_TIME   
+#if ! RUN_TIME
    SLOT_NAME *tmpSNPPtr, *nextSNPPtr;
    int i;
    struct defclassModule *theModuleItem;
-   void *theModule;
+   Defmodule *theModule;
    bool bloaded = false;
-   
+
 #if BLOAD || BLOAD_AND_BSAVE
    if (Bloaded(theEnv)) bloaded = true;
 #endif
@@ -215,17 +225,17 @@ static void DeallocateDefclassData(
    /*=============================*/
    /* Destroy all the defclasses. */
    /*=============================*/
-   
+
    if (! bloaded)
      {
       DoForAllConstructs(theEnv,DestroyDefclassAction,DefclassData(theEnv)->DefclassModuleIndex,false,NULL);
 
-      for (theModule = EnvGetNextDefmodule(theEnv,NULL);
+      for (theModule = GetNextDefmodule(theEnv,NULL);
            theModule != NULL;
-           theModule = EnvGetNextDefmodule(theEnv,theModule))
+           theModule = GetNextDefmodule(theEnv,theModule))
         {
          theModuleItem = (struct defclassModule *)
-                         GetModuleItem(theEnv,(struct defmodule *) theModule,
+                         GetModuleItem(theEnv,theModule,
                                        DefclassData(theEnv)->DefclassModuleIndex);
          rtn_struct(theEnv,defclassModule,theModuleItem);
         }
@@ -234,18 +244,18 @@ static void DeallocateDefclassData(
    /*==========================*/
    /* Remove the class tables. */
    /*==========================*/
-   
+
    if (! bloaded)
      {
       if (DefclassData(theEnv)->ClassIDMap != NULL)
         {
-         genfree(theEnv,DefclassData(theEnv)->ClassIDMap,DefclassData(theEnv)->AvailClassID * sizeof(DEFCLASS *));
+         genfree(theEnv,DefclassData(theEnv)->ClassIDMap,DefclassData(theEnv)->AvailClassID * sizeof(Defclass *));
         }
      }
-     
+
    if (DefclassData(theEnv)->ClassTable != NULL)
      {
-      genfree(theEnv,DefclassData(theEnv)->ClassTable,sizeof(DEFCLASS *) * CLASS_TABLE_HASH_SIZE);
+      genfree(theEnv,DefclassData(theEnv)->ClassTable,sizeof(Defclass *) * CLASS_TABLE_HASH_SIZE);
      }
 
    /*==============================*/
@@ -257,7 +267,7 @@ static void DeallocateDefclassData(
       for (i = 0; i < SLOT_NAME_TABLE_HASH_SIZE; i++)
         {
          tmpSNPPtr = DefclassData(theEnv)->SlotNameTable[i];
-      
+
          while (tmpSNPPtr != NULL)
            {
             nextSNPPtr = tmpSNPPtr->nxt;
@@ -266,17 +276,17 @@ static void DeallocateDefclassData(
            }
         }
      }
-          
+
    if (DefclassData(theEnv)->SlotNameTable != NULL)
      {
       genfree(theEnv,DefclassData(theEnv)->SlotNameTable,sizeof(SLOT_NAME *) * SLOT_NAME_TABLE_HASH_SIZE);
      }
 #else
-   DEFCLASS *cls;
+   Defclass *cls;
    void *tmpexp;
-   register unsigned int i;
-   register int j;
-   
+   unsigned int i;
+   int j;
+
    if (DefclassData(theEnv)->ClassTable != NULL)
      {
       for (j = 0 ; j < CLASS_TABLE_HASH_SIZE ; j++)
@@ -286,8 +296,8 @@ static void DeallocateDefclassData(
              {
               if ((cls->slots[i].defaultValue != NULL) && (cls->slots[i].dynamicDefault == 0))
                 {
-                 tmpexp = ((DATA_OBJECT *) cls->slots[i].defaultValue)->supplementalInfo;
-                 rtn_struct(theEnv,dataObject,cls->slots[i].defaultValue);
+                 tmpexp = ((UDFValue *) cls->slots[i].defaultValue)->supplementalInfo;
+                 rtn_struct(theEnv,udfValue,cls->slots[i].defaultValue);
                  cls->slots[i].defaultValue = tmpexp;
                 }
              }
@@ -295,25 +305,25 @@ static void DeallocateDefclassData(
      }
 #endif
   }
-  
+
 #if ! RUN_TIME
 /*********************************************************/
 /* DestroyDefclassAction: Action used to remove defclass */
 /*   as a result of DestroyEnvironment.                  */
 /*********************************************************/
 static void DestroyDefclassAction(
-  void *theEnv,
-  struct constructHeader *theConstruct,
+  Environment *theEnv,
+  ConstructHeader *theConstruct,
   void *buffer)
   {
 #if MAC_XCD
 #pragma unused(buffer)
 #endif
-   struct defclass *theDefclass = (struct defclass *) theConstruct;
+   Defclass *theDefclass = (Defclass *) theConstruct;
 
    if (theDefclass == NULL) return;
 
-#if (! BLOAD_ONLY) 
+#if (! BLOAD_ONLY)
    DestroyDefclass(theEnv,theDefclass);
 #else
 #if MAC_XCD
@@ -336,15 +346,15 @@ static void DestroyDefclassAction(
   NOTES        : None
  ***************************************************/
 void ObjectsRunTimeInitialize(
-  void *theEnv,
-  DEFCLASS *ctable[],
+  Environment *theEnv,
+  Defclass *ctable[],
   SLOT_NAME *sntable[],
-  DEFCLASS **cidmap,
-  unsigned mid)
+  Defclass **cidmap,
+  unsigned short mid)
   {
-   DEFCLASS *cls;
+   Defclass *cls;
    void *tmpexp;
-   register unsigned int i,j;
+   unsigned int i,j;
 
    if (DefclassData(theEnv)->ClassTable != NULL)
      {
@@ -360,70 +370,75 @@ void ObjectsRunTimeInitialize(
                  ===================================================================== */
               if ((cls->slots[i].defaultValue != NULL) && (cls->slots[i].dynamicDefault == 0))
                 {
-                 tmpexp = ((DATA_OBJECT *) cls->slots[i].defaultValue)->supplementalInfo;
-                 ValueDeinstall(theEnv,(DATA_OBJECT *) cls->slots[i].defaultValue);
-                 rtn_struct(theEnv,dataObject,cls->slots[i].defaultValue);
+                 tmpexp = ((UDFValue *) cls->slots[i].defaultValue)->supplementalInfo;
+                 ReleaseUDFV(theEnv,(UDFValue *) cls->slots[i].defaultValue);
+                 rtn_struct(theEnv,udfValue,cls->slots[i].defaultValue);
                  cls->slots[i].defaultValue = tmpexp;
                 }
              }
           }
      }
 
-   InstanceQueryData(theEnv)->QUERY_DELIMETER_SYMBOL = FindSymbolHN(theEnv,QUERY_DELIMETER_STRING);
-   MessageHandlerData(theEnv)->INIT_SYMBOL = FindSymbolHN(theEnv,INIT_STRING);
-   MessageHandlerData(theEnv)->DELETE_SYMBOL = FindSymbolHN(theEnv,DELETE_STRING);
-   MessageHandlerData(theEnv)->CREATE_SYMBOL = FindSymbolHN(theEnv,CREATE_STRING);
-   DefclassData(theEnv)->ISA_SYMBOL = FindSymbolHN(theEnv,SUPERCLASS_RLN);
-   DefclassData(theEnv)->NAME_SYMBOL = FindSymbolHN(theEnv,NAME_RLN);
+   InstanceQueryData(theEnv)->QUERY_DELIMITER_SYMBOL = FindSymbolHN(theEnv,QUERY_DELIMITER_STRING,SYMBOL_BIT);
+   MessageHandlerData(theEnv)->INIT_SYMBOL = FindSymbolHN(theEnv,INIT_STRING,SYMBOL_BIT);
+   MessageHandlerData(theEnv)->DELETE_SYMBOL = FindSymbolHN(theEnv,DELETE_STRING,SYMBOL_BIT);
+   MessageHandlerData(theEnv)->CREATE_SYMBOL = FindSymbolHN(theEnv,CREATE_STRING,SYMBOL_BIT);
+   DefclassData(theEnv)->ISA_SYMBOL = FindSymbolHN(theEnv,SUPERCLASS_RLN,SYMBOL_BIT);
+   DefclassData(theEnv)->NAME_SYMBOL = FindSymbolHN(theEnv,NAME_RLN,SYMBOL_BIT);
 
-   DefclassData(theEnv)->ClassTable = (DEFCLASS **) ctable;
+   DefclassData(theEnv)->ClassTable = (Defclass **) ctable;
    DefclassData(theEnv)->SlotNameTable = (SLOT_NAME **) sntable;
-   DefclassData(theEnv)->ClassIDMap = (DEFCLASS **) cidmap;
-   DefclassData(theEnv)->MaxClassID = (unsigned short) mid;
-   DefclassData(theEnv)->PrimitiveClassMap[FLOAT] =
+   DefclassData(theEnv)->ClassIDMap = (Defclass **) cidmap;
+   DefclassData(theEnv)->MaxClassID = mid;
+   DefclassData(theEnv)->PrimitiveClassMap[FLOAT_TYPE] =
      LookupDefclassByMdlOrScope(theEnv,FLOAT_TYPE_NAME);
-   DefclassData(theEnv)->PrimitiveClassMap[INTEGER] =
+   DefclassData(theEnv)->PrimitiveClassMap[INTEGER_TYPE] =
      LookupDefclassByMdlOrScope(theEnv,INTEGER_TYPE_NAME);
-   DefclassData(theEnv)->PrimitiveClassMap[STRING] =
+   DefclassData(theEnv)->PrimitiveClassMap[STRING_TYPE] =
      LookupDefclassByMdlOrScope(theEnv,STRING_TYPE_NAME);
-   DefclassData(theEnv)->PrimitiveClassMap[SYMBOL] =
+   DefclassData(theEnv)->PrimitiveClassMap[SYMBOL_TYPE] =
      LookupDefclassByMdlOrScope(theEnv,SYMBOL_TYPE_NAME);
-   DefclassData(theEnv)->PrimitiveClassMap[MULTIFIELD] =
+   DefclassData(theEnv)->PrimitiveClassMap[MULTIFIELD_TYPE] =
      LookupDefclassByMdlOrScope(theEnv,MULTIFIELD_TYPE_NAME);
-   DefclassData(theEnv)->PrimitiveClassMap[EXTERNAL_ADDRESS] =
+   DefclassData(theEnv)->PrimitiveClassMap[EXTERNAL_ADDRESS_TYPE] =
      LookupDefclassByMdlOrScope(theEnv,EXTERNAL_ADDRESS_TYPE_NAME);
-   DefclassData(theEnv)->PrimitiveClassMap[FACT_ADDRESS] =
+   DefclassData(theEnv)->PrimitiveClassMap[FACT_ADDRESS_TYPE] =
      LookupDefclassByMdlOrScope(theEnv,FACT_ADDRESS_TYPE_NAME);
-   DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_NAME] =
+   DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_NAME_TYPE] =
      LookupDefclassByMdlOrScope(theEnv,INSTANCE_NAME_TYPE_NAME);
-   DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS] =
+   DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS_TYPE] =
      LookupDefclassByMdlOrScope(theEnv,INSTANCE_ADDRESS_TYPE_NAME);
 
    for (j = 0 ; j < CLASS_TABLE_HASH_SIZE ; j++)
      for (cls = DefclassData(theEnv)->ClassTable[j] ; cls != NULL ; cls = cls->nxtHash)
      {
+      cls->header.env = theEnv;
+         
+      for (i = 0; i < cls->handlerCount; i++)
+        { cls->handlers[i].header.env = theEnv; }
+
       for (i = 0 ; i < cls->slotCount ; i++)
         {
          if ((cls->slots[i].defaultValue != NULL) && (cls->slots[i].dynamicDefault == 0))
            {
             tmpexp = cls->slots[i].defaultValue;
-            cls->slots[i].defaultValue = (void *) get_struct(theEnv,dataObject);
-            EvaluateAndStoreInDataObject(theEnv,(int) cls->slots[i].multiple,(EXPRESSION *) tmpexp,
-                                         (DATA_OBJECT *) cls->slots[i].defaultValue,true);
-            ValueInstall(theEnv,(DATA_OBJECT *) cls->slots[i].defaultValue);
-            ((DATA_OBJECT *) cls->slots[i].defaultValue)->supplementalInfo = tmpexp;
+            cls->slots[i].defaultValue = get_struct(theEnv,udfValue);
+            EvaluateAndStoreInDataObject(theEnv,cls->slots[i].multiple,(Expression *) tmpexp,
+                                         (UDFValue *) cls->slots[i].defaultValue,true);
+            RetainUDFV(theEnv,(UDFValue *) cls->slots[i].defaultValue);
+            ((UDFValue *) cls->slots[i].defaultValue)->supplementalInfo = tmpexp;
            }
         }
      }
-     
+
    SearchForHashedPatternNodes(theEnv,ObjectReteData(theEnv)->ObjectPatternNetworkPointer);
   }
-  
-/*******************************************************************/
-/* SearchForHashedPatternNodes:    */
-/*******************************************************************/
+
+/********************************/
+/* SearchForHashedPatternNodes: */
+/********************************/
 static void SearchForHashedPatternNodes(
-   void *theEnv,
+   Environment *theEnv,
    OBJECT_PATTERN_NODE *theNode)
    {
     while (theNode != NULL)
@@ -432,7 +447,7 @@ static void SearchForHashedPatternNodes(
         { AddHashedPatternNode(theEnv,theNode->lastLevel,theNode,theNode->networkTest->type,theNode->networkTest->value); }
 
        SearchForHashedPatternNodes(theEnv,theNode->nextLevel);
-      
+
        theNode = theNode->rightNode;
       }
    }
@@ -457,10 +472,11 @@ static void SearchForHashedPatternNodes(
                 WARNING!!: Assumes no classes exist yet!
  ***************************************************************/
 void CreateSystemClasses(
-  void *theEnv)
+  Environment *theEnv,
+  void *context)
   {
-   DEFCLASS *user,*any,*primitive,*number,*lexeme,*address,*instance;
-   
+   Defclass *user,*any,*primitive,*number,*lexeme,*address,*instance;
+
    /* ===================================
       Add canonical slot name entries for
       the is-a and name fields - used for
@@ -483,51 +499,51 @@ void CreateSystemClasses(
    user = AddSystemClass(theEnv,USER_TYPE_NAME,any);
 
    number = AddSystemClass(theEnv,NUMBER_TYPE_NAME,primitive);
-   DefclassData(theEnv)->PrimitiveClassMap[INTEGER] = AddSystemClass(theEnv,INTEGER_TYPE_NAME,number);
-   DefclassData(theEnv)->PrimitiveClassMap[FLOAT] = AddSystemClass(theEnv,FLOAT_TYPE_NAME,number);
+   DefclassData(theEnv)->PrimitiveClassMap[INTEGER_TYPE] = AddSystemClass(theEnv,INTEGER_TYPE_NAME,number);
+   DefclassData(theEnv)->PrimitiveClassMap[FLOAT_TYPE] = AddSystemClass(theEnv,FLOAT_TYPE_NAME,number);
    lexeme = AddSystemClass(theEnv,LEXEME_TYPE_NAME,primitive);
-   DefclassData(theEnv)->PrimitiveClassMap[SYMBOL] = AddSystemClass(theEnv,SYMBOL_TYPE_NAME,lexeme);
-   DefclassData(theEnv)->PrimitiveClassMap[STRING] = AddSystemClass(theEnv,STRING_TYPE_NAME,lexeme);
-   DefclassData(theEnv)->PrimitiveClassMap[MULTIFIELD] = AddSystemClass(theEnv,MULTIFIELD_TYPE_NAME,primitive);
+   DefclassData(theEnv)->PrimitiveClassMap[SYMBOL_TYPE] = AddSystemClass(theEnv,SYMBOL_TYPE_NAME,lexeme);
+   DefclassData(theEnv)->PrimitiveClassMap[STRING_TYPE] = AddSystemClass(theEnv,STRING_TYPE_NAME,lexeme);
+   DefclassData(theEnv)->PrimitiveClassMap[MULTIFIELD_TYPE] = AddSystemClass(theEnv,MULTIFIELD_TYPE_NAME,primitive);
    address = AddSystemClass(theEnv,ADDRESS_TYPE_NAME,primitive);
-   DefclassData(theEnv)->PrimitiveClassMap[EXTERNAL_ADDRESS] = AddSystemClass(theEnv,EXTERNAL_ADDRESS_TYPE_NAME,address);
-   DefclassData(theEnv)->PrimitiveClassMap[FACT_ADDRESS] = AddSystemClass(theEnv,FACT_ADDRESS_TYPE_NAME,address);
+   DefclassData(theEnv)->PrimitiveClassMap[EXTERNAL_ADDRESS_TYPE] = AddSystemClass(theEnv,EXTERNAL_ADDRESS_TYPE_NAME,address);
+   DefclassData(theEnv)->PrimitiveClassMap[FACT_ADDRESS_TYPE] = AddSystemClass(theEnv,FACT_ADDRESS_TYPE_NAME,address);
    instance = AddSystemClass(theEnv,INSTANCE_TYPE_NAME,primitive);
-   DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS] = AddSystemClass(theEnv,INSTANCE_ADDRESS_TYPE_NAME,instance);
-   DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_NAME] = AddSystemClass(theEnv,INSTANCE_NAME_TYPE_NAME,instance);
+   DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS_TYPE] = AddSystemClass(theEnv,INSTANCE_ADDRESS_TYPE_NAME,instance);
+   DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_NAME_TYPE] = AddSystemClass(theEnv,INSTANCE_NAME_TYPE_NAME,instance);
 
    /* ================================================================================
        INSTANCE-ADDRESS is-a INSTANCE and ADDRESS.  The links between INSTANCE-ADDRESS
        and ADDRESS still need to be made.
        =============================================================================== */
-   AddClassLink(theEnv,&DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS]->directSuperclasses,address,-1);
-   AddClassLink(theEnv,&DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS]->allSuperclasses,address,2);
-   AddClassLink(theEnv,&address->directSubclasses,DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS],-1);
+   AddClassLink(theEnv,&DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS_TYPE]->directSuperclasses,address,true,0);
+   AddClassLink(theEnv,&DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS_TYPE]->allSuperclasses,address,false,2);
+   AddClassLink(theEnv,&address->directSubclasses,DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS_TYPE],true,0);
 
    /* =======================================================================
       The order of the class in the list MUST correspond to their type codes!
       See CONSTANT.H
       ======================================================================= */
-   AddConstructToModule((struct constructHeader *) DefclassData(theEnv)->PrimitiveClassMap[FLOAT]);
-   AddConstructToModule((struct constructHeader *) DefclassData(theEnv)->PrimitiveClassMap[INTEGER]);
-   AddConstructToModule((struct constructHeader *) DefclassData(theEnv)->PrimitiveClassMap[SYMBOL]);
-   AddConstructToModule((struct constructHeader *) DefclassData(theEnv)->PrimitiveClassMap[STRING]);
-   AddConstructToModule((struct constructHeader *) DefclassData(theEnv)->PrimitiveClassMap[MULTIFIELD]);
-   AddConstructToModule((struct constructHeader *) DefclassData(theEnv)->PrimitiveClassMap[EXTERNAL_ADDRESS]);
-   AddConstructToModule((struct constructHeader *) DefclassData(theEnv)->PrimitiveClassMap[FACT_ADDRESS]);
-   AddConstructToModule((struct constructHeader *) DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS]);
-   AddConstructToModule((struct constructHeader *) DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_NAME]);
-   AddConstructToModule((struct constructHeader *) any);
-   AddConstructToModule((struct constructHeader *) primitive);
-   AddConstructToModule((struct constructHeader *) number);
-   AddConstructToModule((struct constructHeader *) lexeme);
-   AddConstructToModule((struct constructHeader *) address);
-   AddConstructToModule((struct constructHeader *) instance);
-   AddConstructToModule((struct constructHeader *) user);
+   AddConstructToModule(&DefclassData(theEnv)->PrimitiveClassMap[FLOAT_TYPE]->header);
+   AddConstructToModule(&DefclassData(theEnv)->PrimitiveClassMap[INTEGER_TYPE]->header);
+   AddConstructToModule(&DefclassData(theEnv)->PrimitiveClassMap[SYMBOL_TYPE]->header);
+   AddConstructToModule(&DefclassData(theEnv)->PrimitiveClassMap[STRING_TYPE]->header);
+   AddConstructToModule(&DefclassData(theEnv)->PrimitiveClassMap[MULTIFIELD_TYPE]->header);
+   AddConstructToModule(&DefclassData(theEnv)->PrimitiveClassMap[EXTERNAL_ADDRESS_TYPE]->header);
+   AddConstructToModule(&DefclassData(theEnv)->PrimitiveClassMap[FACT_ADDRESS_TYPE]->header);
+   AddConstructToModule(&DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_ADDRESS_TYPE]->header);
+   AddConstructToModule(&DefclassData(theEnv)->PrimitiveClassMap[INSTANCE_NAME_TYPE]->header);
+   AddConstructToModule(&any->header);
+   AddConstructToModule(&primitive->header);
+   AddConstructToModule(&number->header);
+   AddConstructToModule(&lexeme->header);
+   AddConstructToModule(&address->header);
+   AddConstructToModule(&instance->header);
+   AddConstructToModule(&user->header);
 
-   for (any = (DEFCLASS *) EnvGetNextDefclass(theEnv,NULL) ;
+   for (any = GetNextDefclass(theEnv,NULL) ;
         any != NULL ;
-        any = (DEFCLASS *) EnvGetNextDefclass(theEnv,(void *) any))
+        any = GetNextDefclass(theEnv,any))
      AssignClassID(theEnv,any);
   }
 
@@ -549,14 +565,15 @@ void CreateSystemClasses(
   NOTES        : None
  *********************************************************/
 static void SetupDefclasses(
-  void *theEnv)
+  Environment *theEnv)
   {
    InstallPrimitive(theEnv,&DefclassData(theEnv)->DefclassEntityRecord,DEFCLASS_PTR);
 
    DefclassData(theEnv)->DefclassModuleIndex =
                 RegisterModuleItem(theEnv,"defclass",
 #if (! RUN_TIME)
-                                    AllocateModule,ReturnModule,
+                                    AllocateModule,
+                                    ReturnModule,
 #else
                                     NULL,NULL,
 #endif
@@ -570,7 +587,7 @@ static void SetupDefclasses(
 #else
                                     NULL,
 #endif
-                                    EnvFindDefclassInModule);
+                                    (FindConstructFunction *) FindDefclassInModule);
 
    DefclassData(theEnv)->DefclassConstruct =  AddConstruct(theEnv,"defclass","defclasses",
 #if (! BLOAD_ONLY) && (! RUN_TIME)
@@ -578,78 +595,72 @@ static void SetupDefclasses(
 #else
                                      NULL,
 #endif
-                                     EnvFindDefclass,
+                                     (FindConstructFunction *) FindDefclass,
                                      GetConstructNamePointer,GetConstructPPForm,
-                                     GetConstructModuleItem,EnvGetNextDefclass,
-                                     SetNextConstruct,EnvIsDefclassDeletable,
-                                     EnvUndefclass,
+                                     GetConstructModuleItem,
+                                     (GetNextConstructFunction *) GetNextDefclass,
+                                     SetNextConstruct,
+                                     (IsConstructDeletableFunction *) DefclassIsDeletable,
+                                     (DeleteConstructFunction *) Undefclass,
 #if (! RUN_TIME)
-                                     RemoveDefclass
+                                     (FreeConstructFunction *) RemoveDefclass
 #else
                                      NULL
 #endif
                                      );
 
-   AddClearReadyFunction(theEnv,"defclass",InstancesPurge,0);
+   AddClearReadyFunction(theEnv,"defclass",InstancesPurge,0,NULL);
 
 #if ! RUN_TIME
-   EnvAddClearFunction(theEnv,"defclass",CreateSystemClasses,0);
+   AddClearFunction(theEnv,"defclass",CreateSystemClasses,0,NULL);
    InitializeClasses(theEnv);
 
 #if ! BLOAD_ONLY
 #if DEFMODULE_CONSTRUCT
-   AddPortConstructItem(theEnv,"defclass",SYMBOL);
-   AddAfterModuleDefinedFunction(theEnv,"defclass",UpdateDefclassesScope,0);
+   AddPortConstructItem(theEnv,"defclass",SYMBOL_TOKEN);
+   AddAfterModuleDefinedFunction(theEnv,"defclass",UpdateDefclassesScope,0,NULL);
 #endif
-   EnvAddUDF(theEnv,"undefclass","v",UndefclassCommand,"UndefclassCommand",1,1,"y",NULL);
+   AddUDF(theEnv,"undefclass","v",1,1,"y",UndefclassCommand,"UndefclassCommand",NULL);
 
-   AddSaveFunction(theEnv,"defclass",SaveDefclasses,10);
+   AddSaveFunction(theEnv,"defclass",SaveDefclasses,10,NULL);
 #endif
 
 #if DEBUGGING_FUNCTIONS
-   EnvAddUDF(theEnv,"list-defclasses","v",ListDefclassesCommand,"ListDefclassesCommand",0,1,"y",NULL);
-   EnvAddUDF(theEnv,"ppdefclass","v", PPDefclassCommand,"PPDefclassCommand",1,1,"y",NULL);
-   EnvAddUDF(theEnv,"describe-class","v", DescribeClassCommand,"DescribeClassCommand",1,1,"y",NULL);
-   EnvAddUDF(theEnv,"browse-classes","v", BrowseClassesCommand,"BrowseClassesCommand",0,1,"y",NULL);
+   AddUDF(theEnv,"list-defclasses","v",0,1,"y",ListDefclassesCommand,"ListDefclassesCommand",NULL);
+   AddUDF(theEnv,"ppdefclass","v",1,1,"y",PPDefclassCommand,"PPDefclassCommand",NULL);
+   AddUDF(theEnv,"describe-class","v",1,1,"y",DescribeClassCommand,"DescribeClassCommand",NULL);
+   AddUDF(theEnv,"browse-classes","v",0,1,"y",BrowseClassesCommand,"BrowseClassesCommand",NULL);
 #endif
 
-   EnvAddUDF(theEnv,"get-defclass-list","m",GetDefclassListFunction,
-                   "GetDefclassListFunction",0,1,"y",NULL);
-   EnvAddUDF(theEnv,"superclassp","b", SuperclassPCommand,"SuperclassPCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"subclassp","b", SubclassPCommand,"SubclassPCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"class-existp","b", ClassExistPCommand,"ClassExistPCommand",1,1,"y",NULL);
-   EnvAddUDF(theEnv,"message-handler-existp","b",
-                MessageHandlerExistPCommand,"MessageHandlerExistPCommand",2,3,"y",NULL);
-   EnvAddUDF(theEnv,"class-abstractp","b", ClassAbstractPCommand,"ClassAbstractPCommand",1,1,"y",NULL);
+   AddUDF(theEnv,"get-defclass-list","m",0,1,"y",GetDefclassListFunction,"GetDefclassListFunction",NULL);
+   AddUDF(theEnv,"superclassp","b",2,2,"y",SuperclassPCommand,"SuperclassPCommand",NULL);
+   AddUDF(theEnv,"subclassp","b",2,2,"y",SubclassPCommand,"SubclassPCommand",NULL);
+   AddUDF(theEnv,"class-existp","b", 1,1,"y",ClassExistPCommand,"ClassExistPCommand",NULL);
+   AddUDF(theEnv,"message-handler-existp","b",2,3,"y",MessageHandlerExistPCommand,"MessageHandlerExistPCommand",NULL);
+   AddUDF(theEnv,"class-abstractp","b",1,1,"y",ClassAbstractPCommand,"ClassAbstractPCommand",NULL);
 #if DEFRULE_CONSTRUCT
-   EnvAddUDF(theEnv,"class-reactivep","b", ClassReactivePCommand,"ClassReactivePCommand",1,1,"y",NULL);
+   AddUDF(theEnv,"class-reactivep","b",1,1,"y",ClassReactivePCommand,"ClassReactivePCommand",NULL);
 #endif
-   EnvAddUDF(theEnv,"class-slots","m", ClassSlotsCommand,"ClassSlotsCommand",1,2,"y",NULL);
-   EnvAddUDF(theEnv,"class-superclasses","m",
-                    ClassSuperclassesCommand,"ClassSuperclassesCommand",1,2,"y",NULL);
-   EnvAddUDF(theEnv,"class-subclasses","m",
-                    ClassSubclassesCommand,"ClassSubclassesCommand",1,2,"y",NULL);
-   EnvAddUDF(theEnv,"get-defmessage-handler-list","m",
-                    GetDefmessageHandlersListCmd,"GetDefmessageHandlersListCmd",0,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-existp","b",SlotExistPCommand,"SlotExistPCommand",2,3,"y",NULL);
-   EnvAddUDF(theEnv,"slot-facets","m", SlotFacetsCommand,"SlotFacetsCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-sources","m", SlotSourcesCommand,"SlotSourcesCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-types","m", SlotTypesCommand,"SlotTypesCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-allowed-values","m", SlotAllowedValuesCommand,"SlotAllowedValuesCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-allowed-classes","m", SlotAllowedClassesCommand,"SlotAllowedClassesCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-range","m", SlotRangeCommand,"SlotRangeCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-cardinality","m", SlotCardinalityCommand,"SlotCardinalityCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-writablep","b", SlotWritablePCommand,"SlotWritablePCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-initablep","b", SlotInitablePCommand,"SlotInitablePCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-publicp","b", SlotPublicPCommand,"SlotPublicPCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-direct-accessp","b", SlotDirectAccessPCommand,
-                   "SlotDirectAccessPCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"slot-default-value","*", SlotDefaultValueCommand,
-                   "SlotDefaultValueCommand",2,2,"y",NULL);
-   EnvAddUDF(theEnv,"defclass-module","y", GetDefclassModuleCommand,
-                   "GetDefclassModuleCommand",1,1,"y",NULL);
-   EnvAddUDF(theEnv,"get-class-defaults-mode", "y", GetClassDefaultsModeCommand,  "GetClassDefaultsModeCommand", 0,0,NULL,NULL);
-   EnvAddUDF(theEnv,"set-class-defaults-mode", "y", SetClassDefaultsModeCommand,  "SetClassDefaultsModeCommand", 1,1,"y",NULL);
+   AddUDF(theEnv,"class-slots","m",1,2,"y",ClassSlotsCommand,"ClassSlotsCommand",NULL);
+   AddUDF(theEnv,"class-superclasses","m",1,2,"y",ClassSuperclassesCommand,"ClassSuperclassesCommand",NULL);
+   AddUDF(theEnv,"class-subclasses","m",1,2,"y",ClassSubclassesCommand,"ClassSubclassesCommand",NULL);
+   AddUDF(theEnv,"get-defmessage-handler-list","m",0,2,"y",GetDefmessageHandlersListCmd,"GetDefmessageHandlersListCmd",NULL);
+   AddUDF(theEnv,"slot-existp","b",2,3,"y",SlotExistPCommand,"SlotExistPCommand",NULL);
+   AddUDF(theEnv,"slot-facets","m",2,2,"y",SlotFacetsCommand,"SlotFacetsCommand",NULL);
+   AddUDF(theEnv,"slot-sources","m",2,2,"y",SlotSourcesCommand,"SlotSourcesCommand",NULL);
+   AddUDF(theEnv,"slot-types","m",2,2,"y",SlotTypesCommand,"SlotTypesCommand",NULL);
+   AddUDF(theEnv,"slot-allowed-values","m",2,2,"y",SlotAllowedValuesCommand,"SlotAllowedValuesCommand",NULL);
+   AddUDF(theEnv,"slot-allowed-classes","m",2,2,"y",SlotAllowedClassesCommand,"SlotAllowedClassesCommand",NULL);
+   AddUDF(theEnv,"slot-range","m",2,2,"y",SlotRangeCommand,"SlotRangeCommand",NULL);
+   AddUDF(theEnv,"slot-cardinality","m",2,2,"y",SlotCardinalityCommand,"SlotCardinalityCommand",NULL);
+   AddUDF(theEnv,"slot-writablep","b",2,2,"y",SlotWritablePCommand,"SlotWritablePCommand",NULL);
+   AddUDF(theEnv,"slot-initablep","b",2,2,"y",SlotInitablePCommand,"SlotInitablePCommand",NULL);
+   AddUDF(theEnv,"slot-publicp","b",2,2,"y",SlotPublicPCommand,"SlotPublicPCommand",NULL);
+   AddUDF(theEnv,"slot-direct-accessp","b",2,2,"y",SlotDirectAccessPCommand,"SlotDirectAccessPCommand",NULL);
+   AddUDF(theEnv,"slot-default-value","*",2,2,"y",SlotDefaultValueCommand,"SlotDefaultValueCommand",NULL);
+   AddUDF(theEnv,"defclass-module","y",1,1,"y",GetDefclassModuleCommand,"GetDefclassModuleCommand",NULL);
+   AddUDF(theEnv,"get-class-defaults-mode","y",0,0,NULL,GetClassDefaultsModeCommand,"GetClassDefaultsModeCommand",NULL);
+   AddUDF(theEnv,"set-class-defaults-mode","y",1,1,"y",SetClassDefaultsModeCommand,"SetClassDefaultsModeCommand",NULL);
 #endif
 
 #if DEBUGGING_FUNCTIONS
@@ -677,33 +688,33 @@ static void SetupDefclasses(
                   class list (this is responsibility
                   of caller)
  *********************************************************/
-static DEFCLASS *AddSystemClass(
-  void *theEnv,
+static Defclass *AddSystemClass(
+  Environment *theEnv,
   const char *name,
-  DEFCLASS *parent)
+  Defclass *parent)
   {
-   DEFCLASS *sys;
-   long i;
+   Defclass *sys;
+   unsigned long i;
    char defaultScopeMap[1];
 
-   sys = NewClass(theEnv,(SYMBOL_HN *) EnvAddSymbol(theEnv,name));
+   sys = NewClass(theEnv,CreateSymbol(theEnv,name));
    sys->abstract = 1;
 #if DEFRULE_CONSTRUCT
    sys->reactive = 0;
 #endif
-   IncrementSymbolCount(sys->header.name);
+   IncrementLexemeCount(sys->header.name);
    sys->installed = 1;
    sys->system = 1;
    sys->hashTableIndex = HashClass(sys->header.name);
 
-   AddClassLink(theEnv,&sys->allSuperclasses,sys,-1);
+   AddClassLink(theEnv,&sys->allSuperclasses,sys,true,0);
    if (parent != NULL)
      {
-      AddClassLink(theEnv,&sys->directSuperclasses,parent,-1);
-      AddClassLink(theEnv,&parent->directSubclasses,sys,-1);
-      AddClassLink(theEnv,&sys->allSuperclasses,parent,-1);
+      AddClassLink(theEnv,&sys->directSuperclasses,parent,true,0);
+      AddClassLink(theEnv,&parent->directSubclasses,sys,true,0);
+      AddClassLink(theEnv,&sys->allSuperclasses,parent,true,0);
       for (i = 1 ; i < parent->allSuperclasses.classCount ; i++)
-        AddClassLink(theEnv,&sys->allSuperclasses,parent->allSuperclasses.classArray[i],-1);
+        AddClassLink(theEnv,&sys->allSuperclasses,parent->allSuperclasses.classArray[i],true,0);
      }
    sys->nxtHash = DefclassData(theEnv)->ClassTable[sys->hashTableIndex];
    DefclassData(theEnv)->ClassTable[sys->hashTableIndex] = sys;
@@ -713,10 +724,10 @@ static DEFCLASS *AddSystemClass(
       There is only one module (MAIN) so far -
       which has an id of 0
       ========================================= */
-   ClearBitString((void *) defaultScopeMap,(int) sizeof(char));
+   ClearBitString(defaultScopeMap,sizeof(char));
    SetBitMap(defaultScopeMap,0);
 #if DEFMODULE_CONSTRUCT
-   sys->scopeMap = (BITMAP_HN *) EnvAddBitMap(theEnv,(void *) defaultScopeMap,(int) sizeof(char));
+   sys->scopeMap = (CLIPSBitMap *) AddBitMap(theEnv,defaultScopeMap,sizeof(char));
    IncrementBitMapCount(sys->scopeMap);
 #endif
    return(sys);
@@ -732,9 +743,9 @@ static DEFCLASS *AddSystemClass(
   NOTES        : None
  *****************************************************/
 static void *AllocateModule(
-  void *theEnv)
+  Environment *theEnv)
   {
-   return((void *) get_struct(theEnv,defclassModule));
+   return (void *) get_struct(theEnv,defclassModule);
   }
 
 /***************************************************
@@ -747,7 +758,7 @@ static void *AllocateModule(
   NOTES        : None
  ***************************************************/
 static void ReturnModule(
-  void *theEnv,
+  Environment *theEnv,
   void *theItem)
   {
    FreeConstructHeaderModule(theEnv,(struct defmoduleItemHeader *) theItem,DefclassData(theEnv)->DefclassConstruct);
@@ -771,17 +782,19 @@ static void ReturnModule(
   NOTES        : None
  ***************************************************/
 static void UpdateDefclassesScope(
-  void *theEnv)
+  Environment *theEnv,
+  void *context)
   {
-   register unsigned i;
-   DEFCLASS *theDefclass;
-   int newModuleID,count;
+   unsigned i;
+   Defclass *theDefclass;
+   unsigned long newModuleID;
+   unsigned int count;
    char *newScopeMap;
-   unsigned newScopeMapSize;
+   unsigned short newScopeMapSize;
    const char *className;
-   struct defmodule *matchModule;
+   Defmodule *matchModule;
 
-   newModuleID = (int) ((struct defmodule *) EnvGetCurrentModule(theEnv))->bsaveID;
+   newModuleID = GetCurrentModule(theEnv)->header.bsaveID;
    newScopeMapSize = (sizeof(char) * ((GetNumberOfDefmodules(theEnv) / BITS_PER_BYTE) + 1));
    newScopeMap = (char *) gm2(theEnv,newScopeMapSize);
    for (i = 0 ; i < CLASS_TABLE_HASH_SIZE ; i++)
@@ -790,20 +803,20 @@ static void UpdateDefclassesScope(
           theDefclass = theDefclass->nxtHash)
        {
         matchModule = theDefclass->header.whichModule->theModule;
-        className = ValueToString(theDefclass->header.name);
-        ClearBitString((void *) newScopeMap,newScopeMapSize);
+        className = theDefclass->header.name->contents;
+        ClearBitString(newScopeMap,newScopeMapSize);
         GenCopyMemory(char,theDefclass->scopeMap->size,
-                   newScopeMap,ValueToBitMap(theDefclass->scopeMap));
-        DecrementBitMapCount(theEnv,theDefclass->scopeMap);
+                   newScopeMap,theDefclass->scopeMap->contents);
+        DecrementBitMapReferenceCount(theEnv,theDefclass->scopeMap);
         if (theDefclass->system)
           SetBitMap(newScopeMap,newModuleID);
         else if (FindImportedConstruct(theEnv,"defclass",matchModule,
                                        className,&count,true,NULL) != NULL)
           SetBitMap(newScopeMap,newModuleID);
-        theDefclass->scopeMap = (BITMAP_HN *) EnvAddBitMap(theEnv,(void *) newScopeMap,newScopeMapSize);
+        theDefclass->scopeMap = (CLIPSBitMap *) AddBitMap(theEnv,newScopeMap,newScopeMapSize);
         IncrementBitMapCount(theDefclass->scopeMap);
        }
-   rm(theEnv,(void *) newScopeMap,newScopeMapSize);
+   rm(theEnv,newScopeMap,newScopeMapSize);
   }
 
 #endif

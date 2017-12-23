@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -25,6 +25,13 @@
 /*            compilers/operating systems (IBM_MCW,          */
 /*            MAC_MCW, and IBM_TBC).                         */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_objbin
@@ -38,33 +45,33 @@
 #define OBJECTBIN_DATA 33
 
 struct objectBinaryData
-  { 
-   DEFCLASS *DefclassArray;
-   long ModuleCount;
-   long ClassCount;
-   long LinkCount;
-   long SlotCount;
-   long SlotNameCount;
-   long TemplateSlotCount;
-   long SlotNameMapCount;
-   long HandlerCount;
+  {
+   Defclass *DefclassArray;
+   unsigned long ModuleCount;
+   unsigned long ClassCount;
+   unsigned long LinkCount;
+   unsigned long SlotCount;
+   unsigned long SlotNameCount;
+   unsigned long TemplateSlotCount;
+   unsigned long SlotNameMapCount;
+   unsigned long HandlerCount;
    DEFCLASS_MODULE *ModuleArray;
-   DEFCLASS **LinkArray;
-   SLOT_DESC *SlotArray;
-   SLOT_DESC **TmpslotArray;
+   Defclass **LinkArray;
+   SlotDescriptor *SlotArray;
+   SlotDescriptor **TmpslotArray;
    SLOT_NAME *SlotNameArray;
    unsigned *MapslotArray;
-   HANDLER *HandlerArray;
+   DefmessageHandler *HandlerArray;
    unsigned *MaphandlerArray;
   };
 
 #define ObjectBinaryData(theEnv) ((struct objectBinaryData *) GetEnvironmentData(theEnv,OBJECTBIN_DATA))
 
-#define DefclassPointer(i) (((i) == -1L) ? NULL : (DEFCLASS *) &ObjectBinaryData(theEnv)->DefclassArray[i])
-#define DefclassIndex(cls) (((cls) == NULL) ? -1 : ((struct constructHeader *) cls)->bsaveID)
+#define DefclassPointer(i) (((i) == ULONG_MAX) ? NULL : &ObjectBinaryData(theEnv)->DefclassArray[i])
+#define DefclassIndex(cls) (((cls) == NULL) ? ULONG_MAX : ((ConstructHeader *) cls)->bsaveID)
 
-   void                    SetupObjectsBload(void *);
-   void                   *BloadDefclassModuleReference(void *,int);
+   void                    SetupObjectsBload(Environment *);
+   void                   *BloadDefclassModuleReference(Environment *,unsigned long);
 
 #endif /* _H_objbin */
 

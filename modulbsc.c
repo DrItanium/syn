@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  08/25/16             */
    /*                                                     */
    /*         DEFMODULE BASIC COMMANDS HEADER FILE        */
    /*******************************************************/
@@ -28,6 +28,17 @@
 /*                                                           */
 /*            Converted API macros to function calls.        */
 /*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #include "setup.h"
@@ -52,28 +63,28 @@
 /* LOCAL INTERNAL FUNCTION DEFINITIONS */
 /***************************************/
 
-   static void                    ClearDefmodules(void *);
+   static void                    ClearDefmodules(Environment *,void *);
 #if DEFMODULE_CONSTRUCT
-   static void                    SaveDefmodules(void *,void *,const char *);
+   static void                    SaveDefmodules(Environment *,Defmodule *,const char *,void *);
 #endif
 
 /*****************************************************************/
 /* DefmoduleBasicCommands: Initializes basic defmodule commands. */
 /*****************************************************************/
 void DefmoduleBasicCommands(
-  void *theEnv)
+  Environment *theEnv)
   {
-   EnvAddClearFunction(theEnv,"defmodule",ClearDefmodules,2000);
+   AddClearFunction(theEnv,"defmodule",ClearDefmodules,2000,NULL);
 
 #if DEFMODULE_CONSTRUCT
-   AddSaveFunction(theEnv,"defmodule",SaveDefmodules,1100);
+   AddSaveFunction(theEnv,"defmodule",SaveDefmodules,1100,NULL);
 
 #if ! RUN_TIME
-   EnvAddUDF(theEnv,"get-defmodule-list","m", EnvGetDefmoduleListFunction,"EnvGetDefmoduleListFunction",0,0,NULL,NULL);
+   AddUDF(theEnv,"get-defmodule-list","m",0,0,NULL,GetDefmoduleListFunction,"GetDefmoduleListFunction",NULL);
 
 #if DEBUGGING_FUNCTIONS
-   EnvAddUDF(theEnv,"list-defmodules","v", ListDefmodulesCommand,"ListDefmodulesCommand",0,0,NULL,NULL);
-   EnvAddUDF(theEnv,"ppdefmodule","v",PPDefmoduleCommand,"PPDefmoduleCommand",1,1,"y",NULL);
+   AddUDF(theEnv,"list-defmodules","v",0,0,NULL,ListDefmodulesCommand,"ListDefmodulesCommand",NULL);
+   AddUDF(theEnv,"ppdefmodule","v",1,1,"y",PPDefmoduleCommand,"PPDefmoduleCommand",NULL);
 #endif
 #endif
 #endif
@@ -92,15 +103,16 @@ void DefmoduleBasicCommands(
 /*   the clear command. Creates the MAIN module.         */
 /*********************************************************/
 static void ClearDefmodules(
-  void *theEnv)
+  Environment *theEnv,
+  void *context)
   {
 #if (BLOAD || BLOAD_AND_BSAVE || BLOAD_ONLY) && (! RUN_TIME)
    if (Bloaded(theEnv) == true) return;
 #endif
 #if (! RUN_TIME)
-   RemoveAllDefmodules(theEnv);
+   RemoveAllDefmodules(theEnv,NULL);
 
-   CreateMainModule(theEnv);
+   CreateMainModule(theEnv,NULL);
    DefmoduleData(theEnv)->MainModuleRedefinable = true;
 #else
 #if MAC_XCD
@@ -116,51 +128,56 @@ static void ClearDefmodules(
 /*   for use with the save command.       */
 /******************************************/
 static void SaveDefmodules(
-  void *theEnv,
-  void *theModule,
-  const char *logicalName)
+  Environment *theEnv,
+  Defmodule *theModule,
+  const char *logicalName,
+  void *context)
   {
    const char *ppform;
 
-   ppform = EnvGetDefmodulePPForm(theEnv,theModule);
+   ppform = DefmodulePPForm(theModule);
    if (ppform != NULL)
      {
-      PrintInChunks(theEnv,logicalName,ppform);
-      EnvPrintRouter(theEnv,logicalName,"\n");
+      WriteString(theEnv,logicalName,ppform);
+      WriteString(theEnv,logicalName,"\n");
      }
   }
-  
-/***************************************************/
-/* EnvGetDefmoduleListFunction: H/L access routine */
-/*   for the get-defmodule-list function.          */
-/***************************************************/
-void EnvGetDefmoduleListFunction(
+
+/************************************************/
+/* GetDefmoduleListFunction: H/L access routine */
+/*   for the get-defmodule-list function.       */
+/************************************************/
+void GetDefmoduleListFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   EnvGetDefmoduleList(UDFContextEnvironment(context),returnValue);
+   CLIPSValue result;
+   
+   GetDefmoduleList(theEnv,&result);
+   CLIPSToUDFValue(&result,returnValue);
   }
 
-/*************************************************/
-/* EnvGetDefmoduleList: H/L and C access routine */
-/*   for the get-defmodule-list function.        */
-/*************************************************/
-void EnvGetDefmoduleList(
-  void *theEnv,
+/******************************************/
+/* GetDefmoduleList: C access routine     */
+/*   for the get-defmodule-list function. */
+/******************************************/
+void GetDefmoduleList(
+  Environment *theEnv,
   CLIPSValue *returnValue)
   {
-   void *theConstruct;
+   Defmodule *theConstruct;
    unsigned long count = 0;
-   struct multifield *theList;
+   Multifield *theList;
 
    /*====================================*/
    /* Determine the number of constructs */
    /* of the specified type.             */
    /*====================================*/
 
-   for (theConstruct = EnvGetNextDefmodule(theEnv,NULL);
+   for (theConstruct = GetNextDefmodule(theEnv,NULL);
         theConstruct != NULL;
-        theConstruct = EnvGetNextDefmodule(theEnv,theConstruct))
+        theConstruct = GetNextDefmodule(theEnv,theConstruct))
      { count++; }
 
    /*===========================*/
@@ -168,27 +185,23 @@ void EnvGetDefmoduleList(
    /* enough to store the list. */
    /*===========================*/
 
-   SetpType(returnValue,MULTIFIELD);
-   SetpDOBegin(returnValue,1);
-   SetpDOEnd(returnValue,(long) count);
-   theList = (struct multifield *) EnvCreateMultifield(theEnv,count);
-   SetpValue(returnValue,(void *) theList);
+   theList = CreateMultifield(theEnv,count);
+   returnValue->value = theList;
 
    /*====================================*/
    /* Store the names in the multifield. */
    /*====================================*/
 
-   for (theConstruct = EnvGetNextDefmodule(theEnv,NULL), count = 1;
+   for (theConstruct = GetNextDefmodule(theEnv,NULL), count = 0;
         theConstruct != NULL;
-        theConstruct = EnvGetNextDefmodule(theEnv,theConstruct), count++)
+        theConstruct = GetNextDefmodule(theEnv,theConstruct), count++)
      {
       if (EvaluationData(theEnv)->HaltExecution == true)
         {
-         EnvSetMultifieldErrorValue(theEnv,returnValue);
+         returnValue->multifieldValue = CreateMultifield(theEnv,0L);
          return;
         }
-      SetMFType(theList,count,SYMBOL);
-      SetMFValue(theList,count,EnvAddSymbol(theEnv,EnvGetDefmoduleName(theEnv,theConstruct)));
+      theList->contents[count].lexemeValue = CreateSymbol(theEnv,DefmoduleName(theConstruct));
      }
   }
 
@@ -199,16 +212,16 @@ void EnvGetDefmoduleList(
 /*   for the ppdefmodule command.           */
 /********************************************/
 void PPDefmoduleCommand(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
    const char *defmoduleName;
-   void *theEnv = UDFContextEnvironment(context);
 
    defmoduleName = GetConstructName(context,"ppdefmodule","defmodule name");
    if (defmoduleName == NULL) return;
 
-   PPDefmodule(theEnv,defmoduleName,WDISPLAY);
+   PPDefmodule(theEnv,defmoduleName,STDOUT);
 
    return;
   }
@@ -218,22 +231,23 @@ void PPDefmoduleCommand(
 /*   the ppdefmodule command.        */
 /*************************************/
 bool PPDefmodule(
-  void *theEnv,
+  Environment *theEnv,
   const char *defmoduleName,
   const char *logicalName)
   {
-   void *defmodulePtr;
+   Defmodule *defmodulePtr;
 
-   defmodulePtr = EnvFindDefmodule(theEnv,defmoduleName);
+   defmodulePtr = FindDefmodule(theEnv,defmoduleName);
    if (defmodulePtr == NULL)
      {
-      CantFindItemErrorMessage(theEnv,"defmodule",defmoduleName);
-      return(false);
+      CantFindItemErrorMessage(theEnv,"defmodule",defmoduleName,true);
+      return false;
      }
 
-   if (EnvGetDefmodulePPForm(theEnv,defmodulePtr) == NULL) return(true);
-   PrintInChunks(theEnv,logicalName,EnvGetDefmodulePPForm(theEnv,defmodulePtr));
-   return(true);
+   if (DefmodulePPForm(defmodulePtr) == NULL) return true;
+   WriteString(theEnv,logicalName,DefmodulePPForm(defmodulePtr));
+
+   return true;
   }
 
 /***********************************************/
@@ -241,29 +255,30 @@ bool PPDefmodule(
 /*   for the list-defmodules command.          */
 /***********************************************/
 void ListDefmodulesCommand(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   EnvListDefmodules(UDFContextEnvironment(context),WDISPLAY);
+   ListDefmodules(theEnv,STDOUT);
   }
 
-/***************************************/
-/* EnvListDefmodules: C access routine */
-/*   for the list-defmodules command.  */
-/***************************************/
-void EnvListDefmodules(
-  void *theEnv,
+/**************************************/
+/* ListDefmodules: C access routine   */
+/*   for the list-defmodules command. */
+/**************************************/
+void ListDefmodules(
+  Environment *theEnv,
   const char *logicalName)
   {
-   void *theModule;
-   int count = 0;
+   Defmodule *theModule;
+   unsigned int count = 0;
 
-   for (theModule = EnvGetNextDefmodule(theEnv,NULL);
+   for (theModule = GetNextDefmodule(theEnv,NULL);
         theModule != NULL;
-        theModule = EnvGetNextDefmodule(theEnv,theModule))
+        theModule = GetNextDefmodule(theEnv,theModule))
     {
-     EnvPrintRouter(theEnv,logicalName,EnvGetDefmoduleName(theEnv,theModule));
-     EnvPrintRouter(theEnv,logicalName,"\n");
+     WriteString(theEnv,logicalName,DefmoduleName(theModule));
+     WriteString(theEnv,logicalName,"\n");
      count++;
     }
 

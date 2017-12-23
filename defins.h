@@ -1,9 +1,9 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
-   /*                                                     */
+   /*               DEFINSTANCES HEADER FILE              */
    /*******************************************************/
 
 /*************************************************************/
@@ -36,6 +36,19 @@
 /*            imported modules are search when locating a    */
 /*            named construct.                               */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_defins
@@ -61,17 +74,17 @@ typedef struct definstancesModule
 
 typedef struct definstances
   {
-   struct constructHeader header;
+   ConstructHeader header;
    unsigned busy;
-   EXPRESSION *mkinstance;
-  } DEFINSTANCES;
+   Expression *mkinstance;
+  } Definstances;
 
 #define DEFINSTANCES_DATA 22
 
 struct definstancesData
-  { 
-   struct construct *DefinstancesConstruct;
-   int DefinstancesModuleIndex;
+  {
+   Construct *DefinstancesConstruct;
+   unsigned DefinstancesModuleIndex;
 #if CONSTRUCT_COMPILER && (! RUN_TIME)
    struct CodeGeneratorItem *DefinstancesCodeItem;
 #endif
@@ -79,26 +92,30 @@ struct definstancesData
 
 #define DefinstancesData(theEnv) ((struct definstancesData *) GetEnvironmentData(theEnv,DEFINSTANCES_DATA))
 
-   const char                    *EnvDefinstancesModule(void *,void *);
-   const char                    *EnvDefinstancesModuleName(void *,void *);
-   void                          *EnvFindDefinstances(void *,const char *);
-   void                          *EnvFindDefinstancesInModule(void *,const char *);
-   void                           EnvGetDefinstancesList(void *,DATA_OBJECT *,struct defmodule *);
-   const char                    *EnvGetDefinstancesName(void *,void *);
-   SYMBOL_HN                     *EnvGetDefinstancesNamePointer(void *,void *);
-   const char                    *EnvGetDefinstancesPPForm(void *,void *);
-   void                          *EnvGetNextDefinstances(void *,void *);
-   bool                           EnvIsDefinstancesDeletable(void *,void *);
-   void                           EnvSetDefinstancesPPForm(void *,void *,const char *);
-   bool                           EnvUndefinstances(void *,void *);
-   void                           GetDefinstancesListFunction(UDFContext *,CLIPSValue *);
-   void                           GetDefinstancesModuleCommand(UDFContext *,CLIPSValue *);
-   void                           SetupDefinstances(void *);
-   void                           UndefinstancesCommand(UDFContext *,CLIPSValue *);
+   const char                    *DefinstancesModule(Definstances *);
+   const char                    *DefinstancesModuleName(Environment *,Definstances *);
+   Definstances                  *FindDefinstances(Environment *,const char *);
+   Definstances                  *FindDefinstancesInModule(Environment *,const char *);
+   void                           GetDefinstancesList(Environment *,CLIPSValue *,Defmodule *);
+   const char                    *DefinstancesName(Definstances *);
+   CLIPSLexeme                   *GetDefinstancesNamePointer(Environment *,Definstances *);
+   const char                    *DefinstancesPPForm(Definstances *);
+   Definstances                  *GetNextDefinstances(Environment *,Definstances *);
+   bool                           DefinstancesIsDeletable(Definstances *);
+   void                           SetDefinstancesPPForm(Environment *,Definstances *,const char *);
+   bool                           Undefinstances(Definstances *,Environment *);
+   void                           GetDefinstancesListFunction(Environment *,UDFContext *,UDFValue *);
+   void                           GetDefinstancesModuleCommand(Environment *,UDFContext *,UDFValue *);
+   void                           SetupDefinstances(Environment *);
+   void                           UndefinstancesCommand(Environment *,UDFContext *,UDFValue *);
 #if DEBUGGING_FUNCTIONS
-   void                           PPDefinstancesCommand(UDFContext *,CLIPSValue *);
-   void                           ListDefinstancesCommand(UDFContext *,CLIPSValue *);
-   void                           EnvListDefinstances(void *,const char *,struct defmodule *);
+   void                           PPDefinstancesCommand(Environment *,UDFContext *,UDFValue *);
+   void                           ListDefinstancesCommand(Environment *,UDFContext *,UDFValue *);
+   void                           ListDefinstances(Environment *,const char *,Defmodule *);
+#endif
+
+#if RUN_TIME
+   void                           DefinstancesRunTimeInitialize(Environment *);
 #endif
 
 #endif /* DEFINSTANCES_CONSTRUCT */

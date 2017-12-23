@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*                 DEVELOPER HEADER FILE               */
    /*******************************************************/
@@ -27,6 +27,17 @@
 /*                                                           */
 /*            Changed integer type/precision.                */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_developr
@@ -35,22 +46,22 @@
 
 #define _H_developr
 
-   void                           DeveloperCommands(void *);
-   void                           PrimitiveTablesInfo(UDFContext *,CLIPSValue *);
-   void                           PrimitiveTablesUsage(UDFContext *,CLIPSValue *);
+   void                           DeveloperCommands(Environment *);
+   void                           PrimitiveTablesInfoCommand(Environment *,UDFContext *,UDFValue *);
+   void                           PrimitiveTablesUsageCommand(Environment *,UDFContext *,UDFValue *);
 
 #if DEFRULE_CONSTRUCT && DEFTEMPLATE_CONSTRUCT
-   void                           ShowFactPatternNetwork(UDFContext *,CLIPSValue *);
-   void                           ValidateFactIntegrity(UDFContext *,CLIPSValue *);
+   void                           ShowFactPatternNetworkCommand(Environment *,UDFContext *,UDFValue *);
+   void                           ValidateFactIntegrityCommand(Environment *,UDFContext *,UDFValue *);
 #endif
 #if DEFRULE_CONSTRUCT && OBJECT_SYSTEM
-   void                           PrintObjectPatternNetwork(UDFContext *,CLIPSValue *);
+   void                           PrintObjectPatternNetworkCommand(Environment *,UDFContext *,UDFValue *);
 #endif
 #if OBJECT_SYSTEM
-   void                           InstanceTableUsage(UDFContext *,CLIPSValue *);
+   void                           InstanceTableUsageCommand(Environment *,UDFContext *,UDFValue *);
 #endif
 #if DEFRULE_CONSTRUCT
-   void                           ValidateBetaMemories(void *);
+   void                           ValidateBetaMemoriesCommand(Environment *,UDFContext *,UDFValue *);
 #endif
 
 #endif /* _H_developr */

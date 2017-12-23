@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  07/30/16             */
    /*                                                     */
    /*            CONSTRAINT BLOAD/BSAVE MODULE            */
    /*******************************************************/
@@ -22,6 +22,13 @@
 /*                                                           */
 /*      6.30: Changed integer type/precision.                */
 /*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #include "setup.h"
@@ -31,6 +38,7 @@
 #include "constant.h"
 #include "envrnmnt.h"
 #include "memalloc.h"
+#include "prntutil.h"
 #include "router.h"
 #include "bload.h"
 
@@ -65,12 +73,12 @@ struct bsaveConstraintRecord
    unsigned int instanceNameRestriction : 1;
    unsigned int multifieldsAllowed : 1;
    unsigned int singlefieldsAllowed : 1;
-   long classList;
-   long restrictionList;
-   long minValue;
-   long maxValue;
-   long minFields;
-   long maxFields;
+   unsigned long classList;
+   unsigned long restrictionList;
+   unsigned long minValue;
+   unsigned long maxValue;
+   unsigned long minFields;
+   unsigned long maxFields;
   };
 
 typedef struct bsaveConstraintRecord BSAVE_CONSTRAINT_RECORD;
@@ -80,9 +88,9 @@ typedef struct bsaveConstraintRecord BSAVE_CONSTRAINT_RECORD;
 /***************************************/
 
 #if BLOAD_AND_BSAVE
-   static void                    CopyToBsaveConstraintRecord(void *,CONSTRAINT_RECORD *,BSAVE_CONSTRAINT_RECORD *);
+   static void                    CopyToBsaveConstraintRecord(Environment *,CONSTRAINT_RECORD *,BSAVE_CONSTRAINT_RECORD *);
 #endif
-   static void                    CopyFromBsaveConstraintRecord(void *,void *,long);
+   static void                    CopyFromBsaveConstraintRecord(Environment *,void *,unsigned long);
 
 #if BLOAD_AND_BSAVE
 
@@ -92,12 +100,12 @@ typedef struct bsaveConstraintRecord BSAVE_CONSTRAINT_RECORD;
 /*   currently being saved.                       */
 /**************************************************/
 void WriteNeededConstraints(
-  void *theEnv,
+  Environment *theEnv,
   FILE *fp)
   {
    int i;
    unsigned short theIndex = 0;
-   unsigned long int numberOfUsedConstraints = 0;
+   unsigned long numberOfUsedConstraints = 0;
    CONSTRAINT_RECORD *tmpPtr;
    BSAVE_CONSTRAINT_RECORD bsaveConstraints;
 
@@ -121,12 +129,12 @@ void WriteNeededConstraints(
    /* then no constraints are saved.              */
    /*=============================================*/
 
-   if ((! EnvGetDynamicConstraintChecking(theEnv)) && (numberOfUsedConstraints != 0))
+   if ((! GetDynamicConstraintChecking(theEnv)) && (numberOfUsedConstraints != 0))
      {
       numberOfUsedConstraints = 0;
       PrintWarningID(theEnv,"CSTRNBIN",1,false);
-      EnvPrintRouter(theEnv,WWARNING,"Constraints are not saved with a binary image\n");
-      EnvPrintRouter(theEnv,WWARNING,"  when dynamic constraint checking is disabled.\n");
+      WriteString(theEnv,STDWRN,"Constraints are not saved with a binary image\n");
+      WriteString(theEnv,STDWRN,"  when dynamic constraint checking is disabled.\n");
      }
 
    /*============================================*/
@@ -135,7 +143,7 @@ void WriteNeededConstraints(
    /* constraints in the constraint table.       */
    /*============================================*/
 
-   GenWrite(&numberOfUsedConstraints,sizeof(unsigned long int),fp);
+   GenWrite(&numberOfUsedConstraints,sizeof(unsigned long),fp);
    if (numberOfUsedConstraints == 0) return;
 
    for (i = 0 ; i < SIZE_CONSTRAINT_HASH; i++)
@@ -156,7 +164,7 @@ void WriteNeededConstraints(
 /*   constraints in a binary image.                 */
 /****************************************************/
 static void CopyToBsaveConstraintRecord(
-  void *theEnv,
+  Environment *theEnv,
   CONSTRAINT_RECORD *constraints,
   BSAVE_CONSTRAINT_RECORD *bsaveConstraints)
   {
@@ -194,9 +202,9 @@ static void CopyToBsaveConstraintRecord(
 /*   by the binary image currently being loaded.        */
 /********************************************************/
 void ReadNeededConstraints(
-  void *theEnv)
+  Environment *theEnv)
   {
-   GenReadBinary(theEnv,(void *) &ConstraintData(theEnv)->NumberOfConstraints,sizeof(unsigned long int));
+   GenReadBinary(theEnv,&ConstraintData(theEnv)->NumberOfConstraints,sizeof(unsigned long));
    if (ConstraintData(theEnv)->NumberOfConstraints == 0) return;
 
    ConstraintData(theEnv)->ConstraintArray = (CONSTRAINT_RECORD *)
@@ -212,9 +220,9 @@ void ReadNeededConstraints(
 /*   for storing constraints in a binary image.      */
 /*****************************************************/
 static void CopyFromBsaveConstraintRecord(
-  void *theEnv,
+  Environment *theEnv,
   void *buf,
-  long theIndex)
+  unsigned long theIndex)
   {
    BSAVE_CONSTRAINT_RECORD *bsaveConstraints;
    CONSTRAINT_RECORD *constraints;
@@ -256,11 +264,11 @@ static void CopyFromBsaveConstraintRecord(
 /*   with constraints loaded from binary image          */
 /********************************************************/
 void ClearBloadedConstraints(
-  void *theEnv)
+  Environment *theEnv)
   {
    if (ConstraintData(theEnv)->NumberOfConstraints != 0)
      {
-      genfree(theEnv,(void *) ConstraintData(theEnv)->ConstraintArray,
+      genfree(theEnv,ConstraintData(theEnv)->ConstraintArray,
                      (sizeof(CONSTRAINT_RECORD) * ConstraintData(theEnv)->NumberOfConstraints));
       ConstraintData(theEnv)->NumberOfConstraints = 0;
      }

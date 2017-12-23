@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*               FACT COMMANDS HEADER FILE             */
    /*******************************************************/
@@ -40,6 +40,19 @@
 /*            being executed during fact assertions via      */
 /*            Increment/DecrementClearReadyLocks API.        */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_factcom
@@ -50,21 +63,21 @@
 
 #include "evaluatn.h"
 
-   void                           FactCommandDefinitions(void *);
-   void                           AssertCommand(UDFContext *,CLIPSValue *);
-   void                           RetractCommand(UDFContext *,CLIPSValue *);
-   void                           AssertStringFunction(UDFContext *,CLIPSValue *);
-   void                           FactsCommand(UDFContext *,CLIPSValue *);
-   void                           EnvFacts(void *,const char *,void *,long long,long long,long long);
-   void                           SetFactDuplicationCommand(UDFContext *,CLIPSValue *);
-   void                           GetFactDuplicationCommand(UDFContext *,CLIPSValue *);
-   void                           SaveFactsCommand(UDFContext *,CLIPSValue *);
-   void                           LoadFactsCommand(UDFContext *,CLIPSValue *);
-   bool                           EnvSaveFacts(void *,const char *,int);
-   bool                           EnvSaveFactsDriver(void *,const char *,int,struct expr *);
-   bool                           EnvLoadFacts(void *,const char *);
-   bool                           EnvLoadFactsFromString(void *,const char *,long);
-   void                           FactIndexFunction(UDFContext *,CLIPSValue *);
+   void                           FactCommandDefinitions(Environment *);
+   void                           AssertCommand(Environment *,UDFContext *,UDFValue *);
+   void                           RetractCommand(Environment *,UDFContext *,UDFValue *);
+   void                           AssertStringFunction(Environment *,UDFContext *,UDFValue *);
+   void                           FactsCommand(Environment *,UDFContext *,UDFValue *);
+   void                           Facts(Environment *,const char *,Defmodule *,long long,long long,long long);
+   void                           SetFactDuplicationCommand(Environment *,UDFContext *,UDFValue *);
+   void                           GetFactDuplicationCommand(Environment *,UDFContext *,UDFValue *);
+   void                           SaveFactsCommand(Environment *,UDFContext *,UDFValue *);
+   void                           LoadFactsCommand(Environment *,UDFContext *,UDFValue *);
+   bool                           SaveFacts(Environment *,const char *,SaveScope);
+   bool                           SaveFactsDriver(Environment *,const char *,SaveScope,struct expr *);
+   bool                           LoadFacts(Environment *,const char *);
+   bool                           LoadFactsFromString(Environment *,const char *,size_t);
+   void                           FactIndexFunction(Environment *,UDFContext *,UDFValue *);
 
 #endif /* _H_factcom */
 

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  11/01/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -40,6 +40,19 @@
 /*                                                           */
 /*            Converted API macros to function calls.        */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_msgcom
@@ -54,19 +67,19 @@
 #define MESSAGE_HANDLER_DATA 32
 
 struct messageHandlerData
-  { 
-   ENTITY_RECORD HandlerGetInfo;
-   ENTITY_RECORD HandlerPutInfo;
-   SYMBOL_HN *INIT_SYMBOL;
-   SYMBOL_HN *DELETE_SYMBOL;
-   SYMBOL_HN *CREATE_SYMBOL;
+  {
+   EntityRecord HandlerGetInfo;
+   EntityRecord HandlerPutInfo;
+   CLIPSLexeme *INIT_SYMBOL;
+   CLIPSLexeme *DELETE_SYMBOL;
+   CLIPSLexeme *CREATE_SYMBOL;
 #if DEBUGGING_FUNCTIONS
-   unsigned WatchHandlers;
-   unsigned WatchMessages;
+   bool WatchHandlers;
+   bool WatchMessages;
 #endif
    const char *hndquals[4];
-   SYMBOL_HN *SELF_SYMBOL;
-   SYMBOL_HN *CurrentMessageName;
+   CLIPSLexeme *SELF_SYMBOL;
+   CLIPSLexeme *CurrentMessageName;
    HANDLER_LINK *CurrentCore;
    HANDLER_LINK *TopOfCore;
    HANDLER_LINK *NextInCore;
@@ -75,33 +88,33 @@ struct messageHandlerData
 
 #define MessageHandlerData(theEnv) ((struct messageHandlerData *) GetEnvironmentData(theEnv,MESSAGE_HANDLER_DATA))
 
-
 #define INIT_STRING   "init"
 #define DELETE_STRING "delete"
 #define PRINT_STRING  "print"
 #define CREATE_STRING "create"
 
-   void             SetupMessageHandlers(void *);
-   const char      *EnvGetDefmessageHandlerName(void *,void *,int);
-   const char      *EnvGetDefmessageHandlerType(void *,void *,int);
-   int              EnvGetNextDefmessageHandler(void *,void *,int);
-   HANDLER         *GetDefmessageHandlerPointer(void *,int);
+   void             SetupMessageHandlers(Environment *);
+   const char      *DefmessageHandlerName(Defclass *,unsigned);
+   const char      *DefmessageHandlerType(Defclass *,unsigned);
+   unsigned         GetNextDefmessageHandler(Defclass *,unsigned);
+   DefmessageHandler
+                   *GetDefmessageHandlerPointer(Defclass *,unsigned int);
 #if DEBUGGING_FUNCTIONS
-   bool             EnvGetDefmessageHandlerWatch(void *,void *,int);
-   void             EnvSetDefmessageHandlerWatch(void *,bool,void *,int);
+   bool             DefmessageHandlerGetWatch(Defclass *,unsigned);
+   void             DefmessageHandlerSetWatch(Defclass *,unsigned,bool);
 #endif
-   unsigned         EnvFindDefmessageHandler(void *,void *,const char *,const char *);
-   bool             EnvIsDefmessageHandlerDeletable(void *,void *,int);
-   void             UndefmessageHandlerCommand(UDFContext *,CLIPSValue *);
-   bool             EnvUndefmessageHandler(void *,void *,int);
+   unsigned         FindDefmessageHandler(Defclass *,const char *,const char *);
+   bool             DefmessageHandlerIsDeletable(Defclass *,unsigned);
+   void             UndefmessageHandlerCommand(Environment *,UDFContext *,UDFValue *);
+   bool             UndefmessageHandler(Defclass *,unsigned,Environment *);
 #if DEBUGGING_FUNCTIONS
-   void             PPDefmessageHandlerCommand(UDFContext *,CLIPSValue *);
-   void             ListDefmessageHandlersCommand(UDFContext *,CLIPSValue *);
-   void             PreviewSendCommand(UDFContext *,CLIPSValue *);
-   const char      *EnvGetDefmessageHandlerPPForm(void *,void *,int);
-   void             EnvListDefmessageHandlers(void *,const char *,void *,bool);
-   void             EnvPreviewSend(void *,const char *,void *,const char *);
-   long             DisplayHandlersInLinks(void *,const char *,PACKED_CLASS_LINKS *,int);
+   void             PPDefmessageHandlerCommand(Environment *,UDFContext *,UDFValue *);
+   void             ListDefmessageHandlersCommand(Environment *,UDFContext *,UDFValue *);
+   void             PreviewSendCommand(Environment *,UDFContext *,UDFValue *);
+   const char      *DefmessageHandlerPPForm(Defclass *,unsigned);
+   void             ListDefmessageHandlers(Environment *,Defclass *,const char *,bool);
+   void             PreviewSend(Defclass *,const char *,const char *);
+   unsigned long    DisplayHandlersInLinks(Environment *,const char *,PACKED_CLASS_LINKS *,unsigned int);
 #endif
 
 #endif /* _H_msgcom */

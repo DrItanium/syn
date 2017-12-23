@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*          OBJECT PATTERN MATCHER MODULE              */
    /*******************************************************/
@@ -39,6 +39,13 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_objrtbld
@@ -49,7 +56,7 @@
 
 #if DEFRULE_CONSTRUCT && OBJECT_SYSTEM
 
-   void                    SetupObjectPatternStuff(void *);
+   void                    SetupObjectPatternStuff(Environment *);
 
 #endif /* DEFRULE_CONSTRUCT && OBJECT_SYSTEM */
 

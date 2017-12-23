@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/19/17            */
    /*                                                     */
    /*               I/O FUNCTIONS HEADER FILE             */
    /*******************************************************/
@@ -52,11 +52,26 @@
 /*            specify crlf as \n or \r\n.                    */
 /*                                                           */
 /*            Added AwaitingInput flag.                      */
-/*                                                           */             
+/*                                                           */
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
-/*      6.40: Added print and println functions.             */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
+/*            Added print and println functions.             */
+/*                                                           */
+/*            Added unget-char function.                     */
+/*                                                           */
+/*            Added flush, rewind, tell, and seek functions. */
 /*                                                           */
 /*************************************************************/
 
@@ -66,23 +81,28 @@
 
 #define _H_iofun
 
-   void                           IOFunctionDefinitions(void *);
+   void                           IOFunctionDefinitions(Environment *);
 #if IO_FUNCTIONS
-   bool                           SetFullCRLF(void *,bool);
-   void                           PrintoutFunction(UDFContext *,CLIPSValue *);
-   void                           PrintFunction(UDFContext *,CLIPSValue *);
-   void                           PrintlnFunction(UDFContext *,CLIPSValue *);
-   void                           ReadFunction(UDFContext *,CLIPSValue *);
-   void                           OpenFunction(UDFContext *,CLIPSValue *);
-   void                           CloseFunction(UDFContext *,CLIPSValue *);
-   void                           GetCharFunction(UDFContext *,CLIPSValue *);
-   void                           PutCharFunction(UDFContext *,CLIPSValue *);
-   void                           ReadlineFunction(UDFContext *,CLIPSValue *);
-   void                           FormatFunction(UDFContext *,CLIPSValue *);
-   void                           RemoveFunction(UDFContext *,CLIPSValue *);
-   void                           RenameFunction(UDFContext *,CLIPSValue *);
-   void                           SetLocaleFunction(UDFContext *,CLIPSValue *);
-   void                           ReadNumberFunction(UDFContext *,CLIPSValue *);
+   bool                           SetFullCRLF(Environment *,bool);
+   void                           PrintoutFunction(Environment *,UDFContext *,UDFValue *);
+   void                           PrintFunction(Environment *,UDFContext *,UDFValue *);
+   void                           PrintlnFunction(Environment *,UDFContext *,UDFValue *);
+   void                           ReadFunction(Environment *,UDFContext *,UDFValue *);
+   void                           OpenFunction(Environment *,UDFContext *,UDFValue *);
+   void                           CloseFunction(Environment *,UDFContext *,UDFValue *);
+   void                           FlushFunction(Environment *,UDFContext *,UDFValue *);
+   void                           RewindFunction(Environment *,UDFContext *,UDFValue *);
+   void                           TellFunction(Environment *,UDFContext *,UDFValue *);
+   void                           SeekFunction(Environment *,UDFContext *,UDFValue *);
+   void                           GetCharFunction(Environment *,UDFContext *,UDFValue *);
+   void                           UngetCharFunction(Environment *,UDFContext *,UDFValue *);
+   void                           PutCharFunction(Environment *,UDFContext *,UDFValue *);
+   void                           ReadlineFunction(Environment *,UDFContext *,UDFValue *);
+   void                           FormatFunction(Environment *,UDFContext *,UDFValue *);
+   void                           RemoveFunction(Environment *,UDFContext *,UDFValue *);
+   void                           RenameFunction(Environment *,UDFContext *,UDFValue *);
+   void                           SetLocaleFunction(Environment *,UDFContext *,UDFValue *);
+   void                           ReadNumberFunction(Environment *,UDFContext *,UDFValue *);
 #endif
 
 #endif /* _H_iofun */

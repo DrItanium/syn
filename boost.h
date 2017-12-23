@@ -26,7 +26,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-void InstallBoostExtensions(void* theEnv);
+#include "clips.h"
+void InstallBoostExtensions(Environment* theEnv);
 
 #ifdef __cplusplus
 }

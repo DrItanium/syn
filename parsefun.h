@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*            PARSING FUNCTIONS HEADER FILE            */
    /*******************************************************/
@@ -34,6 +34,17 @@
 /*            Fixed function declaration issue when          */
 /*            BLOAD_ONLY compiler flag is set to 1.          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_parsefun
@@ -44,9 +55,9 @@
 
 #include "evaluatn.h"
 
-   void                           ParseFunctionDefinitions(void *);
-   void                           CheckSyntaxFunction(UDFContext *,CLIPSValue *);
-   bool                           CheckSyntax(void *,const char *,CLIPSValue *);
+   void                           ParseFunctionDefinitions(Environment *);
+   void                           CheckSyntaxFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           CheckSyntax(Environment *,const char *,UDFValue *);
 
 #endif /* _H_parsefun */
 

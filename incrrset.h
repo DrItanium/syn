@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/20/16             */
+   /*             CLIPS Version 6.40  08/11/16            */
    /*                                                     */
    /*            INCREMENTAL RESET HEADER FILE            */
    /*******************************************************/
@@ -36,7 +36,18 @@
 /*                                                           */
 /*            Converted API macros to function calls.        */
 /*                                                           */
-/*      6.40: Incremental reset is always enabled.           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            Incremental reset is always enabled.           */
 /*                                                           */
 /*************************************************************/
 
@@ -48,7 +59,7 @@
 
 #include "ruledef.h"
 
-   void                           IncrementalReset(void *,struct defrule *);
+   void                           IncrementalReset(Environment *,Defrule *);
 
 #endif /* _H_incrrset */
 

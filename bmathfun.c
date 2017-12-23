@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/20/16             */
+   /*            CLIPS Version 6.40  10/01/16             */
    /*                                                     */
    /*             BASIC MATH FUNCTIONS MODULE             */
    /*******************************************************/
@@ -33,6 +33,17 @@
 /*            Added Env prefix to GetHaltExecution and       */
 /*            SetHaltExecution functions.                    */
 /*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*            Auto-float-dividend always enabled.            */
 /*                                                           */
 /*************************************************************/
@@ -44,6 +55,7 @@
 #include "argacces.h"
 #include "envrnmnt.h"
 #include "exprnpsr.h"
+#include "prntutil.h"
 #include "router.h"
 
 #include "bmathfun.h"
@@ -52,20 +64,19 @@
 /* BasicMathFunctionDefinitions: Defines basic math functions. */
 /***************************************************************/
 void BasicMathFunctionDefinitions(
-  void *theEnv)
+  Environment *theEnv)
   {
 #if ! RUN_TIME
-   EnvAddUDF(theEnv,"+",        "ld", AdditionFunction, "AdditionFunction", 2,UNBOUNDED, "ld" ,NULL);
-   EnvAddUDF(theEnv, "*",       "ld", MultiplicationFunction, "MultiplicationFunction",  2,UNBOUNDED, "ld", NULL);
-   EnvAddUDF(theEnv, "-",       "ld", SubtractionFunction, "SubtractionFunction",  2,UNBOUNDED, "ld", NULL);
-   EnvAddUDF(theEnv, "/",       "d",  DivisionFunction, "DivisionFunction", 2,UNBOUNDED, "ld", NULL);
-   EnvAddUDF(theEnv, "div",     "l",  DivFunction, "DivFunction",  2,UNBOUNDED, "ld", NULL);
-   
-   EnvAddUDF(theEnv, "integer", "l",  IntegerFunction,"IntegerFunction",1,1,"ld",NULL);
-   EnvAddUDF(theEnv, "float",   "d",  FloatFunction,"FloatFunction",1,1,"ld",NULL);
-   EnvAddUDF(theEnv, "abs",     "ld", AbsFunction,"AbsFunction",1,1,"ld",NULL);
-   EnvAddUDF(theEnv, "min",     "ld", MinFunction,"MinFunction",1,UNBOUNDED,"ld",NULL);
-   EnvAddUDF(theEnv, "max",     "ld", MaxFunction,"MaxFunction",1,UNBOUNDED,"ld",NULL);
+   AddUDF(theEnv,"+","ld",2,UNBOUNDED,"ld",AdditionFunction,"AdditionFunction",NULL);
+   AddUDF(theEnv,"*","ld",2,UNBOUNDED,"ld",MultiplicationFunction,"MultiplicationFunction",NULL);
+   AddUDF(theEnv,"-","ld",2,UNBOUNDED,"ld",SubtractionFunction,"SubtractionFunction",NULL);
+   AddUDF(theEnv,"/","d",2,UNBOUNDED,"ld",DivisionFunction,"DivisionFunction",NULL);
+   AddUDF(theEnv,"div","l",2,UNBOUNDED,"ld",DivFunction,"DivFunction",NULL);
+   AddUDF(theEnv,"integer","l",1,1,"ld",IntegerFunction,"IntegerFunction",NULL);
+   AddUDF(theEnv,"float","d",1,1,"ld",FloatFunction,"FloatFunction",NULL);
+   AddUDF(theEnv,"abs","ld",1,1,"ld",AbsFunction,"AbsFunction",NULL);
+   AddUDF(theEnv,"min","ld",1,UNBOUNDED,"ld",MinFunction,"MinFunction",NULL);
+   AddUDF(theEnv,"max","ld",1,UNBOUNDED,"ld",MaxFunction,"MaxFunction",NULL);
 #endif
   }
 
@@ -74,13 +85,14 @@ void BasicMathFunctionDefinitions(
 /*   routine for the + function.  */
 /**********************************/
 void AdditionFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSFloat ftotal = 0.0;
-   CLIPSInteger ltotal = 0LL;
+   double ftotal = 0.0;
+   long long ltotal = 0LL;
    bool useFloatTotal = false;
-   CLIPSValue theArg;
+   UDFValue theArg;
 
    /*=================================================*/
    /* Loop through each of the arguments adding it to */
@@ -91,18 +103,18 @@ void AdditionFunction(
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&theArg))
+      if (! UDFNextArgument(context,NUMBER_BITS,&theArg))
         { return; }
 
       if (useFloatTotal)
-        { ftotal += mCVToFloat(&theArg); }
+        { ftotal += CVCoerceToFloat(&theArg); }
       else
         {
-         if (mCVIsType(&theArg,INTEGER_TYPE))
-           { ltotal += mCVToInteger(&theArg); }
+         if (CVIsType(&theArg,INTEGER_BIT))
+           { ltotal += theArg.integerValue->contents; }
          else
            {
-            ftotal = ((CLIPSFloat) ltotal) + mCVToFloat(&theArg);
+            ftotal = (double) ltotal + CVCoerceToFloat(&theArg);
             useFloatTotal = true;
            }
         }
@@ -114,9 +126,9 @@ void AdditionFunction(
    /*======================================================*/
 
    if (useFloatTotal)
-     { mCVSetFloat(returnValue,ftotal); }
+     { returnValue->floatValue = CreateFloat(theEnv,ftotal); }
    else
-     { mCVSetInteger(returnValue,ltotal); }
+     { returnValue->integerValue = CreateInteger(theEnv,ltotal); }
   }
 
 /****************************************/
@@ -124,13 +136,14 @@ void AdditionFunction(
 /*   routine for the * function.        */
 /****************************************/
 void MultiplicationFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSFloat ftotal = 1.0;
-   CLIPSInteger ltotal = 1LL;
+   double ftotal = 1.0;
+   long long ltotal = 1LL;
    bool useFloatTotal = false;
-   CLIPSValue theArg;
+   UDFValue theArg;
 
    /*===================================================*/
    /* Loop through each of the arguments multiplying it */
@@ -141,18 +154,18 @@ void MultiplicationFunction(
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&theArg))
+      if (! UDFNextArgument(context,NUMBER_BITS,&theArg))
         { return; }
 
       if (useFloatTotal)
-        { ftotal *= mCVToFloat(&theArg); }
+        { ftotal *= CVCoerceToFloat(&theArg); }
       else
         {
-         if (mCVIsType(&theArg,INTEGER_TYPE))
-           { ltotal *= mCVToInteger(&theArg); }
+         if (CVIsType(&theArg,INTEGER_BIT))
+           { ltotal *= theArg.integerValue->contents; }
          else
            {
-            ftotal = ((CLIPSFloat) ltotal) * mCVToFloat(&theArg);
+            ftotal = (double) ltotal * CVCoerceToFloat(&theArg);
             useFloatTotal = true;
            }
         }
@@ -164,9 +177,9 @@ void MultiplicationFunction(
    /*======================================================*/
 
    if (useFloatTotal)
-     { mCVSetFloat(returnValue,ftotal); }
+     { returnValue->floatValue = CreateFloat(theEnv,ftotal); }
    else
-     { mCVSetInteger(returnValue,ltotal); }
+     { returnValue->integerValue = CreateInteger(theEnv,ltotal); }
   }
 
 /*************************************/
@@ -174,13 +187,14 @@ void MultiplicationFunction(
 /*   routine for the - function.     */
 /*************************************/
 void SubtractionFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSFloat ftotal = 0.0;
-   CLIPSInteger ltotal = 0LL;
+   double ftotal = 0.0;
+   long long ltotal = 0LL;
    bool useFloatTotal = false;
-   CLIPSValue theArg;
+   UDFValue theArg;
 
    /*=================================================*/
    /* Get the first argument. This number which will  */
@@ -188,14 +202,14 @@ void SubtractionFunction(
    /* arguments will subtracted.                      */
    /*=================================================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,&theArg))
+   if (! UDFFirstArgument(context,NUMBER_BITS,&theArg))
      { return; }
 
-   if (mCVIsType(&theArg,INTEGER_TYPE))
-     { ltotal = mCVToInteger(&theArg); }
+   if (CVIsType(&theArg,INTEGER_BIT))
+     { ltotal = theArg.integerValue->contents; }
    else
      {
-      ftotal = mCVToFloat(&theArg);
+      ftotal = CVCoerceToFloat(&theArg);
       useFloatTotal = true;
      }
 
@@ -208,18 +222,18 @@ void SubtractionFunction(
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&theArg))
+      if (! UDFNextArgument(context,NUMBER_BITS,&theArg))
         { return; }
 
       if (useFloatTotal)
-        { ftotal -= mCVToFloat(&theArg); }
+        { ftotal -= CVCoerceToFloat(&theArg); }
       else
         {
-         if (mCVIsType(&theArg,INTEGER_TYPE))
-           { ltotal -= mCVToInteger(&theArg); }
+         if (CVIsType(&theArg,INTEGER_BIT))
+           { ltotal -= theArg.integerValue->contents; }
          else
            {
-            ftotal = ((CLIPSFloat) ltotal) - mCVToFloat(&theArg);
+            ftotal = (double) ltotal - theArg.floatValue->contents;
             useFloatTotal = true;
            }
         }
@@ -231,9 +245,9 @@ void SubtractionFunction(
    /*======================================================*/
 
    if (useFloatTotal)
-     { mCVSetFloat(returnValue,ftotal); }
+     { returnValue->floatValue = CreateFloat(theEnv,ftotal); }
    else
-     { mCVSetInteger(returnValue,ltotal); }
+     { returnValue->integerValue = CreateInteger(theEnv,ltotal); }
   }
 
 /***********************************/
@@ -241,14 +255,14 @@ void SubtractionFunction(
 /*   routine for the / function.   */
 /***********************************/
 void DivisionFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSFloat ftotal = 1.0;
-   CLIPSFloat theNumber;
-   CLIPSValue theArg;
-   Environment *theEnv = UDFContextEnvironment(context);
-   
+   double ftotal = 1.0;
+   double theNumber;
+   UDFValue theArg;
+
    /*===================================================*/
    /* Get the first argument. This number which will be */
    /* the starting product from which all subsequent    */
@@ -257,10 +271,10 @@ void DivisionFunction(
    /* to a float if it is an integer.                   */
    /*===================================================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,&theArg))
+   if (! UDFFirstArgument(context,NUMBER_BITS,&theArg))
      { return; }
 
-   ftotal = mCVToFloat(&theArg);
+   ftotal = CVCoerceToFloat(&theArg);
 
    /*====================================================*/
    /* Loop through each of the arguments dividing it     */
@@ -272,16 +286,16 @@ void DivisionFunction(
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&theArg))
+      if (! UDFNextArgument(context,NUMBER_BITS,&theArg))
         { return; }
-        
-      theNumber = mCVToFloat(&theArg);
-      
+
+      theNumber = CVCoerceToFloat(&theArg);
+
       if (theNumber == 0.0)
         {
          DivideByZeroErrorMessage(theEnv,"/");
-         EnvSetEvaluationError(theEnv,true);
-         mCVSetFloat(returnValue,1.0);
+         SetEvaluationError(theEnv,true);
+         returnValue->floatValue = CreateFloat(theEnv,1.0);
          return;
         }
 
@@ -293,7 +307,7 @@ void DivisionFunction(
    /* then return a float, otherwise return an integer.    */
    /*======================================================*/
 
-   mCVSetFloat(returnValue,ftotal);
+   returnValue->floatValue = CreateFloat(theEnv,ftotal);
   }
 
 /*************************************/
@@ -301,13 +315,13 @@ void DivisionFunction(
 /*   for the div function.           */
 /*************************************/
 void DivFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSInteger total = 1LL;
-   DATA_OBJECT theArg;
-   CLIPSInteger theNumber;
-   void *theEnv = UDFContextEnvironment(context);
+   long long total = 1LL;
+   UDFValue theArg;
+   long long theNumber;
 
    /*===================================================*/
    /* Get the first argument. This number which will be */
@@ -315,9 +329,9 @@ void DivFunction(
    /* arguments will divide.                            */
    /*===================================================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,&theArg))
+   if (! UDFFirstArgument(context,NUMBER_BITS,&theArg))
      { return; }
-   total = mCVToInteger(&theArg);
+   total = CVCoerceToInteger(&theArg);
 
    /*=====================================================*/
    /* Loop through each of the arguments dividing it into */
@@ -328,19 +342,19 @@ void DivFunction(
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&theArg))
+      if (! UDFNextArgument(context,NUMBER_BITS,&theArg))
         { return; }
 
-      theNumber = mCVToInteger(&theArg);
+      theNumber = CVCoerceToInteger(&theArg);
 
       if (theNumber == 0LL)
         {
          DivideByZeroErrorMessage(theEnv,"div");
-         EnvSetEvaluationError(theEnv,true);
-         mCVSetInteger(returnValue,1L);
+         SetEvaluationError(theEnv,true);
+         returnValue->integerValue = CreateInteger(theEnv,1L);
          return;
         }
-        
+
       total /= theNumber;
      }
 
@@ -348,7 +362,7 @@ void DivFunction(
    /* The result of the div function is always an integer. */
    /*======================================================*/
 
-   mCVSetInteger(returnValue,total);
+   returnValue->integerValue = CreateInteger(theEnv,total);
   }
 
 /*****************************************/
@@ -356,14 +370,15 @@ void DivFunction(
 /*   for the integer function.           */
 /*****************************************/
 void IntegerFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
    /*======================================*/
    /* Check that the argument is a number. */
    /*======================================*/
 
-   if (! UDFNthArgument(context,1,NUMBER_TYPES,returnValue))
+   if (! UDFNthArgument(context,1,NUMBER_BITS,returnValue))
      { return; }
 
    /*============================================*/
@@ -371,8 +386,8 @@ void IntegerFunction(
    /* return the argument unchanged.             */
    /*============================================*/
 
-   if (mCVIsType(returnValue,FLOAT_TYPE))
-     { mCVSetInteger(returnValue,mCVToInteger(returnValue)); }
+   if (CVIsType(returnValue,FLOAT_BIT))
+     { returnValue->integerValue = CreateInteger(theEnv,CVCoerceToInteger(returnValue)); }
   }
 
 /***************************************/
@@ -380,14 +395,15 @@ void IntegerFunction(
 /*   for the float function.           */
 /***************************************/
 void FloatFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
    /*======================================*/
    /* Check that the argument is a number. */
    /*======================================*/
 
-   if (! UDFNthArgument(context,1,NUMBER_TYPES,returnValue))
+   if (! UDFNthArgument(context,1,NUMBER_BITS,returnValue))
      { return; }
 
    /*=============================================*/
@@ -395,8 +411,8 @@ void FloatFunction(
    /* return the argument unchanged.              */
    /*=============================================*/
 
-   if (mCVIsType(returnValue,INTEGER_TYPE))
-     { mCVSetFloat(returnValue,mCVToFloat(returnValue)); }
+   if (CVIsType(returnValue,INTEGER_BIT))
+     { returnValue->floatValue = CreateFloat(theEnv,CVCoerceToFloat(returnValue)); }
   }
 
 /*************************************/
@@ -404,29 +420,32 @@ void FloatFunction(
 /*   for the abs function.           */
 /*************************************/
 void AbsFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
    /*======================================*/
    /* Check that the argument is a number. */
    /*======================================*/
 
-   if (! UDFNthArgument(context,1,NUMBER_TYPES,returnValue))
+   if (! UDFNthArgument(context,1,NUMBER_BITS,returnValue))
      { return; }
 
    /*==========================================*/
    /* Return the absolute value of the number. */
    /*==========================================*/
 
-   if (mCVIsType(returnValue,INTEGER_TYPE))
+   if (CVIsType(returnValue,INTEGER_BIT))
      {
-      CLIPSInteger lv = mCVToInteger(returnValue);
-      if (lv < 0L) mCVSetInteger(returnValue,-lv);
+      long long lv = returnValue->integerValue->contents;
+      if (lv < 0L)
+        { returnValue->integerValue = CreateInteger(theEnv,-lv); }
      }
    else
      {
-      CLIPSFloat dv = mCVToFloat(returnValue);
-      if (dv < 0.0) mCVSetFloat(returnValue,-dv);
+      double dv = returnValue->floatValue->contents;
+      if (dv < 0.0)
+        { returnValue->floatValue = CreateFloat(theEnv,-dv); }
      }
   }
 
@@ -435,44 +454,45 @@ void AbsFunction(
 /*   for the min function.           */
 /*************************************/
 void MinFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue nextPossible;
+   UDFValue nextPossible;
 
    /*============================================*/
    /* Check that the first argument is a number. */
    /*============================================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,returnValue))
+   if (! UDFFirstArgument(context,NUMBER_BITS,returnValue))
      { return; }
-    
+
    /*===========================================================*/
    /* Loop through the remaining arguments, first checking each */
    /* argument to see that it is a number, and then determining */
    /* if the argument is less than the previous arguments and   */
-   /* is thus the maximum value.                                */
+   /* is thus the minimum value.                                */
    /*===========================================================*/
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&nextPossible))
+      if (! UDFNextArgument(context,NUMBER_BITS,&nextPossible))
         { return; }
-      
+
       /*=============================================*/
       /* If either argument is a float, convert both */
       /* to floats. Otherwise compare two integers.  */
       /*=============================================*/
-      
-      if (mCVIsType(returnValue,FLOAT_TYPE) || mCVIsType(&nextPossible,FLOAT_TYPE))
+
+      if (CVIsType(returnValue,FLOAT_BIT) || CVIsType(&nextPossible,FLOAT_BIT))
         {
-         if (mCVToFloat(returnValue) > mCVToFloat(&nextPossible))
-           { CVSetCLIPSValue(returnValue,&nextPossible); }
+         if (CVCoerceToFloat(returnValue) > CVCoerceToFloat(&nextPossible))
+           { returnValue->value = nextPossible.value; }
         }
       else
         {
-         if (mCVToInteger(returnValue) > mCVToInteger(&nextPossible))
-           { CVSetCLIPSValue(returnValue,&nextPossible); }
+         if (returnValue->integerValue->contents > nextPossible.integerValue->contents)
+           { returnValue->value = nextPossible.value; }
         }
      }
   }
@@ -482,16 +502,17 @@ void MinFunction(
 /*   for the max function.           */
 /*************************************/
 void MaxFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   CLIPSValue nextPossible;
-   
+   UDFValue nextPossible;
+
    /*============================================*/
    /* Check that the first argument is a number. */
    /*============================================*/
 
-   if (! UDFFirstArgument(context,NUMBER_TYPES,returnValue))
+   if (! UDFFirstArgument(context,NUMBER_BITS,returnValue))
      { return; }
 
    /*===========================================================*/
@@ -503,23 +524,23 @@ void MaxFunction(
 
    while (UDFHasNextArgument(context))
      {
-      if (! UDFNextArgument(context,NUMBER_TYPES,&nextPossible))
+      if (! UDFNextArgument(context,NUMBER_BITS,&nextPossible))
         { return; }
-      
+
       /*=============================================*/
       /* If either argument is a float, convert both */
       /* to floats. Otherwise compare two integers.  */
       /*=============================================*/
-      
-      if (mCVIsType(returnValue,FLOAT_TYPE) || mCVIsType(&nextPossible,FLOAT_TYPE))
+
+      if (CVIsType(returnValue,FLOAT_BIT) || CVIsType(&nextPossible,FLOAT_BIT))
         {
-         if (mCVToFloat(returnValue) < mCVToFloat(&nextPossible))
-           { CVSetCLIPSValue(returnValue,&nextPossible); }
+         if (CVCoerceToFloat(returnValue) < CVCoerceToFloat(&nextPossible))
+           { returnValue->value = nextPossible.value; }
         }
       else
         {
-         if (mCVToInteger(returnValue) < mCVToInteger(&nextPossible))
-           { CVSetCLIPSValue(returnValue,&nextPossible); }
+         if (returnValue->integerValue->contents < nextPossible.integerValue->contents)
+           { returnValue->value = nextPossible.value; }
         }
      }
   }

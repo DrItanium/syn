@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*               FACT MATCH HEADER FILE                */
    /*******************************************************/
@@ -33,6 +33,13 @@
 /*            compilers/operating systems (IBM_MCW,          */
 /*            MAC_MCW, and IBM_TBC).                         */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_factmch
@@ -45,12 +52,12 @@
 #include "factbld.h"
 #include "factmngr.h"
 
-   void                           FactPatternMatch(void *,struct fact *,
-                                               struct factPatternNode *,int,
-                                               struct multifieldMarker *,
-                                               struct multifieldMarker *);
-   void                           MarkFactPatternForIncrementalReset(void *,struct patternNodeHeader *,int);
-   void                           FactsIncrementalReset(void *);
+   void                           FactPatternMatch(Environment *,Fact *,
+                                                   struct factPatternNode *,size_t,size_t,
+                                                   struct multifieldMarker *,
+                                                   struct multifieldMarker *);
+   void                           MarkFactPatternForIncrementalReset(Environment *,struct patternNodeHeader *,bool);
+   void                           FactsIncrementalReset(Environment *);
 
 #endif /* _H_factmch */
 

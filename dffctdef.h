@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/06/16            */
    /*                                                     */
    /*                DEFFACTS HEADER FILE                 */
    /*******************************************************/
@@ -32,6 +32,17 @@
 /*            imported modules are search when locating a    */
 /*            named construct.                               */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_dffctdef
@@ -39,6 +50,8 @@
 #pragma once
 
 #define _H_dffctdef
+
+typedef struct deffacts Deffacts;
 
 #include "constrct.h"
 #include "conscomp.h"
@@ -51,17 +64,17 @@
 #define DEFFACTS_DATA 0
 
 struct deffactsData
-  { 
-   struct construct *DeffactsConstruct;
-   int DeffactsModuleIndex;  
+  {
+   Construct *DeffactsConstruct;
+   unsigned DeffactsModuleIndex;
 #if CONSTRUCT_COMPILER && (! RUN_TIME)
    struct CodeGeneratorItem *DeffactsCodeItem;
 #endif
   };
-  
+
 struct deffacts
   {
-   struct constructHeader header;
+   ConstructHeader header;
    struct expr *assertList;
   };
 
@@ -72,16 +85,19 @@ struct deffactsModule
 
 #define DeffactsData(theEnv) ((struct deffactsData *) GetEnvironmentData(theEnv,DEFFACTS_DATA))
 
-   void                           InitializeDeffacts(void *);
-   void                          *EnvFindDeffacts(void *,const char *);
-   void                          *EnvFindDeffactsInModule(void *,const char *);
-   void                          *EnvGetNextDeffacts(void *,void *);
+   void                           InitializeDeffacts(Environment *);
+   Deffacts                      *FindDeffacts(Environment *,const char *);
+   Deffacts                      *FindDeffactsInModule(Environment *,const char *);
+   Deffacts                      *GetNextDeffacts(Environment *,Deffacts *);
    void                           CreateInitialFactDeffacts(void);
-   bool                           EnvIsDeffactsDeletable(void *,void *);
-   struct deffactsModule         *GetDeffactsModuleItem(void *,struct defmodule *);
-   const char                    *EnvDeffactsModule(void *,void *);
-   const char                    *EnvGetDeffactsName(void *,void *);
-   const char                    *EnvGetDeffactsPPForm(void *,void *);
+   bool                           DeffactsIsDeletable(Deffacts *);
+   struct deffactsModule         *GetDeffactsModuleItem(Environment *,Defmodule *);
+   const char                    *DeffactsModule(Deffacts *);
+   const char                    *DeffactsName(Deffacts *);
+   const char                    *DeffactsPPForm(Deffacts *);
+#if RUN_TIME
+   void                           DeffactsRunTimeInitialize(Environment *);
+#endif
 
 #endif /* _H_dffctdef */
 

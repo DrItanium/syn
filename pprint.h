@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/02/17            */
    /*                                                     */
    /*               PRETTY PRINT HEADER FILE              */
    /*******************************************************/
@@ -20,9 +20,18 @@
 /*      6.30: Changed integer type/precision.                */
 /*                                                           */
 /*            Used genstrcpy instead of strcpy.              */
-/*                                                           */             
+/*                                                           */
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
+/*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
 /*                                                           */
 /*************************************************************/
 
@@ -35,10 +44,10 @@
 #define PRETTY_PRINT_DATA 52
 
 struct prettyPrintData
-  { 
+  {
    bool PPBufferStatus;
    bool PPBufferEnabled;
-   int IndentationDepth;
+   size_t IndentationDepth;
    size_t PPBufferPos;
    size_t PPBufferMax;
    size_t PPBackupOnce;
@@ -48,21 +57,21 @@ struct prettyPrintData
 
 #define PrettyPrintData(theEnv) ((struct prettyPrintData *) GetEnvironmentData(theEnv,PRETTY_PRINT_DATA))
 
-   void                           InitializePrettyPrintData(void *);
-   void                           FlushPPBuffer(void *);
-   void                           DestroyPPBuffer(void *);
-   void                           SavePPBuffer(void *,const char *);
-   void                           PPBackup(void *);
-   char                          *CopyPPBuffer(void *);
-   char                          *GetPPBuffer(void *);
-   void                           PPCRAndIndent(void *);
-   void                           IncrementIndentDepth(void *,int);
-   void                           DecrementIndentDepth(void *,int);
-   void                           SetIndentDepth(void *,int);
-   void                           SetPPBufferStatus(void *,bool);
-   bool                           GetPPBufferStatus(void *);
-   int                            SetPPBufferEnabled(void *,int);
-   int                            GetPPBufferEnabled(void *);
+   void                           InitializePrettyPrintData(Environment *);
+   void                           FlushPPBuffer(Environment *);
+   void                           DestroyPPBuffer(Environment *);
+   void                           SavePPBuffer(Environment *,const char *);
+   void                           PPBackup(Environment *);
+   char                          *CopyPPBuffer(Environment *);
+   char                          *GetPPBuffer(Environment *);
+   void                           PPCRAndIndent(Environment *);
+   void                           IncrementIndentDepth(Environment *,size_t);
+   void                           DecrementIndentDepth(Environment *,size_t);
+   void                           SetIndentDepth(Environment *,size_t);
+   void                           SetPPBufferStatus(Environment *,bool);
+   bool                           GetPPBufferStatus(Environment *);
+   bool                           SetPPBufferEnabled(Environment *,bool);
+   bool                           GetPPBufferEnabled(Environment *);
 
 #endif
 

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  10/19/17             */
    /*                                                     */
    /*            SYSTEM DEPENDENT HEADER FILE             */
    /*******************************************************/
@@ -22,7 +22,7 @@
 /*      6.24: Support for run-time programs directly passing */
 /*            the hash tables for initialization.            */
 /*                                                           */
-/*            Made gensystem functional for Xcode.           */ 
+/*            Made gensystem functional for Xcode.           */
 /*                                                           */
 /*            Added BeforeOpenFunction and AfterOpenFunction */
 /*            hooks.                                         */
@@ -58,7 +58,7 @@
 /*            Changed the EX_MATH compilation flag to        */
 /*            EXTENDED_MATH_FUNCTIONS.                       */
 /*                                                           */
-/*            Support for typed EXTERNAL_ADDRESS.            */
+/*            Support for typed EXTERNAL_ADDRESS_TYPE.       */
 /*                                                           */
 /*            GenOpen function checks for UTF-8 Byte Order   */
 /*            Marker.                                        */
@@ -74,11 +74,25 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
-/*      6.40: Refactored code to reduce header dependencies  */
+/*      6.40: Added genchdir function for changing the       */
+/*            current directory.                             */
+/*                                                           */
+/*            Refactored code to reduce header dependencies  */
 /*            in sysdep.c.                                   */
 /*                                                           */
-/*            Added genchdir function for changing the       */
-/*            current directory.                             */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Removed ContinueEnvFunction, PauseEnvFunction, */
+/*            and RedrawScreenFunction callbacks.            */
+/*                                                           */
+/*            Completion code now returned by gensystem.     */
+/*                                                           */
+/*            Added flush, rewind, tell, and seek functions. */
 /*                                                           */
 /*************************************************************/
 
@@ -91,43 +105,41 @@
 #include <stdio.h>
 #include <setjmp.h>
 
-   void                        SetRedrawFunction(void *,void (*)(void *));
-   void                        SetPauseEnvFunction(void *,void (*)(void *));
-   void                        SetContinueEnvFunction(void *,void (*)(void *,int));
-   void                        (*GetRedrawFunction(void *))(void *);
-   void                        (*GetPauseEnvFunction(void *))(void *);
-   void                        (*GetContinueEnvFunction(void *))(void *,int);
    double                      gentime(void);
-   void                        gensystem(void *theEnv,const char *);
-   int                         GenOpenReadBinary(void *,const char *,const char *);
-   void                        GetSeekCurBinary(void *,long);
-   void                        GetSeekSetBinary(void *,long);
-   void                        GenTellBinary(void *,long *);
-   void                        GenCloseBinary(void *);
-   void                        GenReadBinary(void *,void *,size_t);
-   FILE                       *GenOpen(void *,const char *,const char *);
-   int                         GenClose(void *,FILE *);
-   void                        genexit(void *,int);
+   int                         gensystem(Environment *,const char *);
+   int                         GenOpenReadBinary(Environment *,const char *,const char *);
+   void                        GetSeekCurBinary(Environment *,long);
+   void                        GetSeekSetBinary(Environment *,long);
+   void                        GenTellBinary(Environment *,long *);
+   void                        GenCloseBinary(Environment *);
+   void                        GenReadBinary(Environment *,void *,size_t);
+   FILE                       *GenOpen(Environment *,const char *,const char *);
+   int                         GenClose(Environment *,FILE *);
+   int                         GenFlush(Environment *,FILE *);
+   void                        GenRewind(Environment *,FILE *);
+   long long                   GenTell(Environment *,FILE *);
+   int                         GenSeek(Environment *,FILE *,long,int);
+   void                        genexit(Environment *,int);
    int                         genrand(void);
-   void                        genseed(int);
+   void                        genseed(unsigned int);
    bool                        genremove(const char *);
    bool                        genrename(const char *,const char *);
    char                       *gengetcwd(char *,int);
    void                        GenWrite(void *,size_t,FILE *);
-   int                       (*EnvSetBeforeOpenFunction(void *,int (*)(void *)))(void *);
-   int                       (*EnvSetAfterOpenFunction(void *,int (*)(void *)))(void *);
+   int                       (*SetBeforeOpenFunction(Environment *,int (*)(Environment *)))(Environment *);
+   int                       (*SetAfterOpenFunction(Environment *,int (*)(Environment *)))(Environment *);
    int                         gensprintf(char *,const char *,...);
    char                       *genstrcpy(char *,const char *);
    char                       *genstrncpy(char *,const char *,size_t);
    char                       *genstrcat(char *,const char *);
    char                       *genstrncat(char *,const char *,size_t);
    int                         genchdir(const char *);
-   void                        SetJmpBuffer(void *,jmp_buf *);
-   void                        genprintfile(void *,FILE *,const char *);
-   int                         gengetchar(void *);
-   int                         genungetchar(void *,int);
-   void                        InitializeSystemDependentData(void *);
-   void                        InitializeNonportableFeatures(void *);
+   void                        SetJmpBuffer(Environment *,jmp_buf *);
+   void                        genprintfile(Environment *,FILE *,const char *);
+   int                         gengetchar(Environment *);
+   int                         genungetchar(Environment *,int);
+   void                        InitializeSystemDependentData(Environment *);
+   void                        InitializeNonportableFeatures(Environment *);
 
 #endif /* _H_sysdep */
 

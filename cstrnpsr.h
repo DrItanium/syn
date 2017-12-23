@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*             CONSTRAINT PARSER HEADER FILE           */
    /*******************************************************/
@@ -29,6 +29,15 @@
 /*                                                           */
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
+/*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
 /*                                                           */
 /*************************************************************/
 
@@ -58,16 +67,16 @@ struct constraintParseRecord
 
 typedef struct constraintParseRecord CONSTRAINT_PARSE_RECORD;
 
-   bool                           CheckConstraintParseConflicts(void *,CONSTRAINT_RECORD *);
-   void                           AttributeConflictErrorMessage(void *,const char *,const char *);
+   bool                           CheckConstraintParseConflicts(Environment *,CONSTRAINT_RECORD *);
+   void                           AttributeConflictErrorMessage(Environment *,const char *,const char *);
 #if (! RUN_TIME) && (! BLOAD_ONLY)
    void                           InitializeConstraintParseRecord(CONSTRAINT_PARSE_RECORD *);
    bool                           StandardConstraint(const char *);
-   bool                           ParseStandardConstraint(void *,const char *,const char *,
+   bool                           ParseStandardConstraint(Environment *,const char *,const char *,
                                                                  CONSTRAINT_RECORD *,
                                                                  CONSTRAINT_PARSE_RECORD *,
                                                                  bool);
-   void                           OverlayConstraint(void *,CONSTRAINT_PARSE_RECORD *,
+   void                           OverlayConstraint(Environment *,CONSTRAINT_PARSE_RECORD *,
                                                            CONSTRAINT_RECORD *,CONSTRAINT_RECORD *);
    void                           OverlayConstraintParseRecord(CONSTRAINT_PARSE_RECORD *,
                                                                       CONSTRAINT_PARSE_RECORD *);

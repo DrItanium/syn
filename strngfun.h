@@ -1,9 +1,9 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/26/17            */
    /*                                                     */
-   /*             STRING FUNCTIONS HEADER FILE            */
+   /*          STRING_TYPE FUNCTIONS HEADER FILE          */
    /*******************************************************/
 
 /*************************************************************/
@@ -36,6 +36,19 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_strngfun
@@ -44,23 +57,38 @@
 
 #define _H_strngfun
 
-#include "evaluatn.h"
+#include "entities.h"
 
-   bool                           EnvBuild(void *,const char *);
-   bool                           EnvEval(void *,const char *,DATA_OBJECT_PTR);
-   void                           StringFunctionDefinitions(void *);
-   void                           StrCatFunction(UDFContext *,CLIPSValue *);
-   void                           SymCatFunction(UDFContext *,CLIPSValue *);
-   void                           StrLengthFunction(UDFContext *,CLIPSValue *);
-   void                           UpcaseFunction(UDFContext *,CLIPSValue *);
-   void                           LowcaseFunction(UDFContext *,CLIPSValue *);
-   void                           StrCompareFunction(UDFContext *,CLIPSValue *);
-   void                           SubStringFunction(UDFContext *,CLIPSValue *);
-   void                           StrIndexFunction(UDFContext *,CLIPSValue *);
-   void                           EvalFunction(UDFContext *,CLIPSValue *);
-   void                           BuildFunction(UDFContext *,CLIPSValue *);
-   void                           StringToFieldFunction(UDFContext *,CLIPSValue *);
-   void                           StringToField(void *,const char *,DATA_OBJECT *);
+typedef enum
+  {
+   EE_NO_ERROR = 0,
+   EE_PARSING_ERROR,
+   EE_PROCESSING_ERROR
+  } EvalError;
+
+typedef enum
+  {
+   BE_NO_ERROR = 0,
+   BE_COULD_NOT_BUILD_ERROR,
+   BE_CONSTRUCT_NOT_FOUND_ERROR,
+   BE_PARSING_ERROR,
+  } BuildError;
+
+   BuildError                     Build(Environment *,const char *);
+   EvalError                      Eval(Environment *,const char *,CLIPSValue *);
+   void                           StringFunctionDefinitions(Environment *);
+   void                           StrCatFunction(Environment *,UDFContext *,UDFValue *);
+   void                           SymCatFunction(Environment *,UDFContext *,UDFValue *);
+   void                           StrLengthFunction(Environment *,UDFContext *,UDFValue *);
+   void                           UpcaseFunction(Environment *,UDFContext *,UDFValue *);
+   void                           LowcaseFunction(Environment *,UDFContext *,UDFValue *);
+   void                           StrCompareFunction(Environment *,UDFContext *,UDFValue *);
+   void                           SubStringFunction(Environment *,UDFContext *,UDFValue *);
+   void                           StrIndexFunction(Environment *,UDFContext *,UDFValue *);
+   void                           EvalFunction(Environment *,UDFContext *,UDFValue *);
+   void                           BuildFunction(Environment *,UDFContext *,UDFValue *);
+   void                           StringToFieldFunction(Environment *,UDFContext *,UDFValue *);
+   void                           StringToField(Environment *,const char *,UDFValue *);
 
 #endif /* _H_strngfun */
 

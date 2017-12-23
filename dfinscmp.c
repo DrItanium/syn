@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  07/30/16             */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -22,6 +22,13 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 /* =========================================
@@ -39,17 +46,17 @@
 
 #include "dfinscmp.h"
 
-/* =========================================
-   *****************************************
-      INTERNALLY VISIBLE FUNCTION HEADERS
-   =========================================
-   ***************************************** */
+/***************************************/
+/* LOCAL INTERNAL FUNCTION DEFINITIONS */
+/***************************************/
 
-static void ReadyDefinstancesForCode(void *);
-static bool DefinstancesToCode(void *,const char *,const char *,char *,int,FILE *,int,int);
-static void CloseDefinstancesFiles(void *,FILE *,FILE *,int);
-static void DefinstancesModuleToCode(void *,FILE *,struct defmodule *,int,int);
-static void SingleDefinstancesToCode(void *,FILE *,DEFINSTANCES *,int,int,int);
+   static void                    ReadyDefinstancesForCode(Environment *);
+   static bool                    DefinstancesToCode(Environment *,const char *,const char *,char *,unsigned int,
+                                                     FILE *,unsigned int,unsigned int);
+   static void                    CloseDefinstancesFiles(Environment *,FILE *,FILE *,unsigned int);
+   static void                    DefinstancesModuleToCode(Environment *,FILE *,Defmodule *,unsigned int,unsigned int);
+   static void                    SingleDefinstancesToCode(Environment*,FILE *,Definstances *,unsigned int,unsigned int,unsigned int);
+   static void                    InitDefinstancesCode(Environment *,FILE *,unsigned int,unsigned int);
 
 /* =========================================
    *****************************************
@@ -67,10 +74,10 @@ static void SingleDefinstancesToCode(void *,FILE *,DEFINSTANCES *,int,int,int);
   NOTES        : None
  ***************************************************/
 void SetupDefinstancesCompiler(
-  void *theEnv)
+  Environment *theEnv)
   {
    DefinstancesData(theEnv)->DefinstancesCodeItem = AddCodeGeneratorItem(theEnv,"definstances",0,ReadyDefinstancesForCode,
-                                               NULL,DefinstancesToCode,2);
+                                               InitDefinstancesCode,DefinstancesToCode,2);
   }
 
 
@@ -88,13 +95,13 @@ void SetupDefinstancesCompiler(
   NOTES        : None
  ****************************************************/
 void DefinstancesCModuleReference(
-  void *theEnv,
+  Environment *theEnv,
   FILE *theFile,
-  int count,
-  int imageID,
-  int maxIndices)
+  unsigned long count,
+  unsigned int imageID,
+  unsigned int maxIndices)
   {
-   fprintf(theFile,"MIHS &%s%d_%d[%d]",
+   fprintf(theFile,"MIHS &%s%u_%lu[%lu]",
                       ModulePrefix(DefinstancesData(theEnv)->DefinstancesCodeItem),
                       imageID,
                       (count / maxIndices) + 1,
@@ -117,9 +124,27 @@ void DefinstancesCModuleReference(
   NOTES        : None
  ***************************************************/
 static void ReadyDefinstancesForCode(
-  void *theEnv)
+  Environment *theEnv)
   {
    MarkConstructBsaveIDs(theEnv,DefinstancesData(theEnv)->DefinstancesModuleIndex);
+  }
+
+/***************************************************/
+/* InitDefinstancesCode: Writes out initialization */
+/*   code for definstances for a run-time module.  */
+/***************************************************/
+static void InitDefinstancesCode(
+  Environment *theEnv,
+  FILE *initFP,
+  unsigned int imageID,
+  unsigned int maxIndices)
+  {
+#if MAC_XCD
+#pragma unused(maxIndices)
+#pragma unused(imageID)
+#pragma unused(theEnv)
+#endif
+   fprintf(initFP,"   DefinstancesRunTimeInitialize(theEnv);\n");
   }
 
 /*******************************************************
@@ -132,26 +157,26 @@ static void ReadyDefinstancesForCode(
                  4) The base id for the construct set
                  5) The max number of indices allowed
                     in an array
-  RETURNS      : 0 on errors,
-                  1 if definstances written
+  RETURNS      : False on errors,
+                 True if definstances written
   SIDE EFFECTS : Code written to files
   NOTES        : None
  *******************************************************/
 static bool DefinstancesToCode(
-  void *theEnv,
+  Environment *theEnv,
   const char *fileName,
   const char *pathName,
   char *fileNameBuffer,
-  int fileID,
+  unsigned int fileID,
   FILE *headerFP,
-  int imageID,
-  int maxIndices)
+  unsigned int imageID,
+  unsigned int maxIndices)
   {
-   int fileCount = 1;
-   struct defmodule *theModule;
-   DEFINSTANCES *theDefinstances;
-   int moduleCount = 0, moduleArrayCount = 0, moduleArrayVersion = 1;
-   int definstancesArrayCount = 0, definstancesArrayVersion = 1;
+   unsigned int fileCount = 1;
+   Defmodule *theModule;
+   Definstances *theDefinstances;
+   unsigned int moduleCount = 0, moduleArrayCount = 0, moduleArrayVersion = 1;
+   unsigned int definstancesArrayCount = 0, definstancesArrayVersion = 1;
    FILE *moduleFile = NULL, *definstancesFile = NULL;
 
    /* ================================================
@@ -163,11 +188,11 @@ static bool DefinstancesToCode(
       Loop through all the modules and all the definstances writing
       their C code representation to the file as they are traversed
       ============================================================= */
-   theModule = (struct defmodule *) EnvGetNextDefmodule(theEnv,NULL);
+   theModule = GetNextDefmodule(theEnv,NULL);
 
    while (theModule != NULL)
      {
-      EnvSetCurrentModule(theEnv,(void *) theModule);
+      SetCurrentModule(theEnv,theModule);
 
       moduleFile = OpenFileIfNeeded(theEnv,moduleFile,fileName,pathName,fileNameBuffer,fileID,imageID,&fileCount,
                                     moduleArrayVersion,headerFP,
@@ -177,25 +202,25 @@ static bool DefinstancesToCode(
       if (moduleFile == NULL)
         {
          CloseDefinstancesFiles(theEnv,moduleFile,definstancesFile,maxIndices);
-         return(false);
+         return false;
         }
 
       DefinstancesModuleToCode(theEnv,moduleFile,theModule,imageID,maxIndices);
       moduleFile = CloseFileIfNeeded(theEnv,moduleFile,&moduleArrayCount,&moduleArrayVersion,
                                      maxIndices,NULL,NULL);
 
-      theDefinstances = (DEFINSTANCES *) EnvGetNextDefinstances(theEnv,NULL);
+      theDefinstances = GetNextDefinstances(theEnv,NULL);
 
       while (theDefinstances != NULL)
         {
          definstancesFile = OpenFileIfNeeded(theEnv,definstancesFile,fileName,pathName,fileNameBuffer,fileID,imageID,&fileCount,
                                              definstancesArrayVersion,headerFP,
-                                             "DEFINSTANCES",ConstructPrefix(DefinstancesData(theEnv)->DefinstancesCodeItem),
+                                             "Definstances",ConstructPrefix(DefinstancesData(theEnv)->DefinstancesCodeItem),
                                              false,NULL);
          if (definstancesFile == NULL)
            {
             CloseDefinstancesFiles(theEnv,moduleFile,definstancesFile,maxIndices);
-            return(false);
+            return false;
            }
 
          SingleDefinstancesToCode(theEnv,definstancesFile,theDefinstances,imageID,
@@ -204,17 +229,17 @@ static bool DefinstancesToCode(
          definstancesFile = CloseFileIfNeeded(theEnv,definstancesFile,&definstancesArrayCount,
                                               &definstancesArrayVersion,maxIndices,NULL,NULL);
 
-         theDefinstances = (DEFINSTANCES *) EnvGetNextDefinstances(theEnv,theDefinstances);
+         theDefinstances = GetNextDefinstances(theEnv,theDefinstances);
         }
 
-      theModule = (struct defmodule *) EnvGetNextDefmodule(theEnv,theModule);
+      theModule = GetNextDefmodule(theEnv,theModule);
       moduleCount++;
       moduleArrayCount++;
      }
 
    CloseDefinstancesFiles(theEnv,moduleFile,definstancesFile,maxIndices);
 
-   return(true);
+   return true;
   }
 
 /***************************************************
@@ -230,13 +255,13 @@ static bool DefinstancesToCode(
   NOTES        : None
  ***************************************************/
 static void CloseDefinstancesFiles(
-  void *theEnv,
+  Environment *theEnv,
   FILE *moduleFile,
   FILE *definstancesFile,
-  int maxIndices)
+  unsigned int maxIndices)
   {
-   int count = maxIndices;
-   int arrayVersion = 0;
+   unsigned int count = maxIndices;
+   unsigned int arrayVersion = 0;
 
    if (definstancesFile != NULL)
      {
@@ -266,11 +291,11 @@ static void CloseDefinstancesFiles(
   NOTES        : None
  ***************************************************/
 static void DefinstancesModuleToCode(
-  void *theEnv,
+  Environment *theEnv,
   FILE *theFile,
-  struct defmodule *theModule,
-  int imageID,
-  int maxIndices)
+  Defmodule *theModule,
+  unsigned int imageID,
+  unsigned int maxIndices)
   {
    fprintf(theFile,"{");
    ConstructModuleToCode(theEnv,theFile,theModule,imageID,maxIndices,
@@ -293,12 +318,12 @@ static void DefinstancesModuleToCode(
   NOTES        : None
  ***************************************************/
 static void SingleDefinstancesToCode(
-  void *theEnv,
+  Environment *theEnv,
   FILE *theFile,
-  DEFINSTANCES *theDefinstances,
-  int imageID,
-  int maxIndices,
-  int moduleCount)
+  Definstances *theDefinstances,
+  unsigned int imageID,
+  unsigned int maxIndices,
+  unsigned int moduleCount)
   {
    /* ===================
       Definstances Header

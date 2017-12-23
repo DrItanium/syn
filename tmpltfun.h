@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  11/01/16            */
    /*                                                     */
    /*          DEFTEMPLATE FUNCTION HEADER FILE           */
    /*******************************************************/
@@ -55,7 +55,20 @@
 /*            being executed during fact assertions via      */
 /*            Increment/DecrementClearReadyLocks API.        */
 /*                                                           */
-/*      6.40: Fact ?var:slot references in defrule actions.  */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
+/*            Modify command preserves fact id and address.  */
 /*                                                           */
 /*************************************************************/
 
@@ -67,41 +80,40 @@
 
 #include "expressn.h"
 #include "factmngr.h"
-#include "scanner.h"
 #include "symbol.h"
 #include "tmpltdef.h"
 
-   bool                           UpdateModifyDuplicate(void *,struct expr *,const char *,void *);
-   struct expr                   *ModifyParse(void *,struct expr *,const char *);
-   struct expr                   *DuplicateParse(void *,struct expr *,const char *);
-   void                           DeftemplateFunctions( void *);
-   void                           ModifyCommand(UDFContext *,CLIPSValue *);
-   void                           DuplicateCommand(UDFContext *,CLIPSValue *);
-   void                           DeftemplateSlotNamesFunction(UDFContext *,CLIPSValue *);
-   void                           EnvDeftemplateSlotNames(void *,void *,DATA_OBJECT *);
-   void                           DeftemplateSlotDefaultValueFunction(UDFContext *,CLIPSValue *);
-   bool                           EnvDeftemplateSlotDefaultValue(void *,void *,const char *,DATA_OBJECT *);
-   void                           DeftemplateSlotCardinalityFunction(UDFContext *,CLIPSValue *);
-   void                           EnvDeftemplateSlotCardinality(void *,void *,const char *,DATA_OBJECT *);
-   void                           DeftemplateSlotAllowedValuesFunction(UDFContext *,CLIPSValue *);
-   void                           EnvDeftemplateSlotAllowedValues(void *,void *,const char *,DATA_OBJECT *);
-   void                           DeftemplateSlotRangeFunction(UDFContext *,CLIPSValue *);
-   void                           EnvDeftemplateSlotRange(void *,void *,const char *,DATA_OBJECT *);
-   void                           DeftemplateSlotTypesFunction(UDFContext *,CLIPSValue *);
-   void                           EnvDeftemplateSlotTypes(void *,void *,const char *,DATA_OBJECT *);
-   void                           DeftemplateSlotMultiPFunction(UDFContext *,CLIPSValue *);
-   bool                           EnvDeftemplateSlotMultiP(void *,void *,const char *);
-   void                           DeftemplateSlotSinglePFunction(UDFContext *,CLIPSValue *);
-   bool                           EnvDeftemplateSlotSingleP(void *,void *,const char *);
-   void                           DeftemplateSlotExistPFunction(UDFContext *,CLIPSValue *);
-   bool                           EnvDeftemplateSlotExistP(void *,void *,const char *);
-   void                           DeftemplateSlotDefaultPFunction(UDFContext *,CLIPSValue *);
-   int                            EnvDeftemplateSlotDefaultP(void *,void *,const char *);
-   void                           DeftemplateSlotFacetExistPFunction(UDFContext *,CLIPSValue *);
-   bool                           EnvDeftemplateSlotFacetExistP(void *,void *,const char *,const char *);
-   void                           DeftemplateSlotFacetValueFunction(UDFContext *,CLIPSValue *);
-   bool                           EnvDeftemplateSlotFacetValue(void *,void *,const char *,const char *,DATA_OBJECT *);
-   SYMBOL_HN                     *FindTemplateForFactAddress(SYMBOL_HN *,struct lhsParseNode *);
+   bool                           UpdateModifyDuplicate(Environment *,struct expr *,const char *,void *);
+   struct expr                   *ModifyParse(Environment *,struct expr *,const char *);
+   struct expr                   *DuplicateParse(Environment *,struct expr *,const char *);
+   void                           DeftemplateFunctions(Environment *);
+   void                           ModifyCommand(Environment *,UDFContext *,UDFValue *);
+   void                           DuplicateCommand(Environment *,UDFContext *,UDFValue *);
+   void                           DeftemplateSlotNamesFunction(Environment *,UDFContext *,UDFValue *);
+   void                           DeftemplateSlotNames(Deftemplate *,CLIPSValue *);
+   void                           DeftemplateSlotDefaultValueFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           DeftemplateSlotDefaultValue(Deftemplate *,const char *,CLIPSValue *);
+   void                           DeftemplateSlotCardinalityFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           DeftemplateSlotCardinality(Deftemplate *,const char *,CLIPSValue *);
+   void                           DeftemplateSlotAllowedValuesFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           DeftemplateSlotAllowedValues(Deftemplate *,const char *,CLIPSValue *);
+   void                           DeftemplateSlotRangeFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           DeftemplateSlotRange(Deftemplate *,const char *,CLIPSValue *);
+   void                           DeftemplateSlotTypesFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           DeftemplateSlotTypes(Deftemplate *,const char *,CLIPSValue *);
+   void                           DeftemplateSlotMultiPFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           DeftemplateSlotMultiP(Deftemplate *,const char *);
+   void                           DeftemplateSlotSinglePFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           DeftemplateSlotSingleP(Deftemplate *,const char *);
+   void                           DeftemplateSlotExistPFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           DeftemplateSlotExistP(Deftemplate *,const char *);
+   void                           DeftemplateSlotDefaultPFunction(Environment *,UDFContext *,UDFValue *);
+   DefaultType                    DeftemplateSlotDefaultP(Deftemplate *,const char *);
+   void                           DeftemplateSlotFacetExistPFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           DeftemplateSlotFacetExistP(Environment *,Deftemplate *,const char *,const char *);
+   void                           DeftemplateSlotFacetValueFunction(Environment *,UDFContext *,UDFValue *);
+   bool                           DeftemplateSlotFacetValue(Environment *,Deftemplate *,const char *,const char *,UDFValue *);
+   Fact                          *ReplaceFact(Environment *,Fact *,CLIPSValue *,char *);
 
 #endif /* _H_tmpltfun */
 

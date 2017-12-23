@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  11/01/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -25,6 +25,15 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_dffnxexe
@@ -35,11 +44,10 @@
 
 #if DEFFUNCTION_CONSTRUCT
 
+#include "entities.h"
 #include "dffnxfun.h"
-#include "expressn.h"
-#include "evaluatn.h"
 
-   void                           CallDeffunction(void *,DEFFUNCTION *,EXPRESSION *,DATA_OBJECT *);
+   void                           CallDeffunction(Environment *,Deffunction *,Expression *,UDFValue *);
 
 #endif /* DEFFUNCTION_CONSTRUCT */
 

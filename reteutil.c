@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/20/16             */
+   /*            CLIPS Version 6.40  08/28/17             */
    /*                                                     */
    /*                 RETE UTILITY MODULE                 */
    /*******************************************************/
@@ -42,10 +42,22 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.31: Bug fix to prevent rule activations for        */
+/*            partial matches being deleted.                 */
+/*                                                           */
 /*      6.40: Added Env prefix to GetHaltExecution and       */
 /*            SetHaltExecution functions.                    */
 /*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*            Incremental reset is always enabled.           */
+/*                                                           */
+/*            UDF redesign.                                  */
 /*                                                           */
 /*************************************************************/
 
@@ -63,6 +75,7 @@
 #include "memalloc.h"
 #include "moduldef.h"
 #include "pattern.h"
+#include "prntutil.h"
 #include "retract.h"
 #include "router.h"
 #include "rulecom.h"
@@ -73,27 +86,27 @@
 /* LOCAL INTERNAL FUNCTION DEFINITIONS */
 /***************************************/
 
-   static void                        TraceErrorToRuleDriver(void *,struct joinNode *,const char *,int,bool);
-   static struct alphaMemoryHash     *FindAlphaMemory(void *,struct patternNodeHeader *,unsigned long);
+   static void                        TraceErrorToRuleDriver(Environment *,struct joinNode *,const char *,int,bool);
+   static struct alphaMemoryHash     *FindAlphaMemory(Environment *,struct patternNodeHeader *,unsigned long);
    static unsigned long               AlphaMemoryHashValue(struct patternNodeHeader *,unsigned long);
-   static void                        UnlinkAlphaMemory(void *,struct patternNodeHeader *,struct alphaMemoryHash *);
-   static void                        UnlinkAlphaMemoryBucketSiblings(void *,struct alphaMemoryHash *);
+   static void                        UnlinkAlphaMemory(Environment *,struct patternNodeHeader *,struct alphaMemoryHash *);
+   static void                        UnlinkAlphaMemoryBucketSiblings(Environment *,struct alphaMemoryHash *);
    static void                        InitializePMLinks(struct partialMatch *);
    static void                        UnlinkBetaPartialMatchfromAlphaAndBetaLineage(struct partialMatch *);
    static int                         CountPriorPatterns(struct joinNode *);
-   static void                        ResizeBetaMemory(void *,struct betaMemory *);
-   static void                        ResetBetaMemory(void *,struct betaMemory *);
+   static void                        ResizeBetaMemory(Environment *,struct betaMemory *);
+   static void                        ResetBetaMemory(Environment *,struct betaMemory *);
 #if (CONSTRUCT_COMPILER || BLOAD_AND_BSAVE) && (! RUN_TIME)
-   static void                        TagNetworkTraverseJoins(void *,long int *,long int *,struct joinNode *);
+   static void                        TagNetworkTraverseJoins(Environment *,unsigned long *,unsigned long *,struct joinNode *);
 #endif
-   
+
 /***********************************************************/
 /* PrintPartialMatch: Prints out the list of fact indices  */
 /*   and/or instance names associated with a partial match */
 /*   or rule instantiation.                                */
 /***********************************************************/
 void PrintPartialMatch(
-  void *theEnv,
+  Environment *theEnv,
   const char *logicalName,
   struct partialMatch *list)
   {
@@ -109,9 +122,9 @@ void PrintPartialMatch(
          (*matchingItem->theInfo->base.shortPrintFunction)(theEnv,logicalName,matchingItem);
         }
       else
-        { EnvPrintRouter(theEnv,logicalName,"*"); }
+        { WriteString(theEnv,logicalName,"*"); }
       i++;
-      if (i < list->bcount) EnvPrintRouter(theEnv,logicalName,",");
+      if (i < list->bcount) WriteString(theEnv,logicalName,",");
      }
   }
 
@@ -119,7 +132,7 @@ void PrintPartialMatch(
 /* CopyPartialMatch:  Copies a partial match. */
 /**********************************************/
 struct partialMatch *CopyPartialMatch(
-  void *theEnv,
+  Environment *theEnv,
   struct partialMatch *list)
   {
    struct partialMatch *linker;
@@ -132,6 +145,7 @@ struct partialMatch *CopyPartialMatch(
    linker->betaMemory = true;
    linker->busy = false;
    linker->rhsMemory = false;
+   linker->deleting = false;
    linker->bcount = list->bcount;
    linker->hashValue = 0;
 
@@ -140,11 +154,11 @@ struct partialMatch *CopyPartialMatch(
    return(linker);
   }
 
-/**********************************************/
-/* CreateEmptyPartialMatch:  */
-/**********************************************/
+/****************************/
+/* CreateEmptyPartialMatch: */
+/****************************/
 struct partialMatch *CreateEmptyPartialMatch(
-  void *theEnv)
+  Environment *theEnv)
   {
    struct partialMatch *linker;
 
@@ -154,6 +168,7 @@ struct partialMatch *CreateEmptyPartialMatch(
    linker->betaMemory = true;
    linker->busy = false;
    linker->rhsMemory = false;
+   linker->deleting = false;
    linker->bcount = 1;
    linker->hashValue = 0;
    linker->binds[0].gm.theValue = NULL;
@@ -161,9 +176,9 @@ struct partialMatch *CreateEmptyPartialMatch(
    return(linker);
   }
 
-/****************************************************/
+/**********************/
 /* InitializePMLinks: */
-/****************************************************/
+/**********************/
 static void InitializePMLinks(
   struct partialMatch *theMatch)
   {
@@ -182,12 +197,12 @@ static void InitializePMLinks(
    theMatch->marker = NULL;
    theMatch->dependents = NULL;
   }
-  
-/***********************************************************/
-/* UpdateBetaPMLinks: . */
-/***********************************************************/
+
+/**********************/
+/* UpdateBetaPMLinks: */
+/**********************/
 void UpdateBetaPMLinks(
-  void *theEnv,
+  Environment *theEnv,
   struct partialMatch *thePM,
   struct partialMatch *lhsBinds,
   struct partialMatch *rhsBinds,
@@ -197,10 +212,10 @@ void UpdateBetaPMLinks(
   {
    unsigned long betaLocation;
    struct betaMemory *theMemory;
-   
+
    if (side == LHS)
-     { 
-      theMemory = join->leftMemory; 
+     {
+      theMemory = join->leftMemory;
       thePM->rhsMemory = false;
      }
    else
@@ -208,15 +223,15 @@ void UpdateBetaPMLinks(
       theMemory = join->rightMemory;
       thePM->rhsMemory = true;
      }
-   
+
    thePM->hashValue = hashValue;
-     
+
    /*================================*/
    /* Update the node's linked list. */
    /*================================*/
 
    betaLocation = hashValue % theMemory->size;
-   
+
    if (side == LHS)
      {
       thePM->nextInMemory = theMemory->beta[betaLocation];
@@ -236,19 +251,19 @@ void UpdateBetaPMLinks(
 
       theMemory->last[betaLocation] = thePM;
      }
-     
+
    theMemory->count++;
    if (side == LHS)
     { join->memoryLeftAdds++; }
    else
     { join->memoryRightAdds++; }
-   
+
    thePM->owner = join;
 
    /*======================================*/
    /* Update the alpha memory linked list. */
    /*======================================*/
-      
+
    if (rhsBinds != NULL)
      {
       thePM->nextRightChild = rhsBinds->children;
@@ -257,7 +272,7 @@ void UpdateBetaPMLinks(
       rhsBinds->children = thePM;
       thePM->rightParent = rhsBinds;
     }
-      
+
    /*=====================================*/
    /* Update the beta memory linked list. */
    /*=====================================*/
@@ -308,12 +323,12 @@ void RemoveBlockedLink(
   struct partialMatch *thePM)
   {
    struct partialMatch *blocker;
-   
+
    if (thePM->prevBlocked == NULL)
-     { 
+     {
       blocker = (struct partialMatch *) thePM->marker;
-      blocker->blockList = thePM->nextBlocked; 
-     } 
+      blocker->blockList = thePM->nextBlocked;
+     }
    else
      { thePM->prevBlocked->nextBlocked = thePM->nextBlocked; }
 
@@ -324,12 +339,12 @@ void RemoveBlockedLink(
    thePM->prevBlocked = NULL;
    thePM->marker = NULL;
   }
-         
-/***********************************************************/
-/* UnlinkBetaPMFromNodeAndLineage: . */
-/***********************************************************/
+
+/***********************************/
+/* UnlinkBetaPMFromNodeAndLineage: */
+/***********************************/
 void UnlinkBetaPMFromNodeAndLineage(
-  void *theEnv,
+  Environment *theEnv,
   struct joinNode *join,
   struct partialMatch *thePM,
   int side)
@@ -341,11 +356,11 @@ void UnlinkBetaPMFromNodeAndLineage(
      { theMemory = join->leftMemory; }
    else
      { theMemory = join->rightMemory; }
-   
+
    /*=============================================*/
    /* Update the nextInMemory/prevInMemory links. */
    /*=============================================*/
-   
+
    theMemory->count--;
 
    if (side == LHS)
@@ -354,25 +369,25 @@ void UnlinkBetaPMFromNodeAndLineage(
     { join->memoryRightDeletes++; }
 
    betaLocation = thePM->hashValue % theMemory->size;
-   
+
    if ((side == RHS) &&
        (theMemory->last[betaLocation] == thePM))
      { theMemory->last[betaLocation] = thePM->prevInMemory; }
-     
+
    if (thePM->prevInMemory == NULL)
-     { 
+     {
       betaLocation = thePM->hashValue % theMemory->size;
-      theMemory->beta[betaLocation] = thePM->nextInMemory; 
+      theMemory->beta[betaLocation] = thePM->nextInMemory;
      }
    else
      { thePM->prevInMemory->nextInMemory = thePM->nextInMemory; }
 
    if (thePM->nextInMemory != NULL)
      { thePM->nextInMemory->prevInMemory = thePM->prevInMemory; }
-     
+
    thePM->nextInMemory = NULL;
    thePM->prevInMemory = NULL;
-   
+
    UnlinkBetaPartialMatchfromAlphaAndBetaLineage(thePM);
 
    if (! DefruleData(theEnv)->BetaMemoryResizingFlag)
@@ -380,13 +395,13 @@ void UnlinkBetaPMFromNodeAndLineage(
 
    if ((theMemory->count == 0) && (theMemory->size > 1))
      { ResetBetaMemory(theEnv,theMemory); }
-  } 
+  }
 
-/***********************************************************/
-/* UnlinkNonLeftLineage: . */
-/***********************************************************/
+/*************************/
+/* UnlinkNonLeftLineage: */
+/*************************/
 void UnlinkNonLeftLineage(
-  void *theEnv,
+  Environment *theEnv,
   struct joinNode *join,
   struct partialMatch *thePM,
   int side)
@@ -399,11 +414,11 @@ void UnlinkNonLeftLineage(
      { theMemory = join->leftMemory; }
    else
      { theMemory = join->rightMemory; }
-   
+
    /*=============================================*/
    /* Update the nextInMemory/prevInMemory links. */
    /*=============================================*/
-   
+
    theMemory->count--;
 
    if (side == LHS)
@@ -412,15 +427,15 @@ void UnlinkNonLeftLineage(
     { join->memoryRightDeletes++; }
 
    betaLocation = thePM->hashValue % theMemory->size;
-   
+
    if ((side == RHS) &&
        (theMemory->last[betaLocation] == thePM))
      { theMemory->last[betaLocation] = thePM->prevInMemory; }
-     
+
    if (thePM->prevInMemory == NULL)
-     { 
+     {
       betaLocation = thePM->hashValue % theMemory->size;
-      theMemory->beta[betaLocation] = thePM->nextInMemory; 
+      theMemory->beta[betaLocation] = thePM->nextInMemory;
      }
    else
      { thePM->prevInMemory->nextInMemory = thePM->nextInMemory; }
@@ -433,33 +448,33 @@ void UnlinkNonLeftLineage(
    /*=========================*/
 
    if (thePM->prevRightChild == NULL)
-     { 
+     {
       if (thePM->rightParent != NULL)
-        { 
-         thePM->rightParent->children = thePM->nextRightChild; 
+        {
+         thePM->rightParent->children = thePM->nextRightChild;
          if (thePM->nextRightChild != NULL)
            {
             thePM->rightParent->children = thePM->nextRightChild;
             thePM->nextRightChild->rightParent = thePM->rightParent;
            }
-        } 
+        }
      }
    else
      { thePM->prevRightChild->nextRightChild = thePM->nextRightChild; }
 
    if (thePM->nextRightChild != NULL)
      { thePM->nextRightChild->prevRightChild = thePM->prevRightChild; }
-   
+
    /*===========================*/
    /* Update the blocked lists. */
    /*===========================*/
 
    if (thePM->prevBlocked == NULL)
-     { 
+     {
       tempPM = (struct partialMatch *) thePM->marker;
-      
+
       if (tempPM != NULL)
-        { tempPM->blockList = thePM->nextBlocked; } 
+        { tempPM->blockList = thePM->nextBlocked; }
      }
    else
      { thePM->prevBlocked->nextBlocked = thePM->nextBlocked; }
@@ -472,7 +487,7 @@ void UnlinkNonLeftLineage(
 
    if ((theMemory->count == 0) && (theMemory->size > 1))
      { ResetBetaMemory(theEnv,theMemory); }
-  } 
+  }
 
 /*******************************************************************/
 /* UnlinkBetaPartialMatchfromAlphaAndBetaLineage: Removes the      */
@@ -485,15 +500,15 @@ static void UnlinkBetaPartialMatchfromAlphaAndBetaLineage(
   struct partialMatch *thePM)
   {
    struct partialMatch *tempPM;
-   
+
    /*=========================*/
    /* Update the alpha lists. */
    /*=========================*/
 
    if (thePM->prevRightChild == NULL)
-     { 
+     {
       if (thePM->rightParent != NULL)
-        { thePM->rightParent->children = thePM->nextRightChild; } 
+        { thePM->rightParent->children = thePM->nextRightChild; }
      }
    else
      { thePM->prevRightChild->nextRightChild = thePM->nextRightChild; }
@@ -504,15 +519,15 @@ static void UnlinkBetaPartialMatchfromAlphaAndBetaLineage(
    thePM->rightParent = NULL;
    thePM->nextRightChild = NULL;
    thePM->prevRightChild = NULL;
-   
+
    /*========================*/
    /* Update the beta lists. */
    /*========================*/
 
    if (thePM->prevLeftChild == NULL)
-     { 
+     {
       if (thePM->leftParent != NULL)
-        { thePM->leftParent->children = thePM->nextLeftChild; } 
+        { thePM->leftParent->children = thePM->nextLeftChild; }
      }
    else
      { thePM->prevLeftChild->nextLeftChild = thePM->nextLeftChild; }
@@ -529,11 +544,11 @@ static void UnlinkBetaPartialMatchfromAlphaAndBetaLineage(
    /*===========================*/
 
    if (thePM->prevBlocked == NULL)
-     { 
+     {
       tempPM = (struct partialMatch *) thePM->marker;
-      
+
       if (tempPM != NULL)
-        { tempPM->blockList = thePM->nextBlocked; } 
+        { tempPM->blockList = thePM->nextBlocked; }
      }
    else
      { thePM->prevBlocked->nextBlocked = thePM->nextBlocked; }
@@ -544,11 +559,11 @@ static void UnlinkBetaPartialMatchfromAlphaAndBetaLineage(
    thePM->marker = NULL;
    thePM->nextBlocked = NULL;
    thePM->prevBlocked = NULL;
-      
+
    /*===============================================*/
    /* Remove parent reference from the child links. */
    /*===============================================*/
-   
+
    if (thePM->children != NULL)
      {
       if (thePM->rhsMemory)
@@ -561,54 +576,55 @@ static void UnlinkBetaPartialMatchfromAlphaAndBetaLineage(
          for (tempPM = thePM->children; tempPM != NULL; tempPM = tempPM->nextLeftChild)
            { tempPM->leftParent = NULL; }
         }
-        
+
       thePM->children = NULL;
      }
-  } 
-  
+  }
+
 /********************************************************/
 /* MergePartialMatches: Merges two partial matches. The */
 /*   second match should either be NULL (indicating a   */
 /*   negated CE) or contain a single match.             */
 /********************************************************/
 struct partialMatch *MergePartialMatches(
-  void *theEnv,
+  Environment *theEnv,
   struct partialMatch *lhsBind,
   struct partialMatch *rhsBind)
   {
    struct partialMatch *linker;
    static struct partialMatch mergeTemplate = { 1 }; /* betaMemory is true, remainder are 0 or NULL */
-  
+
    /*=================================*/
    /* Allocate the new partial match. */
    /*=================================*/
-   
+
    linker = get_var_struct(theEnv,partialMatch,sizeof(struct genericMatch) * lhsBind->bcount);
 
    /*============================================*/
    /* Set the flags to their appropriate values. */
    /*============================================*/
-   
+
    memcpy(linker,&mergeTemplate,sizeof(struct partialMatch) - sizeof(struct genericMatch));
-   
-   linker->bcount = (unsigned short) (lhsBind->bcount + 1);
-   
+
+   linker->deleting = false;
+   linker->bcount = lhsBind->bcount + 1;
+
    /*========================================================*/
    /* Copy the bindings of the partial match being extended. */
    /*========================================================*/
-      
+
    memcpy(linker->binds,lhsBind->binds,sizeof(struct genericMatch) * lhsBind->bcount);
 
    /*===================================*/
    /* Add the binding of the rhs match. */
    /*===================================*/
- 
+
    if (rhsBind == NULL)
      { linker->binds[lhsBind->bcount].gm.theValue = NULL; }
    else
      { linker->binds[lhsBind->bcount].gm.theValue = rhsBind->binds[0].gm.theValue; }
 
-   return(linker);
+   return linker;
   }
 
 /*******************************************************************/
@@ -616,7 +632,7 @@ struct partialMatch *MergePartialMatches(
 /*   (used by the fact and instance pattern matchers).             */
 /*******************************************************************/
 void InitializePatternHeader(
-  void *theEnv,
+  Environment *theEnv,
   struct patternNodeHeader *theHeader)
   {
 #if MAC_XCD
@@ -649,7 +665,7 @@ void InitializePatternHeader(
 /*   is still responsible for freeing these data structures).     */
 /******************************************************************/
 struct partialMatch *CreateAlphaMatch(
-  void *theEnv,
+  Environment *theEnv,
   void *theEntity,
   struct multifieldMarker *markers,
   struct patternNodeHeader *theHeader,
@@ -668,6 +684,7 @@ struct partialMatch *CreateAlphaMatch(
    InitializePMLinks(theMatch);
    theMatch->betaMemory = false;
    theMatch->busy = false;
+   theMatch->deleting = false;
    theMatch->bcount = 1;
    theMatch->hashValue = hashOffset;
 
@@ -707,9 +724,9 @@ struct partialMatch *CreateAlphaMatch(
       if (theAlphaMemory->next != NULL)
         { theAlphaMemory->next->prev = theAlphaMemory; }
 
-      theAlphaMemory->prev = NULL; 
+      theAlphaMemory->prev = NULL;
       DefruleData(theEnv)->AlphaMemoryTable[hashValue] = theAlphaMemory;
-      
+
       if (theHeader->firstHash == NULL)
         {
          theHeader->firstHash = theAlphaMemory;
@@ -728,7 +745,7 @@ struct partialMatch *CreateAlphaMatch(
    /* Store the alpha match in the alpha */
    /* memory of the pattern node.        */
    /*====================================*/
- 
+
     theMatch->prevInMemory = theAlphaMemory->endOfQueue;
     if (theAlphaMemory->endOfQueue == NULL)
      {
@@ -747,13 +764,13 @@ struct partialMatch *CreateAlphaMatch(
 
    return(theMatch);
   }
-  
+
 /*******************************************/
 /* CopyMultifieldMarkers: Copies a list of */
 /*   multifieldMarker data structures.     */
 /*******************************************/
 struct multifieldMarker *CopyMultifieldMarkers(
-  void *theEnv,
+  Environment *theEnv,
   struct multifieldMarker *theMarkers)
   {
    struct multifieldMarker *head = NULL, *lastMark = NULL, *newMark;
@@ -765,7 +782,7 @@ struct multifieldMarker *CopyMultifieldMarkers(
       newMark->whichField = theMarkers->whichField;
       newMark->where = theMarkers->where;
       newMark->startPosition = theMarkers->startPosition;
-      newMark->endPosition = theMarkers->endPosition;
+      newMark->range = theMarkers->range;
 
       if (lastMark == NULL)
         { head = newMark; }
@@ -787,7 +804,7 @@ struct multifieldMarker *CopyMultifieldMarkers(
 /*   list of GarbagePartialMatches.                            */
 /***************************************************************/
 void FlushAlphaBetaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct partialMatch *pfl)
   {
    struct partialMatch *pfltemp;
@@ -808,7 +825,7 @@ void FlushAlphaBetaMemory(
 /*   of partial matches directly to the pool of free memory.     */
 /*****************************************************************/
 void DestroyAlphaBetaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct partialMatch *pfl)
   {
    struct partialMatch *pfltemp;
@@ -816,7 +833,7 @@ void DestroyAlphaBetaMemory(
    while (pfl != NULL)
      {
       pfltemp = pfl->nextInMemory;
-      DestroyPartialMatch(theEnv,pfl); 
+      DestroyPartialMatch(theEnv,pfl);
       pfl = pfltemp;
      }
   }
@@ -835,12 +852,12 @@ bool FindEntityInPartialMatch(
      {
       if (thePartialMatch->binds[i].gm.theMatch == NULL) continue;
       if (thePartialMatch->binds[i].gm.theMatch->matchingItem == theEntity)
-        { return(true); }
+        { return true; }
      }
 
-   return(false);
+   return false;
   }
-  
+
 /***********************************************************************/
 /* GetPatternNumberFromJoin: Given a pointer to a join associated with */
 /*   a pattern CE, returns an integer representing the position of the */
@@ -871,12 +888,12 @@ int GetPatternNumberFromJoin(
 /*   indicate which rule caused the problem.                            */
 /************************************************************************/
 void TraceErrorToRule(
-  void *theEnv,
+  Environment *theEnv,
   struct joinNode *joinPtr,
   const char *indentSpaces)
   {
    int patternCount;
-   
+
    MarkRuleNetwork(theEnv,0);
 
    patternCount = CountPriorPatterns(joinPtr->lastLevel) + 1;
@@ -891,7 +908,7 @@ void TraceErrorToRule(
 /*   rule caused a pattern or join network error.             */
 /**************************************************************/
 static void TraceErrorToRuleDriver(
-  void *theEnv,
+  Environment *theEnv,
   struct joinNode *joinPtr,
   const char *indentSpaces,
   int priorRightJoinPatterns,
@@ -905,25 +922,25 @@ static void TraceErrorToRuleDriver(
      { priorPatternCount = CountPriorPatterns(joinPtr->lastLevel); }
    else
      { priorPatternCount = 0; }
-        
+
    if (joinPtr->marked)
      { /* Do Nothing */ }
    else if (joinPtr->ruleToActivate != NULL)
      {
       joinPtr->marked = 1;
-      name = EnvGetDefruleName(theEnv,joinPtr->ruleToActivate);
-      EnvPrintRouter(theEnv,WERROR,indentSpaces);
+      name = DefruleName(joinPtr->ruleToActivate);
+      WriteString(theEnv,STDERR,indentSpaces);
 
-      EnvPrintRouter(theEnv,WERROR,"Of pattern #");
-      PrintLongInteger(theEnv,WERROR,priorRightJoinPatterns+priorPatternCount);
-      EnvPrintRouter(theEnv,WERROR," in rule ");
-      EnvPrintRouter(theEnv,WERROR,name);
-      EnvPrintRouter(theEnv,WERROR,"\n");
+      WriteString(theEnv,STDERR,"Of pattern #");
+      WriteInteger(theEnv,STDERR,priorRightJoinPatterns+priorPatternCount);
+      WriteString(theEnv,STDERR," in rule ");
+      WriteString(theEnv,STDERR,name);
+      WriteString(theEnv,STDERR,"\n");
      }
    else
      {
       joinPtr->marked = 1;
-        
+
       theLinks = joinPtr->nextLinks;
       while (theLinks != NULL)
         {
@@ -935,24 +952,24 @@ static void TraceErrorToRuleDriver(
      }
   }
 
-/**************************************************************/
-/* CountPriorPatterns:            */
-/**************************************************************/
+/***********************/
+/* CountPriorPatterns: */
+/***********************/
 static int CountPriorPatterns(
   struct joinNode *joinPtr)
   {
    int count = 0;
-   
+
    while (joinPtr != NULL)
      {
       if (joinPtr->joinFromTheRight)
         { count += CountPriorPatterns((struct joinNode *) joinPtr->rightSideEntryStructure); }
       else
         { count++; }
-        
+
       joinPtr = joinPtr->lastLevel;
      }
-     
+
    return(count);
   }
 
@@ -961,29 +978,29 @@ static int CountPriorPatterns(
 /*   joins in the join network to the specified value.  */
 /********************************************************/
 void MarkRuleNetwork(
-  void *theEnv,
-  int value)
+  Environment *theEnv,
+  bool value)
   {
-   struct defrule *rulePtr, *disjunctPtr;
+   Defrule *rulePtr, *disjunctPtr;
    struct joinNode *joinPtr;
-   struct defmodule *modulePtr;
+   Defmodule *modulePtr;
 
    /*===========================*/
    /* Loop through each module. */
    /*===========================*/
 
    SaveCurrentModule(theEnv);
-   for (modulePtr = (struct defmodule *) EnvGetNextDefmodule(theEnv,NULL);
+   for (modulePtr = GetNextDefmodule(theEnv,NULL);
         modulePtr != NULL;
-        modulePtr = (struct defmodule *) EnvGetNextDefmodule(theEnv,modulePtr))
+        modulePtr = GetNextDefmodule(theEnv,modulePtr))
      {
-      EnvSetCurrentModule(theEnv,(void *) modulePtr);
+      SetCurrentModule(theEnv,modulePtr);
 
       /*=========================*/
       /* Loop through each rule. */
       /*=========================*/
 
-      rulePtr = (struct defrule *) EnvGetNextDefrule(theEnv,NULL);
+      rulePtr = GetNextDefrule(theEnv,NULL);
       while (rulePtr != NULL)
         {
          /*=============================*/
@@ -1001,7 +1018,7 @@ void MarkRuleNetwork(
          /* Move on to the next rule. */
          /*===========================*/
 
-         rulePtr = (struct defrule *) EnvGetNextDefrule(theEnv,rulePtr);
+         rulePtr = GetNextDefrule(theEnv,rulePtr);
         }
 
      }
@@ -1009,18 +1026,18 @@ void MarkRuleNetwork(
    RestoreCurrentModule(theEnv);
   }
 
-/*****************************************/
-/* MarkRuleJoins:      */
-/*****************************************/ 
+/******************/
+/* MarkRuleJoins: */
+/******************/
 void MarkRuleJoins(
   struct joinNode *joinPtr,
-  int value)
+  bool value)
   {
    while (joinPtr != NULL)
      {
       if (joinPtr->joinFromTheRight)
         { MarkRuleJoins((struct joinNode *) joinPtr->rightSideEntryStructure,value); }
-        
+
       joinPtr->marked = value;
       joinPtr = joinPtr->lastLevel;
      }
@@ -1029,9 +1046,9 @@ void MarkRuleJoins(
 /*****************************************/
 /* GetAlphaMemory: Retrieves the list of */
 /*   matches from an alpha memory.       */
-/*****************************************/ 
+/*****************************************/
 struct partialMatch *GetAlphaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct patternNodeHeader *theHeader,
   unsigned long hashOffset)
   {
@@ -1050,13 +1067,13 @@ struct partialMatch *GetAlphaMemory(
 /*****************************************/
 /* GetLeftBetaMemory: Retrieves the list */
 /*   of matches from a beta memory.      */
-/*****************************************/ 
+/*****************************************/
 struct partialMatch *GetLeftBetaMemory(
   struct joinNode *theJoin,
   unsigned long hashValue)
   {
    unsigned long betaLocation;
-   
+
    betaLocation = hashValue % theJoin->leftMemory->size;
 
    return theJoin->leftMemory->beta[betaLocation];
@@ -1065,24 +1082,24 @@ struct partialMatch *GetLeftBetaMemory(
 /******************************************/
 /* GetRightBetaMemory: Retrieves the list */
 /*   of matches from a beta memory.       */
-/******************************************/ 
+/******************************************/
 struct partialMatch *GetRightBetaMemory(
   struct joinNode *theJoin,
   unsigned long hashValue)
   {
    unsigned long betaLocation;
-   
+
    betaLocation = hashValue % theJoin->rightMemory->size;
 
    return theJoin->rightMemory->beta[betaLocation];
   }
-    
+
 /***************************************/
 /* ReturnLeftMemory: Sets the contents */
 /*   of a beta memory to NULL.         */
-/***************************************/ 
+/***************************************/
 void ReturnLeftMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct joinNode *theJoin)
   {
    if (theJoin->leftMemory == NULL) return;
@@ -1094,9 +1111,9 @@ void ReturnLeftMemory(
 /***************************************/
 /* ReturnRightMemory: Sets the contents */
 /*   of a beta memory to NULL.         */
-/***************************************/ 
+/***************************************/
 void ReturnRightMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct joinNode *theJoin)
   {
    if (theJoin->rightMemory == NULL) return;
@@ -1105,7 +1122,7 @@ void ReturnRightMemory(
    rtn_struct(theEnv,betaMemory,theJoin->rightMemory);
    theJoin->rightMemory = NULL;
   }
-  
+
 /****************************************************************/
 /* DestroyBetaMemory: Destroys the contents of a beta memory in */
 /*   preperation for the deallocation of a join. Destroying is  */
@@ -1115,28 +1132,28 @@ void ReturnRightMemory(
 /*   deleted).                                                  */
 /****************************************************************/
 void DestroyBetaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct joinNode *theJoin,
   int side)
-  {  
+  {
    unsigned long i;
-       
+
    if (side == LHS)
      {
       if (theJoin->leftMemory == NULL) return;
-   
+
       for (i = 0; i < theJoin->leftMemory->size; i++)
         { DestroyAlphaBetaMemory(theEnv,theJoin->leftMemory->beta[i]); }
      }
    else
      {
       if (theJoin->rightMemory == NULL) return;
-   
+
       for (i = 0; i < theJoin->rightMemory->size; i++)
         { DestroyAlphaBetaMemory(theEnv,theJoin->rightMemory->beta[i]); }
      }
   }
-    
+
 /*************************************************************/
 /* FlushBetaMemory: Flushes the contents of a beta memory in */
 /*   preperation for the deallocation of a join. Flushing    */
@@ -1145,12 +1162,12 @@ void DestroyBetaMemory(
 /*   remain active.                                          */
 /*************************************************************/
 void FlushBetaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct joinNode *theJoin,
   int side)
   {
    unsigned long i;
-   
+
    if (side == LHS)
      {
       if (theJoin->leftMemory == NULL) return;
@@ -1166,7 +1183,7 @@ void FlushBetaMemory(
         { FlushAlphaBetaMemory(theEnv,theJoin->rightMemory->beta[i]); }
      }
  }
-  
+
 /***********************/
 /* BetaMemoryNotEmpty: */
 /***********************/
@@ -1176,24 +1193,24 @@ bool BetaMemoryNotEmpty(
    if (theJoin->leftMemory != NULL)
      {
       if (theJoin->leftMemory->count > 0)
-        { return(true); }
+        { return true; }
      }
-     
+
    if (theJoin->rightMemory != NULL)
      {
       if (theJoin->rightMemory->count > 0)
-        { return(true); }
+        { return true; }
      }
-     
-   return(false);
+
+   return false;
   }
-    
+
 /*********************************************/
 /* RemoveAlphaMemoryMatches: Removes matches */
 /*   from an alpha memory.                   */
-/*********************************************/ 
+/*********************************************/
 void RemoveAlphaMemoryMatches(
-  void *theEnv,
+  Environment *theEnv,
   struct patternNodeHeader *theHeader,
   struct partialMatch *theMatch,
   struct alphaMatch *theAlphaMatch)
@@ -1206,7 +1223,7 @@ void RemoveAlphaMemoryMatches(
       hashValue = theAlphaMatch->bucket;
       theAlphaMemory = FindAlphaMemory(theEnv,theHeader,hashValue);
      }
-     
+
    if (theMatch->prevInMemory != NULL)
      { theMatch->prevInMemory->nextInMemory = theMatch->nextInMemory; }
    else
@@ -1232,7 +1249,7 @@ void RemoveAlphaMemoryMatches(
 /* DestroyAlphaMemory: */
 /***********************/
 void DestroyAlphaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct patternNodeHeader *theHeader,
   bool unlink)
   {
@@ -1243,7 +1260,7 @@ void DestroyAlphaMemory(
    while (theAlphaMemory != NULL)
      {
       tempMemory = theAlphaMemory->nextHash;
-      DestroyAlphaBetaMemory(theEnv,theAlphaMemory->alphaMemory); 
+      DestroyAlphaBetaMemory(theEnv,theAlphaMemory->alphaMemory);
       if (unlink)
         { UnlinkAlphaMemoryBucketSiblings(theEnv,theAlphaMemory); }
       rtn_struct(theEnv,alphaMemoryHash,theAlphaMemory);
@@ -1254,11 +1271,11 @@ void DestroyAlphaMemory(
    theHeader->lastHash = NULL;
   }
 
-/*****************************************************************/
-/* FlushAlphaMemory:  */
-/*****************************************************************/
+/*********************/
+/* FlushAlphaMemory: */
+/*********************/
 void FlushAlphaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct patternNodeHeader *theHeader)
   {
    struct alphaMemoryHash *theAlphaMemory, *tempMemory;
@@ -1268,7 +1285,7 @@ void FlushAlphaMemory(
    while (theAlphaMemory != NULL)
      {
       tempMemory = theAlphaMemory->nextHash;
-      FlushAlphaBetaMemory(theEnv,theAlphaMemory->alphaMemory); 
+      FlushAlphaBetaMemory(theEnv,theAlphaMemory->alphaMemory);
       UnlinkAlphaMemoryBucketSiblings(theEnv,theAlphaMemory);
       rtn_struct(theEnv,alphaMemoryHash,theAlphaMemory);
       theAlphaMemory = tempMemory;
@@ -1278,16 +1295,16 @@ void FlushAlphaMemory(
    theHeader->lastHash = NULL;
   }
 
-/*****************************************************************/
-/* FindAlphaMemory:  */
-/*****************************************************************/
+/********************/
+/* FindAlphaMemory: */
+/********************/
 static struct alphaMemoryHash *FindAlphaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct patternNodeHeader *theHeader,
   unsigned long hashValue)
   {
    struct alphaMemoryHash *theAlphaMemory;
-      
+
    theAlphaMemory = DefruleData(theEnv)->AlphaMemoryTable[hashValue];
 
    if (theAlphaMemory != NULL)
@@ -1295,13 +1312,13 @@ static struct alphaMemoryHash *FindAlphaMemory(
       while ((theAlphaMemory != NULL) && (theAlphaMemory->owner != theHeader))
         { theAlphaMemory = theAlphaMemory->next; }
      }
-     
-   return theAlphaMemory;
-  }   
 
-/*****************************************************************/
-/* AlphaMemoryHashValue:  */
-/*****************************************************************/
+   return theAlphaMemory;
+  }
+
+/*************************/
+/* AlphaMemoryHashValue: */
+/*************************/
 static unsigned long AlphaMemoryHashValue(
   struct patternNodeHeader *theHeader,
   unsigned long hashOffset)
@@ -1312,74 +1329,74 @@ static unsigned long AlphaMemoryHashValue(
       void *vv;
       unsigned uv;
      } fis;
-        
+
    fis.uv = 0;
    fis.vv = theHeader;
-   
+
    hashValue = fis.uv + hashOffset;
    hashValue = hashValue % ALPHA_MEMORY_HASH_SIZE;
-   
+
    return hashValue;
   }
-  
-/*****************************************************************/
-/* UnlinkAlphaMemory:  */
-/*****************************************************************/
+
+/**********************/
+/* UnlinkAlphaMemory: */
+/**********************/
 static void UnlinkAlphaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct patternNodeHeader *theHeader,
   struct alphaMemoryHash *theAlphaMemory)
   {
    /*======================*/
    /* Unlink the siblings. */
    /*======================*/
-    
+
    UnlinkAlphaMemoryBucketSiblings(theEnv,theAlphaMemory);
-      
+
    /*================================*/
    /* Update firstHash and lastHash. */
    /*================================*/
-   
+
    if (theAlphaMemory == theHeader->firstHash)
      { theHeader->firstHash = theAlphaMemory->nextHash; }
-     
+
    if (theAlphaMemory == theHeader->lastHash)
      { theHeader->lastHash = theAlphaMemory->prevHash; }
-        
+
    /*===============================*/
    /* Update nextHash and prevHash. */
    /*===============================*/
 
    if (theAlphaMemory->prevHash != NULL)
      { theAlphaMemory->prevHash->nextHash = theAlphaMemory->nextHash; }
-     
+
    if (theAlphaMemory->nextHash != NULL)
      { theAlphaMemory->nextHash->prevHash = theAlphaMemory->prevHash; }
-              
-   rtn_struct(theEnv,alphaMemoryHash,theAlphaMemory);
-  }   
 
-/*****************************************************************/
-/* UnlinkAlphaMemoryBucketSiblings:  */
-/*****************************************************************/
+   rtn_struct(theEnv,alphaMemoryHash,theAlphaMemory);
+  }
+
+/************************************/
+/* UnlinkAlphaMemoryBucketSiblings: */
+/************************************/
 static void UnlinkAlphaMemoryBucketSiblings(
-  void *theEnv,
+  Environment *theEnv,
   struct alphaMemoryHash *theAlphaMemory)
   {
    if (theAlphaMemory->prev == NULL)
      { DefruleData(theEnv)->AlphaMemoryTable[theAlphaMemory->bucket] = theAlphaMemory->next; }
    else
      { theAlphaMemory->prev->next = theAlphaMemory->next; }
-        
+
    if (theAlphaMemory->next != NULL)
      { theAlphaMemory->next->prev = theAlphaMemory->prev; }
-  }   
+  }
 
-/********************************************/
-/* ComputeRightHashValue:       */
-/********************************************/ 
+/**************************/
+/* ComputeRightHashValue: */
+/**************************/
 unsigned long ComputeRightHashValue(
-  void *theEnv,
+  Environment *theEnv,
   struct patternNodeHeader *theHeader)
   {
    struct expr *tempExpr;
@@ -1390,55 +1407,55 @@ unsigned long ComputeRightHashValue(
       void *vv;
       unsigned long liv;
      } fis;
-      
+
    if (theHeader->rightHash == NULL)
      { return hashValue; }
-     
-   for (tempExpr = theHeader->rightHash; 
-        tempExpr != NULL; 
+
+   for (tempExpr = theHeader->rightHash;
+        tempExpr != NULL;
         tempExpr = tempExpr->nextArg, multiplier = multiplier * 509)
       {
-       DATA_OBJECT theResult;
+       UDFValue theResult;
        struct expr *oldArgument;
-        
+
        oldArgument = EvaluationData(theEnv)->CurrentExpression;
        EvaluationData(theEnv)->CurrentExpression = tempExpr;
        (*EvaluationData(theEnv)->PrimitivesArray[tempExpr->type]->evaluateFunction)(theEnv,tempExpr->value,&theResult);
        EvaluationData(theEnv)->CurrentExpression = oldArgument;
-        
-       switch (theResult.type)
+
+       switch (theResult.header->type)
          {
-          case STRING:
-          case SYMBOL:
-          case INSTANCE_NAME:
-            hashValue += (((SYMBOL_HN *) theResult.value)->bucket * multiplier);
+          case STRING_TYPE:
+          case SYMBOL_TYPE:
+          case INSTANCE_NAME_TYPE:
+            hashValue += (theResult.lexemeValue->bucket * multiplier);
             break;
-             
-          case INTEGER:
-            hashValue += (((INTEGER_HN *) theResult.value)->bucket * multiplier);
+
+          case INTEGER_TYPE:
+            hashValue += (theResult.integerValue->bucket * multiplier);
             break;
-             
-          case FLOAT:
-            hashValue += (((FLOAT_HN *) theResult.value)->bucket * multiplier);
+
+          case FLOAT_TYPE:
+            hashValue += (theResult.floatValue->bucket * multiplier);
             break;
-            
-          case FACT_ADDRESS:
+
+          case FACT_ADDRESS_TYPE:
 #if OBJECT_SYSTEM
-          case INSTANCE_ADDRESS:
+          case INSTANCE_ADDRESS_TYPE:
 #endif
             fis.liv = 0;
             fis.vv = theResult.value;
-            hashValue += (unsigned long) (fis.liv * multiplier);
+            hashValue += fis.liv * multiplier;
             break;
 
-          case EXTERNAL_ADDRESS:
+          case EXTERNAL_ADDRESS_TYPE:
             fis.liv = 0;
-            fis.vv = ValueToExternalAddress(theResult.value);
-            hashValue += (unsigned long) (fis.liv * multiplier);
+            fis.vv = theResult.externalAddressValue->contents;
+            hashValue += fis.liv * multiplier;
             break;
           }
        }
-       
+
      return hashValue;
     }
 
@@ -1446,53 +1463,53 @@ unsigned long ComputeRightHashValue(
 /* ResizeBetaMemory: */
 /*********************/
 void ResizeBetaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct betaMemory *theMemory)
   {
    struct partialMatch **oldArray, **lastAdd, *thePM, *nextPM;
    unsigned long i, oldSize, betaLocation;
-   
+
    oldSize = theMemory->size;
    oldArray = theMemory->beta;
-   
+
    theMemory->size = oldSize * 11;
    theMemory->beta = (struct partialMatch **) genalloc(theEnv,sizeof(struct partialMatch *) * theMemory->size);
-     
+
    lastAdd = (struct partialMatch **) genalloc(theEnv,sizeof(struct partialMatch *) * theMemory->size);
    memset(theMemory->beta,0,sizeof(struct partialMatch *) * theMemory->size);
    memset(lastAdd,0,sizeof(struct partialMatch *) * theMemory->size);
-   
+
    for (i = 0; i < oldSize; i++)
      {
       thePM = oldArray[i];
       while (thePM != NULL)
         {
          nextPM = thePM->nextInMemory;
-         
+
          thePM->nextInMemory = NULL;
-         
+
          betaLocation = thePM->hashValue % theMemory->size;
          thePM->prevInMemory = lastAdd[betaLocation];
-         
+
          if (lastAdd[betaLocation] != NULL)
            { lastAdd[betaLocation]->nextInMemory = thePM; }
          else
            { theMemory->beta[betaLocation] = thePM; }
-           
+
          lastAdd[betaLocation] = thePM;
-         
+
          thePM = nextPM;
-        } 
+        }
      }
-  
+
    if (theMemory->last != NULL)
-     { 
+     {
       genfree(theEnv,theMemory->last,sizeof(struct partialMatch *) * oldSize);
       theMemory->last = lastAdd;
      }
    else
      { genfree(theEnv,lastAdd,sizeof(struct partialMatch *) * theMemory->size); }
-     
+
    genfree(theEnv,oldArray,sizeof(struct partialMatch *) * oldSize);
   }
 
@@ -1500,7 +1517,7 @@ void ResizeBetaMemory(
 /* ResetBetaMemory: */
 /********************/
 static void ResetBetaMemory(
-  void *theEnv,
+  Environment *theEnv,
   struct betaMemory *theMemory)
   {
    struct partialMatch **oldArray, **lastAdd;
@@ -1512,12 +1529,12 @@ static void ResetBetaMemory(
 
    oldSize = theMemory->size;
    oldArray = theMemory->beta;
-   
+
    theMemory->size = INITIAL_BETA_HASH_SIZE;
    theMemory->beta = (struct partialMatch **) genalloc(theEnv,sizeof(struct partialMatch *) * theMemory->size);
    memset(theMemory->beta,0,sizeof(struct partialMatch *) * theMemory->size);
    genfree(theEnv,oldArray,sizeof(struct partialMatch *) * oldSize);
-     
+
    if (theMemory->last != NULL)
      {
       lastAdd = (struct partialMatch **) genalloc(theEnv,sizeof(struct partialMatch *) * theMemory->size);
@@ -1531,7 +1548,7 @@ static void ResetBetaMemory(
 /* PrintBetaMemory: */
 /********************/
 unsigned long PrintBetaMemory(
-  void *theEnv,
+  Environment *theEnv,
   const char *logName,
   struct betaMemory *theMemory,
   bool indentFirst,
@@ -1541,7 +1558,7 @@ unsigned long PrintBetaMemory(
    struct partialMatch *listOfMatches;
    unsigned long b, count = 0;
 
-   if (EnvGetHaltExecution(theEnv) == true)
+   if (GetHaltExecution(theEnv) == true)
      { return count; }
 
    for (b = 0; b < theMemory->size; b++)
@@ -1555,7 +1572,7 @@ unsigned long PrintBetaMemory(
          /* to stop the display of partial matches. */
          /*=========================================*/
 
-         if (EnvGetHaltExecution(theEnv) == true)
+         if (GetHaltExecution(theEnv) == true)
            { return count; }
 
          /*=========================================================*/
@@ -1563,11 +1580,11 @@ unsigned long PrintBetaMemory(
          /* Subsequent partial matches will always be indented with */
          /* the indentation string.                                 */
          /*=========================================================*/
-         
+
          if (output == VERBOSE)
            {
             if (indentFirst)
-              { EnvPrintRouter(theEnv,logName,indentString); }
+              { WriteString(theEnv,logName,indentString); }
             else
               { indentFirst = true; }
            }
@@ -1575,23 +1592,23 @@ unsigned long PrintBetaMemory(
          /*==========================*/
          /* Print the partial match. */
          /*==========================*/
-         
+
          if (output == VERBOSE)
            {
             PrintPartialMatch(theEnv,logName,listOfMatches);
-            EnvPrintRouter(theEnv,logName,"\n");
+            WriteString(theEnv,logName,"\n");
            }
-           
+
          count++;
-    
+
          /*============================*/
          /* Move on to the next match. */
          /*============================*/
-         
+
          listOfMatches = listOfMatches->nextInMemory;
         }
      }
-     
+
    return count;
   }
 
@@ -1604,14 +1621,14 @@ unsigned long PrintBetaMemory(
 /*   structures currently in use.                            */
 /*************************************************************/
 void TagRuleNetwork(
-  void *theEnv,
-  long int *moduleCount,
-  long int *ruleCount,
-  long int *joinCount,
-  long int *linkCount)
+  Environment *theEnv,
+  unsigned long *moduleCount,
+  unsigned long *ruleCount,
+  unsigned long *joinCount,
+  unsigned long *linkCount)
   {
-   struct defmodule *modulePtr;
-   struct defrule *rulePtr, *disjunctPtr;
+   Defmodule *modulePtr;
+   Defrule *rulePtr, *disjunctPtr;
    struct joinLink *theLink;
 
    *moduleCount = 0;
@@ -1624,9 +1641,9 @@ void TagRuleNetwork(
    for (theLink = DefruleData(theEnv)->LeftPrimeJoins;
         theLink != NULL;
         theLink = theLink->next)
-     { 
+     {
       theLink->bsaveID = *linkCount;
-      (*linkCount)++; 
+      (*linkCount)++;
      }
 
    for (theLink = DefruleData(theEnv)->RightPrimeJoins;
@@ -1636,38 +1653,38 @@ void TagRuleNetwork(
       theLink->bsaveID = *linkCount;
       (*linkCount)++;
      }
-     
+
    /*===========================*/
    /* Loop through each module. */
    /*===========================*/
 
-   for (modulePtr = (struct defmodule *) EnvGetNextDefmodule(theEnv,NULL);
+   for (modulePtr = GetNextDefmodule(theEnv,NULL);
         modulePtr != NULL;
-        modulePtr = (struct defmodule *) EnvGetNextDefmodule(theEnv,modulePtr))
+        modulePtr = GetNextDefmodule(theEnv,modulePtr))
      {
       (*moduleCount)++;
-      EnvSetCurrentModule(theEnv,(void *) modulePtr);
+      SetCurrentModule(theEnv,modulePtr);
 
       /*=========================*/
       /* Loop through each rule. */
       /*=========================*/
 
-      rulePtr = (struct defrule *) EnvGetNextDefrule(theEnv,NULL);
+      rulePtr = GetNextDefrule(theEnv,NULL);
 
       while (rulePtr != NULL)
         {
          /*=============================*/
          /* Loop through each disjunct. */
          /*=============================*/
-         
+
          for (disjunctPtr = rulePtr; disjunctPtr != NULL; disjunctPtr = disjunctPtr->disjunct)
            {
             disjunctPtr->header.bsaveID = *ruleCount;
             (*ruleCount)++;
             TagNetworkTraverseJoins(theEnv,joinCount,linkCount,disjunctPtr->lastJoin);
            }
-            
-         rulePtr = (struct defrule *) EnvGetNextDefrule(theEnv,rulePtr);
+
+         rulePtr = GetNextDefrule(theEnv,rulePtr);
         }
      }
   }
@@ -1676,16 +1693,16 @@ void TagRuleNetwork(
 /* TagNetworkTraverseJoins: Traverses the join network for a rule. */
 /*******************************************************************/
 static void TagNetworkTraverseJoins(
-  void *theEnv,
-  long int *joinCount,
-  long int *linkCount,
+  Environment *theEnv,
+  unsigned long *joinCount,
+  unsigned long *linkCount,
   struct joinNode *joinPtr)
   {
    struct joinLink *theLink;
    for (;
         joinPtr != NULL;
         joinPtr = joinPtr->lastLevel)
-     { 
+     {
       if (joinPtr->marked == 0)
         {
          joinPtr->marked = 1;
@@ -1694,12 +1711,12 @@ static void TagNetworkTraverseJoins(
          for (theLink = joinPtr->nextLinks;
               theLink != NULL;
               theLink = theLink->next)
-           { 
+           {
             theLink->bsaveID = *linkCount;
-            (*linkCount)++; 
+            (*linkCount)++;
            }
         }
-      
+
       if (joinPtr->joinFromTheRight)
         { TagNetworkTraverseJoins(theEnv,joinCount,linkCount,(struct joinNode *) joinPtr->rightSideEntryStructure); }
      }

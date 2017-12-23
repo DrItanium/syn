@@ -1,9 +1,9 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/20/16             */
+   /*            CLIPS Version 6.40  11/07/17             */
    /*                                                     */
-   /*                  CLASS PARSER MODULE                */
+   /*                 CLASS PARSER MODULE                 */
    /*******************************************************/
 
 /**************************************************************/
@@ -28,8 +28,17 @@
 /*            Added const qualifiers to remove C++            */
 /*            deprecation warnings.                           */
 /*                                                            */
-/*      6.40: Static constraint checking is always enabled.   */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Static constraint checking is always enabled.   */
 /*                                                            */
+/*            UDF redesign.                                  */
+/*                                                           */
 /**************************************************************/
 
 /* =========================================
@@ -52,6 +61,7 @@
 #include "envrnmnt.h"
 #include "insfun.h"
 #include "memalloc.h"
+#include "pprint.h"
 #include "prntutil.h"
 #include "router.h"
 #include "scanner.h"
@@ -112,21 +122,19 @@
 #define CREATE_ACCESSOR_BIT   9
 #define OVERRIDE_MSG_BIT      10
 
-/* =========================================
-   *****************************************
-      INTERNALLY VISIBLE FUNCTION HEADERS
-   =========================================
-   ***************************************** */
+/***************************************/
+/* LOCAL INTERNAL FUNCTION DEFINITIONS */
+/***************************************/
 
-static SLOT_DESC *NewSlot(void *,SYMBOL_HN *);
-static TEMP_SLOT_LINK *InsertSlot(void *,TEMP_SLOT_LINK *,SLOT_DESC *);
-static int ParseSimpleFacet(void *,const char *,char*,const char *,int,const char *,
-                            const char *,const char *,const char *,SYMBOL_HN **);
-static bool ParseDefaultFacet(void *,const char *,char *,SLOT_DESC *);
-static void BuildCompositeFacets(void *,SLOT_DESC *,PACKED_CLASS_LINKS *,const char *,
-                                 CONSTRAINT_PARSE_RECORD *);
-static bool CheckForFacetConflicts(void *,SLOT_DESC *,CONSTRAINT_PARSE_RECORD *);
-static bool EvaluateSlotDefaultValue(void *,SLOT_DESC *,const char *);
+   static SlotDescriptor          *NewSlot(Environment *,CLIPSLexeme *);
+   static TEMP_SLOT_LINK          *InsertSlot(Environment *,const char *,TEMP_SLOT_LINK *,SlotDescriptor *);
+   static int                      ParseSimpleFacet(Environment *,const char *,SlotDescriptor *,char*,const char *,int,const char *,
+                                                    const char *,const char *,const char *,CLIPSLexeme **);
+   static bool                    ParseDefaultFacet(Environment *,const char *,char *,SlotDescriptor *);
+   static void                    BuildCompositeFacets(Environment *,SlotDescriptor *,PACKED_CLASS_LINKS *,const char *,
+                                                       CONSTRAINT_PARSE_RECORD *);
+   static bool                    CheckForFacetConflicts(Environment *,SlotDescriptor *,CONSTRAINT_PARSE_RECORD *);
+   static bool                    EvaluateSlotDefaultValue(Environment *,SlotDescriptor *,const char *);
 
 /* =========================================
    *****************************************
@@ -154,18 +162,19 @@ static bool EvaluateSlotDefaultValue(void *,SLOT_DESC *,const char *);
   NOTES        : Assumes "(slot" has already been parsed.
  ************************************************************/
 TEMP_SLOT_LINK *ParseSlot(
-  void *theEnv,
+  Environment *theEnv,
   const char *readSource,
+  const char *className,
   TEMP_SLOT_LINK *slist,
   PACKED_CLASS_LINKS *preclist,
   bool multiSlot,
   bool fieldSpecified)
   {
-   SLOT_DESC *slot;
+   SlotDescriptor *slot;
    CONSTRAINT_PARSE_RECORD parsedConstraint;
    char specbits[2];
    int rtnCode;
-   SYMBOL_HN *newOverrideMsg;
+   CLIPSLexeme *newOverrideMsg;
 
    /* ===============================================================
       Bits in specbits are when slot qualifiers are specified so that
@@ -185,23 +194,23 @@ TEMP_SLOT_LINK *ParseSlot(
    SavePPBuffer(theEnv," ");
    specbits[0] = specbits[1] = '\0';
    GetToken(theEnv,readSource,&DefclassData(theEnv)->ObjectParseToken);
-   if (GetType(DefclassData(theEnv)->ObjectParseToken) != SYMBOL)
+   if (DefclassData(theEnv)->ObjectParseToken.tknType != SYMBOL_TOKEN)
      {
       DeleteSlots(theEnv,slist);
       SyntaxErrorMessage(theEnv,"defclass slot");
-      return(NULL);
+      return NULL;
      }
    if ((DefclassData(theEnv)->ObjectParseToken.value == (void *) DefclassData(theEnv)->ISA_SYMBOL) ||
        (DefclassData(theEnv)->ObjectParseToken.value == (void *) DefclassData(theEnv)->NAME_SYMBOL))
      {
       DeleteSlots(theEnv,slist);
       SyntaxErrorMessage(theEnv,"defclass slot");
-      return(NULL);
+      return NULL;
      }
-   slot = NewSlot(theEnv,(SYMBOL_HN *) GetValue(DefclassData(theEnv)->ObjectParseToken));
-   slist = InsertSlot(theEnv,slist,slot);
+   slot = NewSlot(theEnv,DefclassData(theEnv)->ObjectParseToken.lexemeValue);
+   slist = InsertSlot(theEnv,className,slist,slot);
    if (slist == NULL)
-     return(NULL);
+     return NULL;
    if (multiSlot)
      slot->multiple = true;
    if (fieldSpecified)
@@ -209,31 +218,31 @@ TEMP_SLOT_LINK *ParseSlot(
    GetToken(theEnv,readSource,&DefclassData(theEnv)->ObjectParseToken);
    IncrementIndentDepth(theEnv,3);
    InitializeConstraintParseRecord(&parsedConstraint);
-   while (GetType(DefclassData(theEnv)->ObjectParseToken) == LPAREN)
+   while (DefclassData(theEnv)->ObjectParseToken.tknType == LEFT_PARENTHESIS_TOKEN)
      {
       PPBackup(theEnv);
       PPCRAndIndent(theEnv);
       SavePPBuffer(theEnv,"(");
       GetToken(theEnv,readSource,&DefclassData(theEnv)->ObjectParseToken);
-      if (GetType(DefclassData(theEnv)->ObjectParseToken) != SYMBOL)
+      if (DefclassData(theEnv)->ObjectParseToken.tknType != SYMBOL_TOKEN)
         {
          SyntaxErrorMessage(theEnv,"defclass slot");
          goto ParseSlotError;
         }
-      else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),DEFAULT_FACET) == 0)
+      else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,DEFAULT_FACET) == 0)
         {
          if (ParseDefaultFacet(theEnv,readSource,specbits,slot) == false)
            goto ParseSlotError;
         }
-      else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),DYNAMIC_FACET) == 0)
+      else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,DYNAMIC_FACET) == 0)
         {
          SetBitMap(specbits,DEFAULT_DYNAMIC_BIT);
          if (ParseDefaultFacet(theEnv,readSource,specbits,slot) == false)
            goto ParseSlotError;
         }
-      else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),ACCESS_FACET) == 0)
+      else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,ACCESS_FACET) == 0)
         {
-         rtnCode = ParseSimpleFacet(theEnv,readSource,specbits,ACCESS_FACET,ACCESS_BIT,
+         rtnCode = ParseSimpleFacet(theEnv,readSource,slot,specbits,ACCESS_FACET,ACCESS_BIT,
                                     SLOT_RDWRT_RLN,SLOT_RDONLY_RLN,SLOT_INIT_RLN,
                                     NULL,NULL);
          if (rtnCode == -1)
@@ -243,51 +252,51 @@ TEMP_SLOT_LINK *ParseSlot(
          else if (rtnCode == 2)
            slot->initializeOnly = 1;
         }
-      else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),STORAGE_FACET) == 0)
+      else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,STORAGE_FACET) == 0)
         {
-         rtnCode = ParseSimpleFacet(theEnv,readSource,specbits,STORAGE_FACET,STORAGE_BIT,
+         rtnCode = ParseSimpleFacet(theEnv,readSource,slot,specbits,STORAGE_FACET,STORAGE_BIT,
                                     SLOT_LOCAL_RLN,SLOT_SHARE_RLN,NULL,NULL,NULL);
          if (rtnCode == -1)
            goto ParseSlotError;
-         slot->shared = rtnCode;
+         slot->shared = (rtnCode == 0) ? false : true;
         }
-      else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),PROPAGATION_FACET) == 0)
+      else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,PROPAGATION_FACET) == 0)
         {
-         rtnCode = ParseSimpleFacet(theEnv,readSource,specbits,PROPAGATION_FACET,PROPAGATION_BIT,
+         rtnCode = ParseSimpleFacet(theEnv,readSource,slot,specbits,PROPAGATION_FACET,PROPAGATION_BIT,
                                     SLOT_INH_RLN,SLOT_NO_INH_RLN,NULL,NULL,NULL);
          if (rtnCode == -1)
            goto ParseSlotError;
-         slot->noInherit = rtnCode;
+         slot->noInherit = (rtnCode == 0) ? false : true;
         }
-      else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),SOURCE_FACET) == 0)
+      else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,SOURCE_FACET) == 0)
         {
-         rtnCode = ParseSimpleFacet(theEnv,readSource,specbits,SOURCE_FACET,SOURCE_BIT,
+         rtnCode = ParseSimpleFacet(theEnv,readSource,slot,specbits,SOURCE_FACET,SOURCE_BIT,
                                     SLOT_EXCLUSIVE_RLN,SLOT_COMPOSITE_RLN,NULL,NULL,NULL);
          if (rtnCode == -1)
            goto ParseSlotError;
-         slot->composite = rtnCode;
+         slot->composite = (rtnCode == 0) ? false : true;
         }
 #if DEFRULE_CONSTRUCT
-      else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),MATCH_FACET) == 0)
+      else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,MATCH_FACET) == 0)
         {
-         rtnCode = ParseSimpleFacet(theEnv,readSource,specbits,MATCH_FACET,MATCH_BIT,
+         rtnCode = ParseSimpleFacet(theEnv,readSource,slot,specbits,MATCH_FACET,MATCH_BIT,
                                     SLOT_NONREACTIVE_RLN,SLOT_REACTIVE_RLN,NULL,NULL,NULL);
          if (rtnCode == -1)
            goto ParseSlotError;
-         slot->reactive = rtnCode;
+         slot->reactive = (rtnCode == 0) ? false : true;
         }
 #endif
-      else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),VISIBILITY_FACET) == 0)
+      else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,VISIBILITY_FACET) == 0)
         {
-         rtnCode = ParseSimpleFacet(theEnv,readSource,specbits,VISIBILITY_FACET,VISIBILITY_BIT,
+         rtnCode = ParseSimpleFacet(theEnv,readSource,slot,specbits,VISIBILITY_FACET,VISIBILITY_BIT,
                                     SLOT_PRIVATE_RLN,SLOT_PUBLIC_RLN,NULL,NULL,NULL);
          if (rtnCode == -1)
            goto ParseSlotError;
-         slot->publicVisibility = rtnCode;
+         slot->publicVisibility = (rtnCode == 0) ? false : true;
         }
-      else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),CREATE_ACCESSOR_FACET) == 0)
+      else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,CREATE_ACCESSOR_FACET) == 0)
         {
-         rtnCode = ParseSimpleFacet(theEnv,readSource,specbits,CREATE_ACCESSOR_FACET,
+         rtnCode = ParseSimpleFacet(theEnv,readSource,slot,specbits,CREATE_ACCESSOR_FACET,
                                     CREATE_ACCESSOR_BIT,
                                     SLOT_READ_RLN,SLOT_WRITE_RLN,SLOT_RDWRT_RLN,
                                     SLOT_NONE_RLN,NULL);
@@ -298,23 +307,23 @@ TEMP_SLOT_LINK *ParseSlot(
          if ((rtnCode == 1) || (rtnCode == 2))
            slot->createWriteAccessor = true;
         }
-      else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),OVERRIDE_MSG_FACET) == 0)
+      else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,OVERRIDE_MSG_FACET) == 0)
         {
-         rtnCode = ParseSimpleFacet(theEnv,readSource,specbits,OVERRIDE_MSG_FACET,OVERRIDE_MSG_BIT,
+         rtnCode = ParseSimpleFacet(theEnv,readSource,slot,specbits,OVERRIDE_MSG_FACET,OVERRIDE_MSG_BIT,
                                     NULL,NULL,NULL,SLOT_DEFAULT_RLN,&newOverrideMsg);
          if (rtnCode == -1)
            goto ParseSlotError;
          if (rtnCode == 4)
            {
-            DecrementSymbolCount(theEnv,slot->overrideMessage);
+            ReleaseLexeme(theEnv,slot->overrideMessage);
             slot->overrideMessage = newOverrideMsg;
-            IncrementSymbolCount(slot->overrideMessage);
+            IncrementLexemeCount(slot->overrideMessage);
            }
          slot->overrideMessageSpecified = true;
         }
-      else if (StandardConstraint(DOToString(DefclassData(theEnv)->ObjectParseToken)))
+      else if (StandardConstraint(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents))
         {
-         if (ParseStandardConstraint(theEnv,readSource,DOToString(DefclassData(theEnv)->ObjectParseToken),
+         if (ParseStandardConstraint(theEnv,readSource,DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,
                 slot->constraint,&parsedConstraint,true) == false)
            goto ParseSlotError;
         }
@@ -325,23 +334,23 @@ TEMP_SLOT_LINK *ParseSlot(
         }
       GetToken(theEnv,readSource,&DefclassData(theEnv)->ObjectParseToken);
      }
-   if (GetType(DefclassData(theEnv)->ObjectParseToken) != RPAREN)
+   if (DefclassData(theEnv)->ObjectParseToken.tknType != RIGHT_PARENTHESIS_TOKEN)
      {
       SyntaxErrorMessage(theEnv,"defclass slot");
       goto ParseSlotError;
      }
-     
-   if (DefclassData(theEnv)->ClassDefaultsMode == CONVENIENCE_MODE)
+
+   if (DefclassData(theEnv)->ClassDefaultsModeValue == CONVENIENCE_MODE)
      {
       if (! TestBitMap(specbits,CREATE_ACCESSOR_BIT))
         {
          slot->createReadAccessor = true;
-      
+
          if (! slot->noWrite)
            { slot->createWriteAccessor = true; }
         }
      }
-     
+
    if (slot->composite)
      BuildCompositeFacets(theEnv,slot,preclist,specbits,&parsedConstraint);
    if (CheckForFacetConflicts(theEnv,slot,&parsedConstraint) == false)
@@ -360,7 +369,7 @@ TEMP_SLOT_LINK *ParseSlot(
 ParseSlotError:
    DecrementIndentDepth(theEnv,3);
    DeleteSlots(theEnv,slist);
-   return(NULL);
+   return NULL;
   }
 
 /***************************************************
@@ -373,7 +382,7 @@ ParseSlotError:
   NOTES        : None
  ***************************************************/
 void DeleteSlots(
-  void *theEnv,
+  Environment *theEnv,
   TEMP_SLOT_LINK *slots)
   {
    TEMP_SLOT_LINK *stmp;
@@ -383,17 +392,17 @@ void DeleteSlots(
       stmp = slots;
       slots = slots->nxt;
       DeleteSlotName(theEnv,stmp->desc->slotName);
-      DecrementSymbolCount(theEnv,stmp->desc->overrideMessage);
+      ReleaseLexeme(theEnv,stmp->desc->overrideMessage);
       RemoveConstraint(theEnv,stmp->desc->constraint);
       if (stmp->desc->dynamicDefault == 1)
         {
-         ExpressionDeinstall(theEnv,(EXPRESSION *) stmp->desc->defaultValue);
-         ReturnPackedExpression(theEnv,(EXPRESSION *) stmp->desc->defaultValue);
+         ExpressionDeinstall(theEnv,(Expression *) stmp->desc->defaultValue);
+         ReturnPackedExpression(theEnv,(Expression *) stmp->desc->defaultValue);
         }
       else if (stmp->desc->defaultValue != NULL)
         {
-         ValueDeinstall(theEnv,(DATA_OBJECT *) stmp->desc->defaultValue);
-         rtn_struct(theEnv,dataObject,stmp->desc->defaultValue);
+         ReleaseUDFV(theEnv,(UDFValue *) stmp->desc->defaultValue);
+         rtn_struct(theEnv,udfValue,stmp->desc->defaultValue);
         }
       rtn_struct(theEnv,slotDescriptor,stmp->desc);
       rtn_struct(theEnv,tempSlotLink,stmp);
@@ -415,11 +424,11 @@ void DeleteSlots(
   NOTES        : Also adds symbols of the form get-<name> and
                    put-<name> for slot accessors
  **************************************************************/
-static SLOT_DESC *NewSlot(
-  void *theEnv,
-  SYMBOL_HN *name)
+static SlotDescriptor *NewSlot(
+  Environment *theEnv,
+  CLIPSLexeme *name)
   {
-   SLOT_DESC *slot;
+   SlotDescriptor *slot;
 
    slot = get_struct(theEnv,slotDescriptor);
    slot->dynamicDefault = 1;
@@ -444,7 +453,7 @@ static SLOT_DESC *NewSlot(
    slot->constraint = GetConstraintRecord(theEnv);
    slot->slotName = AddSlotName(theEnv,name,0,false);
    slot->overrideMessage = slot->slotName->putHandlerName;
-   IncrementSymbolCount(slot->overrideMessage);
+   IncrementLexemeCount(slot->overrideMessage);
    return(slot);
   }
 
@@ -460,9 +469,10 @@ static SLOT_DESC *NewSlot(
   NOTES        : None
  **********************************************************/
 static TEMP_SLOT_LINK *InsertSlot(
-  void *theEnv,
+  Environment *theEnv,
+  const char *className,
   TEMP_SLOT_LINK *slist,
-  SLOT_DESC *slot)
+  SlotDescriptor *slot)
   {
    TEMP_SLOT_LINK *stmp,*sprv,*tmp;
 
@@ -482,8 +492,12 @@ static TEMP_SLOT_LINK *InsertSlot(
             tmp->nxt = slist;
             DeleteSlots(theEnv,tmp);
             PrintErrorID(theEnv,"CLSLTPSR",1,false);
-            EnvPrintRouter(theEnv,WERROR,"Duplicate slots not allowed.\n");
-            return(NULL);
+            WriteString(theEnv,STDERR,"The '");
+            WriteString(theEnv,STDERR,slot->slotName->name->contents);
+            WriteString(theEnv,STDERR,"' slot for class '");
+            WriteString(theEnv,STDERR,className);
+            WriteString(theEnv,STDERR,"' is already specified.\n");
+            return NULL;
            }
          sprv = stmp;
          stmp = stmp->nxt;
@@ -527,8 +541,9 @@ static TEMP_SLOT_LINK *InsertSlot(
   NOTES        : None
  *****************************************************************/
 static int ParseSimpleFacet(
-  void *theEnv,
+  Environment *theEnv,
   const char *readSource,
+  SlotDescriptor *slot,
   char *specbits,
   const char *facetName,
   int testBit,
@@ -536,16 +551,19 @@ static int ParseSimpleFacet(
   const char *setRelation,
   const char *alternateRelation,
   const char *varRelation,
-  SYMBOL_HN **facetSymbolicValue)
+  CLIPSLexeme **facetSymbolicValue)
   {
    int rtnCode;
 
    if (TestBitMap(specbits,testBit))
      {
       PrintErrorID(theEnv,"CLSLTPSR",2,false);
-      EnvPrintRouter(theEnv,WERROR,facetName);
-      EnvPrintRouter(theEnv,WERROR," facet already specified.\n");
-      return(-1);
+      WriteString(theEnv,STDERR,"The '");
+      WriteString(theEnv,STDERR,facetName);
+      WriteString(theEnv,STDERR,"' facet for slot '");
+      WriteString(theEnv,STDERR,slot->slotName->name->contents);
+      WriteString(theEnv,STDERR,"' is already specified.\n");
+      return -1;
      }
    SetBitMap(specbits,testBit);
    SavePPBuffer(theEnv," ");
@@ -554,17 +572,17 @@ static int ParseSimpleFacet(
    /* ===============================
       Check for the variable relation
       =============================== */
-   if (DefclassData(theEnv)->ObjectParseToken.type == SF_VARIABLE)
+   if (DefclassData(theEnv)->ObjectParseToken.tknType == SF_VARIABLE_TOKEN)
      {
       if ((varRelation == NULL) ? false :
-          (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),varRelation) == 0))
+          (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,varRelation) == 0))
         rtnCode = 3;
       else
         goto ParseSimpleFacetError;
      }
    else
      {
-      if (DefclassData(theEnv)->ObjectParseToken.type != SYMBOL)
+      if (DefclassData(theEnv)->ObjectParseToken.tknType != SYMBOL_TOKEN)
         goto ParseSimpleFacetError;
 
       /* ===================================================
@@ -573,12 +591,12 @@ static int ParseSimpleFacet(
          =================================================== */
       if (facetSymbolicValue == NULL)
         {
-         if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),clearRelation) == 0)
+         if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,clearRelation) == 0)
            rtnCode = 0;
-         else if (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),setRelation) == 0)
+         else if (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,setRelation) == 0)
            rtnCode = 1;
          else if ((alternateRelation == NULL) ? false :
-                  (strcmp(DOToString(DefclassData(theEnv)->ObjectParseToken),alternateRelation) == 0))
+                  (strcmp(DefclassData(theEnv)->ObjectParseToken.lexemeValue->contents,alternateRelation) == 0))
            rtnCode = 2;
          else
            goto ParseSimpleFacetError;
@@ -586,11 +604,11 @@ static int ParseSimpleFacet(
       else
         {
          rtnCode = 4;
-         *facetSymbolicValue = (SYMBOL_HN *) DefclassData(theEnv)->ObjectParseToken.value;
+         *facetSymbolicValue = DefclassData(theEnv)->ObjectParseToken.lexemeValue;
         }
      }
    GetToken(theEnv,readSource,&DefclassData(theEnv)->ObjectParseToken);
-   if (DefclassData(theEnv)->ObjectParseToken.type != RPAREN)
+   if (DefclassData(theEnv)->ObjectParseToken.tknType != RIGHT_PARENTHESIS_TOKEN)
      goto ParseSimpleFacetError;
    return(rtnCode);
 
@@ -606,32 +624,34 @@ ParseSimpleFacetError:
                  2) The bitmap indicating which facets have
                     already been parsed
                  3) The slot descriptor to set
-  RETURNS      : true if all OK, false otherwise
+  RETURNS      : True if all OK, false otherwise
   SIDE EFFECTS : Slot  set and parsed facet bitmap set
   NOTES        : Syntax: (default ?NONE|<expression>*)
                          (default-dynamic <expression>*)
  *************************************************************/
 static bool ParseDefaultFacet(
-  void *theEnv,
+  Environment *theEnv,
   const char *readSource,
   char *specbits,
-  SLOT_DESC *slot)
+  SlotDescriptor *slot)
   {
-   EXPRESSION *tmp;
+   Expression *tmp;
    bool error, noneSpecified, deriveSpecified;
 
    if (TestBitMap(specbits,DEFAULT_BIT))
      {
       PrintErrorID(theEnv,"CLSLTPSR",2,false);
-      EnvPrintRouter(theEnv,WERROR,"default facet already specified.\n");
-      return(false);
+      WriteString(theEnv,STDERR,"The 'default' facet for slot '");
+      WriteString(theEnv,STDERR,slot->slotName->name->contents);
+      WriteString(theEnv,STDERR,"' is already specified.\n");
+      return false;
      }
    SetBitMap(specbits,DEFAULT_BIT);
    error = false;
    tmp = ParseDefault(theEnv,readSource,true,TestBitMap(specbits,DEFAULT_DYNAMIC_BIT),
                       false,&noneSpecified,&deriveSpecified,&error);
    if (error == true)
-     return(false);
+     return false;
    if (noneSpecified || deriveSpecified)
      {
      if (noneSpecified)
@@ -644,12 +664,12 @@ static bool ParseDefaultFacet(
      }
    else
      {
-      slot->defaultValue = (void *) PackExpression(theEnv,tmp);
+      slot->defaultValue = PackExpression(theEnv,tmp);
       ReturnExpression(theEnv,tmp);
-      ExpressionInstall(theEnv,(EXPRESSION *) slot->defaultValue);
+      ExpressionInstall(theEnv,(Expression *) slot->defaultValue);
       slot->defaultSpecified = 1;
      }
-   return(true);
+   return true;
   }
 
 /**************************************************************************
@@ -679,14 +699,14 @@ static bool ParseDefaultFacet(
   NOTES        : Assumes slot is composite
  *************************************************************************/
 static void BuildCompositeFacets(
-  void *theEnv,
-  SLOT_DESC *sd,
+  Environment *theEnv,
+  SlotDescriptor *sd,
   PACKED_CLASS_LINKS *preclist,
   const char *specbits,
   CONSTRAINT_PARSE_RECORD *parsedConstraint)
   {
-   SLOT_DESC *compslot = NULL;
-   long i;
+   SlotDescriptor *compslot = NULL;
+   unsigned long i;
 
    for (i = 1 ; i < preclist->classCount ; i++)
      {
@@ -705,43 +725,43 @@ static void BuildCompositeFacets(
            {
             if (sd->dynamicDefault)
               {
-               sd->defaultValue = (void *) PackExpression(theEnv,(EXPRESSION *) compslot->defaultValue);
-               ExpressionInstall(theEnv,(EXPRESSION *) sd->defaultValue);
+               sd->defaultValue = PackExpression(theEnv,(Expression *) compslot->defaultValue);
+               ExpressionInstall(theEnv,(Expression *) sd->defaultValue);
               }
             else
               {
-               sd->defaultValue = (void *) get_struct(theEnv,dataObject);
-               GenCopyMemory(DATA_OBJECT,1,sd->defaultValue,compslot->defaultValue);
-               ValueInstall(theEnv,(DATA_OBJECT *) sd->defaultValue);
+               sd->defaultValue = get_struct(theEnv,udfValue);
+               GenCopyMemory(UDFValue,1,sd->defaultValue,compslot->defaultValue);
+               RetainUDFV(theEnv,(UDFValue *) sd->defaultValue);
               }
            }
         }
-      if (TestBitMap(specbits,FIELD_BIT) == 0)
+      if (! TestBitMap(specbits,FIELD_BIT))
         sd->multiple = compslot->multiple;
-      if (TestBitMap(specbits,STORAGE_BIT) == 0)
+      if (! TestBitMap(specbits,STORAGE_BIT))
         sd->shared = compslot->shared;
-      if (TestBitMap(specbits,ACCESS_BIT) == 0)
+      if (! TestBitMap(specbits,ACCESS_BIT))
         {
          sd->noWrite = compslot->noWrite;
          sd->initializeOnly = compslot->initializeOnly;
         }
 #if DEFRULE_CONSTRUCT
-      if (TestBitMap(specbits,MATCH_BIT) == 0)
+      if (! TestBitMap(specbits,MATCH_BIT))
         sd->reactive = compslot->reactive;
 #endif
-      if (TestBitMap(specbits,VISIBILITY_BIT) == 0)
+      if (! TestBitMap(specbits,VISIBILITY_BIT))
         sd->publicVisibility = compslot->publicVisibility;
-      if (TestBitMap(specbits,CREATE_ACCESSOR_BIT) == 0)
+      if (! TestBitMap(specbits,CREATE_ACCESSOR_BIT))
         {
          sd->createReadAccessor = compslot->createReadAccessor;
          sd->createWriteAccessor = compslot->createWriteAccessor;
         }
-      if ((TestBitMap(specbits,OVERRIDE_MSG_BIT) == 0) &&
+      if ((! TestBitMap(specbits,OVERRIDE_MSG_BIT)) &&
           compslot->overrideMessageSpecified)
         {
-         DecrementSymbolCount(theEnv,sd->overrideMessage);
+         ReleaseLexeme(theEnv,sd->overrideMessage);
          sd->overrideMessage = compslot->overrideMessage;
-         IncrementSymbolCount(sd->overrideMessage);
+         IncrementLexemeCount(sd->overrideMessage);
          sd->overrideMessageSpecified = true;
         }
       OverlayConstraint(theEnv,parsedConstraint,sd->constraint,compslot->constraint);
@@ -756,15 +776,15 @@ static void BuildCompositeFacets(
   INPUTS       : 1) The slot descriptor
                  2) The parse record for the
                     type constraints on the slot
-  RETURNS      : true if all OK,
+  RETURNS      : True if all OK,
                  false otherwise
   SIDE EFFECTS : Min and Max fields replaced in
                  constraint for single-field slot
   NOTES        : None
  ***************************************************/
 static bool CheckForFacetConflicts(
-  void *theEnv,
-  SLOT_DESC *sd,
+  Environment *theEnv,
+  SlotDescriptor *sd,
   CONSTRAINT_PARSE_RECORD *parsedConstraint)
   {
    if (sd->multiple == 0)
@@ -772,36 +792,36 @@ static bool CheckForFacetConflicts(
       if (parsedConstraint->cardinality)
         {
          PrintErrorID(theEnv,"CLSLTPSR",3,true);
-         EnvPrintRouter(theEnv,WERROR,"Cardinality facet can only be used with multifield slots\n");
-         return(false);
+         WriteString(theEnv,STDERR,"The 'cardinality' facet can only be used with multifield slots.\n");
+         return false;
         }
       else
         {
          ReturnExpression(theEnv,sd->constraint->minFields);
          ReturnExpression(theEnv,sd->constraint->maxFields);
-         sd->constraint->minFields = GenConstant(theEnv,INTEGER,EnvAddLong(theEnv,1LL));
-         sd->constraint->maxFields = GenConstant(theEnv,INTEGER,EnvAddLong(theEnv,1LL));
+         sd->constraint->minFields = GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,1LL));
+         sd->constraint->maxFields = GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,1LL));
         }
      }
    if (sd->noDefault && sd->noWrite)
      {
       PrintErrorID(theEnv,"CLSLTPSR",4,true);
-      EnvPrintRouter(theEnv,WERROR,"read-only slots must have a default value\n");
-      return(false);
+      WriteString(theEnv,STDERR,"Slots with an 'access' facet value of 'read-only' must have a default value.\n");
+      return false;
      }
    if (sd->noWrite && (sd->createWriteAccessor || sd->overrideMessageSpecified))
      {
       PrintErrorID(theEnv,"CLSLTPSR",5,true);
-      EnvPrintRouter(theEnv,WERROR,"read-only slots cannot have a write accessor\n");
-      return(false);
+      WriteString(theEnv,STDERR,"Slots with an 'access' facet value of 'read-only' cannot have a write accessor.\n");
+      return false;
      }
    if (sd->noInherit && sd->publicVisibility)
      {
       PrintErrorID(theEnv,"CLSLTPSR",6,true);
-      EnvPrintRouter(theEnv,WERROR,"no-inherit slots cannot also be public\n");
-      return(false);
+      WriteString(theEnv,STDERR,"Slots with a 'propagation' facet value of 'no-inherit' cannot have a 'visibility' facet value of 'public'.\n");
+      return false;
      }
-   return(true);
+   return true;
   }
 
 /********************************************************************
@@ -811,20 +831,20 @@ static bool CheckForFacetConflicts(
   INPUTS       : 1) The slot descriptor
                  2) The bitmap marking which facets were specified in
                     the original slot definition
-  RETURNS      : true if all OK, false otherwise
+  RETURNS      : True if all OK, false otherwise
   SIDE EFFECTS : Static default value expressions deleted and
                  replaced with data object evaluation
   NOTES        : On errors, slot is marked as dynamix so that
                  DeleteSlots() will erase the slot expression
  ********************************************************************/
 static bool EvaluateSlotDefaultValue(
-  void *theEnv,
-  SLOT_DESC *sd,
+  Environment *theEnv,
+  SlotDescriptor *sd,
   const char *specbits)
   {
-   DATA_OBJECT temp;
+   UDFValue temp;
    bool oldce,olddcc, vPass;
-   int vCode;
+   ConstraintViolationType vCode;
 
    /* ===================================================================
       Slot default value expression is marked as dynamic until now so
@@ -832,11 +852,11 @@ static bool EvaluateSlotDefaultValue(
       was so that the evaluation of a static default value could be
       delayed until all the constraints were parsed.
       =================================================================== */
-   if (TestBitMap(specbits,DEFAULT_DYNAMIC_BIT) == 0)
+   if (! TestBitMap(specbits,DEFAULT_DYNAMIC_BIT))
      sd->dynamicDefault = 0;
 
    if (sd->noDefault)
-     return(true);
+     return true;
 
    if (sd->dynamicDefault == 0)
      {
@@ -844,49 +864,49 @@ static bool EvaluateSlotDefaultValue(
         {
          oldce = ExecutingConstruct(theEnv);
          SetExecutingConstruct(theEnv,true);
-         olddcc = EnvSetDynamicConstraintChecking(theEnv,true);
+         olddcc = SetDynamicConstraintChecking(theEnv,true);
          vPass = EvaluateAndStoreInDataObject(theEnv,sd->multiple,
-                  (EXPRESSION *) sd->defaultValue,&temp,true);
+                  (Expression *) sd->defaultValue,&temp,true);
          if (vPass != false)
-           vPass = ValidSlotValue(theEnv,&temp,sd,NULL,"slot default value");
-         EnvSetDynamicConstraintChecking(theEnv,olddcc);
+           vPass = (ValidSlotValue(theEnv,&temp,sd,NULL,"the 'default' facet") == PSE_NO_ERROR);
+         SetDynamicConstraintChecking(theEnv,olddcc);
          SetExecutingConstruct(theEnv,oldce);
          if (vPass)
            {
-            ExpressionDeinstall(theEnv,(EXPRESSION *) sd->defaultValue);
-            ReturnPackedExpression(theEnv,(EXPRESSION *) sd->defaultValue);
-            sd->defaultValue = (void *) get_struct(theEnv,dataObject);
-            GenCopyMemory(DATA_OBJECT,1,sd->defaultValue,&temp);
-            ValueInstall(theEnv,(DATA_OBJECT *) sd->defaultValue);
+            ExpressionDeinstall(theEnv,(Expression *) sd->defaultValue);
+            ReturnPackedExpression(theEnv,(Expression *) sd->defaultValue);
+            sd->defaultValue = get_struct(theEnv,udfValue);
+            GenCopyMemory(UDFValue,1,sd->defaultValue,&temp);
+            RetainUDFV(theEnv,(UDFValue *) sd->defaultValue);
            }
          else
            {
             sd->dynamicDefault = 1;
-            return(false);
+            return false;
            }
         }
       else if (sd->defaultSpecified == 0)
         {
-         sd->defaultValue = (void *) get_struct(theEnv,dataObject);
+         sd->defaultValue = get_struct(theEnv,udfValue);
          DeriveDefaultFromConstraints(theEnv,sd->constraint,
-                                      (DATA_OBJECT *) sd->defaultValue,(int) sd->multiple,true);
-         ValueInstall(theEnv,(DATA_OBJECT *) sd->defaultValue);
+                                      (UDFValue *) sd->defaultValue,sd->multiple,true);
+         RetainUDFV(theEnv,(UDFValue *) sd->defaultValue);
         }
      }
    else
      {
-      vCode = ConstraintCheckExpressionChain(theEnv,(EXPRESSION *) sd->defaultValue,sd->constraint);
+      vCode = ConstraintCheckExpressionChain(theEnv,(Expression *) sd->defaultValue,sd->constraint);
       if (vCode != NO_VIOLATION)
         {
          PrintErrorID(theEnv,"CSTRNCHK",1,false);
-         EnvPrintRouter(theEnv,WERROR,"Expression for ");
-         PrintSlot(theEnv,WERROR,sd,NULL,"dynamic default value");
+         WriteString(theEnv,STDERR,"Expression for ");
+         PrintSlot(theEnv,STDERR,sd,NULL,"dynamic default value");
          ConstraintViolationErrorMessage(theEnv,NULL,NULL,0,0,NULL,0,
                                          vCode,sd->constraint,false);
-         return(false);
+         return false;
         }
      }
-   return(true);
+   return true;
   }
 
 #endif

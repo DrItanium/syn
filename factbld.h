@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                FACT BUILD HEADER FILE               */
    /*******************************************************/
@@ -21,6 +21,13 @@
 /*            Added support for hashed comparisons to        */
 /*            constants.                                     */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_factbld
@@ -37,8 +44,8 @@ struct factPatternNode;
 struct factPatternNode
   {
    struct patternNodeHeader header;
-   long bsaveID;
-   unsigned short whichField;
+   unsigned long bsaveID;
+   unsigned short whichField; // TBD seems to be 1 based rather than 0 based
    unsigned short whichSlot;
    unsigned short leaveFields;
    struct expr *networkTest;
@@ -48,9 +55,7 @@ struct factPatternNode
    struct factPatternNode *rightNode;
   };
 
-#include "pattern.h" // TBD Needed?
-
-   void                           InitializeFactPatterns(void *);
-   void                           DestroyFactPatternNetwork(void *,struct factPatternNode *);
+   void                           InitializeFactPatterns(Environment *);
+   void                           DestroyFactPatternNetwork(Environment *,struct factPatternNode *);
 
 #endif /* _H_factbld */

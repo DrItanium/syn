@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  10/19/17             */
    /*                                                     */
    /*               FILE I/O ROUTER MODULE                */
    /*******************************************************/
@@ -40,6 +40,20 @@
 /*            Added STDOUT and STDIN logical name            */
 /*            definitions.                                   */
 /*                                                           */
+/*      6.31: Output to logical WERROR is now sent to stderr */
+/*            rather than stdout.                            */
+/*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Changed return values for router functions.    */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Added flush, rewind, tell, and seek functions. */
+/*                                                           */
 /*************************************************************/
 
 #include <stdio.h>
@@ -59,23 +73,23 @@
 /* LOCAL INTERNAL FUNCTION DEFINITIONS */
 /***************************************/
 
-   static int                     ExitFile(void *,int);
-   static int                     PrintFile(void *,const char *,const char *);
-   static int                     GetcFile(void *,const char *);
-   static int                     UngetcFile(void *,int,const char *);
-   static void                    DeallocateFileRouterData(void *);
+   static void                    ExitFileCallback(Environment *,int,void *);
+   static void                    WriteFileCallback(Environment *,const char *,const char *,void *);
+   static int                     ReadFileCallback(Environment *,const char *,void *);
+   static int                     UnreadFileCallback(Environment *,const char *,int,void *);
+   static void                    DeallocateFileRouterData(Environment *);
 
 /***************************************************************/
 /* InitializeFileRouter: Initializes file input/output router. */
 /***************************************************************/
 void InitializeFileRouter(
-  void *theEnv)
+  Environment *theEnv)
   {
    AllocateEnvironmentData(theEnv,FILE_ROUTER_DATA,sizeof(struct fileRouterData),DeallocateFileRouterData);
 
-   EnvAddRouter(theEnv,"fileio",0,FindFile,
-             PrintFile,GetcFile,
-             UngetcFile,ExitFile);
+   AddRouter(theEnv,"fileio",0,FindFile,
+             WriteFileCallback,ReadFileCallback,
+             UnreadFileCallback,ExitFileCallback,NULL);
   }
 
 /*****************************************/
@@ -83,7 +97,7 @@ void InitializeFileRouter(
 /*    environment data for file routers. */
 /*****************************************/
 static void DeallocateFileRouterData(
-  void *theEnv)
+  Environment *theEnv)
   {
    struct fileRouter *tmpPtr, *nextPtr;
 
@@ -103,7 +117,7 @@ static void DeallocateFileRouterData(
 /*   stream for a given logical name.    */
 /*****************************************/
 FILE *FindFptr(
-  void *theEnv,
+  Environment *theEnv,
   const char *logicalName)
   {
    struct fileRouter *fptr;
@@ -113,21 +127,13 @@ FILE *FindFptr(
    /*========================================================*/
 
    if (strcmp(logicalName,STDOUT) == 0)
-     { return(stdout); }
+     { return stdout; }
    else if (strcmp(logicalName,STDIN) == 0)
-     { return(stdin);  }
-   else if (strcmp(logicalName,WTRACE) == 0)
-     { return(stdout); }
-   else if (strcmp(logicalName,WDIALOG) == 0)
-     { return(stdout); }
-   else if (strcmp(logicalName,WPROMPT) == 0)
-     { return(stdout); }
-   else if (strcmp(logicalName,WDISPLAY) == 0)
-     { return(stdout); }
-   else if (strcmp(logicalName,WERROR) == 0)
-     { return(stdout); }
-   else if (strcmp(logicalName,WWARNING) == 0)
-     { return(stdout); }
+     { return stdin;  }
+   else if (strcmp(logicalName,STDERR) == 0)
+     { return stderr; }
+   else if (strcmp(logicalName,STDWRN) == 0)
+     { return stdout; }
 
    /*==============================================================*/
    /* Otherwise, look up the logical name on the global file list. */
@@ -137,9 +143,9 @@ FILE *FindFptr(
    while ((fptr != NULL) ? (strcmp(logicalName,fptr->logicalName) != 0) : false)
      { fptr = fptr->next; }
 
-   if (fptr != NULL) return(fptr->stream);
+   if (fptr != NULL) return fptr->stream;
 
-   return(NULL);
+   return NULL;
   }
 
 /*****************************************************/
@@ -150,20 +156,22 @@ FILE *FindFptr(
 /*   file router). Otherwise, false is returned.     */
 /*****************************************************/
 bool FindFile(
-  void *theEnv,
-  const char *logicalName)
+  Environment *theEnv,
+  const char *logicalName,
+  void *context)
   {
-   if (FindFptr(theEnv,logicalName) != NULL) return(true);
+   if (FindFptr(theEnv,logicalName) != NULL) return true;
 
-   return(false);
+   return false;
   }
 
-/********************************************/
-/* ExitFile:  Exit routine for file router. */
-/********************************************/
-static int ExitFile(
-  void *theEnv,
-  int num)
+/***************************************************/
+/* ExitFileCallback: Exit routine for file router. */
+/***************************************************/
+static void ExitFileCallback(
+  Environment *theEnv,
+  int num,
+  void *context)
   {
 #if MAC_XCD
 #pragma unused(num)
@@ -175,32 +183,31 @@ static int ExitFile(
 #pragma unused(theEnv)
 #endif
 #endif
-   return(1);
   }
 
-/*********************************************/
-/* PrintFile: Print routine for file router. */
-/*********************************************/
-static int PrintFile(
-  void *theEnv,
+/******************************************************/
+/* WriteFileCallback: Write callback for file router. */
+/******************************************************/
+static void WriteFileCallback(
+  Environment *theEnv,
   const char *logicalName,
-  const char *str)
+  const char *str,
+  void *context)
   {
    FILE *fptr;
 
    fptr = FindFptr(theEnv,logicalName);
-   
+
    genprintfile(theEnv,fptr,str);
-   
-   return(1);
   }
 
-/*******************************************/
-/* GetcFile: Getc routine for file router. */
-/*******************************************/
-static int GetcFile(
-  void *theEnv,
-  const char *logicalName)
+/****************************************************/
+/* ReadFileCallback: Read callback for file router. */
+/****************************************************/
+static int ReadFileCallback(
+  Environment *theEnv,
+  const char *logicalName,
+  void *context)
   {
    FILE *fptr;
    int theChar;
@@ -219,25 +226,26 @@ static int GetcFile(
 
    if ((fptr == stdin) && (theChar == EOF)) clearerr(stdin);
 
-   return(theChar);
+   return theChar;
   }
 
-/***********************************************/
-/* UngetcFile: Ungetc routine for file router. */
-/***********************************************/
-static int UngetcFile(
-  void *theEnv,
+/********************************************************/
+/* UnreadFileCallback: Unread callback for file router. */
+/********************************************************/
+static int UnreadFileCallback(
+  Environment *theEnv,
+  const char *logicalName,
   int ch,
-  const char *logicalName)
+  void *context)
   {
    FILE *fptr;
 
    fptr = FindFptr(theEnv,logicalName);
-   
+
    if (fptr == stdin)
-     { return(genungetchar(theEnv,ch)); }
+     { return genungetchar(theEnv,ch); }
    else
-     { return(ungetc(ch,fptr)); }
+     { return ungetc(ch,fptr); }
   }
 
 /*********************************************************/
@@ -247,7 +255,7 @@ static int UngetcFile(
 /*   file was succesfully opened, otherwise false.       */
 /*********************************************************/
 bool OpenAFile(
-  void *theEnv,
+  Environment *theEnv,
   const char *fileName,
   const char *accessMode,
   const char *logicalName)
@@ -262,7 +270,7 @@ bool OpenAFile(
    /*==================================*/
 
    if ((newstream = GenOpen(theEnv,fileName,accessMode)) == NULL)
-     { return(false); }
+     { return false; }
 
    /*===========================*/
    /* Create a new file router. */
@@ -287,7 +295,7 @@ bool OpenAFile(
    /* was opened successfully.         */
    /*==================================*/
 
-   return(true);
+   return true;
   }
 
 /*************************************************************/
@@ -296,7 +304,7 @@ bool OpenAFile(
 /*   closed, otherwise false.                                */
 /*************************************************************/
 bool CloseFile(
-  void *theEnv,
+  Environment *theEnv,
   const char *fid)
   {
    struct fileRouter *fptr, *prev;
@@ -313,15 +321,15 @@ bool CloseFile(
            { FileRouterData(theEnv)->ListOfFileRouters = fptr->next; }
          else
            { prev->next = fptr->next; }
-         rm(theEnv,fptr,(int) sizeof(struct fileRouter));
+         rm(theEnv,fptr,sizeof(struct fileRouter));
 
-         return(true);
+         return true;
         }
 
       prev = fptr;
      }
 
-   return(false);
+   return false;
   }
 
 /**********************************************/
@@ -330,11 +338,11 @@ bool CloseFile(
 /*   any file was closed, otherwise false.    */
 /**********************************************/
 bool CloseAllFiles(
-  void *theEnv)
+  Environment *theEnv)
   {
    struct fileRouter *fptr, *prev;
 
-   if (FileRouterData(theEnv)->ListOfFileRouters == NULL) return(false);
+   if (FileRouterData(theEnv)->ListOfFileRouters == NULL) return false;
 
    fptr = FileRouterData(theEnv)->ListOfFileRouters;
 
@@ -344,13 +352,130 @@ bool CloseAllFiles(
       prev = fptr;
       rm(theEnv,(void *) fptr->logicalName,strlen(fptr->logicalName) + 1);
       fptr = fptr->next;
-      rm(theEnv,prev,(int) sizeof(struct fileRouter));
+      rm(theEnv,prev,sizeof(struct fileRouter));
      }
 
    FileRouterData(theEnv)->ListOfFileRouters = NULL;
 
-   return(true);
+   return true;
   }
 
+/*************************************************************/
+/* FlushFile: Flushes the file associated with the specified */
+/*   logical name. Returns true if the file was successfully */
+/*   flushed, otherwise false.                               */
+/*************************************************************/
+bool FlushFile(
+  Environment *theEnv,
+  const char *fid)
+  {
+   struct fileRouter *fptr;
 
+   for (fptr = FileRouterData(theEnv)->ListOfFileRouters;
+        fptr != NULL;
+        fptr = fptr->next)
+     {
+      if (strcmp(fptr->logicalName,fid) == 0)
+        {
+         GenFlush(theEnv,fptr->stream);
+         return true;
+        }
+     }
+
+   return false;
+  }
+
+/***********************************************/
+/* FlushAllFiles: Flushes all files associated */
+/*   with a file I/O router. Returns true if   */
+/*   any file was flushed, otherwise false.    */
+/***********************************************/
+bool FlushAllFiles(
+  Environment *theEnv)
+  {
+   struct fileRouter *fptr;
+
+   if (FileRouterData(theEnv)->ListOfFileRouters == NULL) return false;
+
+   for (fptr = FileRouterData(theEnv)->ListOfFileRouters;
+        fptr != NULL;
+        fptr = fptr->next)
+     { GenFlush(theEnv,fptr->stream); }
+
+   return true;
+  }
+
+/*****************************************************/
+/* RewindFile: Rewinds the file associated with the  */
+/*   specified logical name. Returns true if the     */
+/*   file was successfully rewound, otherwise false. */
+/*****************************************************/
+bool RewindFile(
+  Environment *theEnv,
+  const char *fid)
+  {
+   struct fileRouter *fptr;
+
+   for (fptr = FileRouterData(theEnv)->ListOfFileRouters;
+        fptr != NULL;
+        fptr = fptr->next)
+     {
+      if (strcmp(fptr->logicalName,fid) == 0)
+        {
+         GenRewind(theEnv,fptr->stream);
+         return true;
+        }
+     }
+
+   return false;
+  }
+
+/**************************************************/
+/* TellFile: Returns the file position associated */
+/*   with the specified logical name.             */
+/**************************************************/
+long long TellFile(
+  Environment *theEnv,
+  const char *fid)
+  {
+   struct fileRouter *fptr;
+
+   for (fptr = FileRouterData(theEnv)->ListOfFileRouters;
+        fptr != NULL;
+        fptr = fptr->next)
+     {
+      if (strcmp(fptr->logicalName,fid) == 0)
+        { return GenTell(theEnv,fptr->stream); }
+     }
+
+   return LLONG_MIN;
+  }
+
+/***********************************************/
+/* SeekFile: Sets the file position associated */
+/*   with the specified logical name.          */
+/***********************************************/
+bool SeekFile(
+  Environment *theEnv,
+  const char *fid,
+  long offset,
+  int whereFrom)
+  {
+   struct fileRouter *fptr;
+
+   for (fptr = FileRouterData(theEnv)->ListOfFileRouters;
+        fptr != NULL;
+        fptr = fptr->next)
+     {
+      if (strcmp(fptr->logicalName,fid) == 0)
+        {
+         if (GenSeek(theEnv,fptr->stream,offset,whereFrom))
+           { return false; }
+         else
+           { return true; }
+        }
+     }
+
+   return false;
+  }
 

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*        FACT RETE ACCESS FUNCTIONS HEADER FILE       */
    /*******************************************************/
@@ -28,6 +28,17 @@
 /*                                                           */
 /*            Support for hashing optimizations.             */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_factrete
@@ -38,21 +49,21 @@
 
 #include "evaluatn.h"
 
-   bool                           FactPNGetVar1(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactPNGetVar2(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactPNGetVar3(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactJNGetVar1(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactJNGetVar2(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactJNGetVar3(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactSlotLength(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactJNCompVars1(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactJNCompVars2(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactPNCompVars1(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactPNConstant1(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactPNConstant2(void *,void *,DATA_OBJECT_PTR);
-   bool                           FactStoreMultifield(void *,void *,DATA_OBJECT_PTR);
-   unsigned short                 AdjustFieldPosition(void *,struct multifieldMarker *,
-                                                             unsigned short,unsigned short,int *);
+   bool                           FactPNGetVar1(Environment *,void *,UDFValue *);
+   bool                           FactPNGetVar2(Environment *,void *,UDFValue *);
+   bool                           FactPNGetVar3(Environment *,void *,UDFValue *);
+   bool                           FactJNGetVar1(Environment *,void *,UDFValue *);
+   bool                           FactJNGetVar2(Environment *,void *,UDFValue *);
+   bool                           FactJNGetVar3(Environment *,void *,UDFValue *);
+   bool                           FactSlotLength(Environment *,void *,UDFValue *);
+   bool                           FactJNCompVars1(Environment *,void *,UDFValue *);
+   bool                           FactJNCompVars2(Environment *,void *,UDFValue *);
+   bool                           FactPNCompVars1(Environment *,void *,UDFValue *);
+   bool                           FactPNConstant1(Environment *,void *,UDFValue *);
+   bool                           FactPNConstant2(Environment *,void *,UDFValue *);
+   bool                           FactStoreMultifield(Environment *,void *,UDFValue *);
+   size_t                         AdjustFieldPosition(Environment *,struct multifieldMarker *,
+                                                      unsigned short,unsigned short,size_t *);
 
 #endif
 

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/18/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -32,6 +32,15 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_factqpsr
@@ -40,13 +49,13 @@
 
 #define _H_factqpsr
 
-#if FACT_SET_QUERIES && (! RUN_TIME)
+#if FACT_SET_QUERIES
 
 #include "expressn.h"
 
-   EXPRESSION                    *FactParseQueryNoAction(void *,EXPRESSION *,const char *);
-   EXPRESSION                    *FactParseQueryAction(void *,EXPRESSION *,const char *);
+   Expression                    *FactParseQueryNoAction(Environment *,Expression *,const char *);
+   Expression                    *FactParseQueryAction(Environment *,Expression *,const char *);
 
-#endif /* FACT_SET_QUERIES && (! RUN_TIME) */
+#endif /* FACT_SET_QUERIES */
 
 #endif /* _H_factqpsr */

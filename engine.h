@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/20/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*                 ENGINE HEADER FILE                  */
    /*******************************************************/
@@ -39,7 +39,7 @@
 /*                                                           */
 /*            Added context information for run functions.   */
 /*                                                           */
-/*            Added before rule firing callback function.    */ 
+/*            Added before rule firing callback function.    */
 /*                                                           */
 /*            Changed garbage collection algorithm.          */
 /*                                                           */
@@ -57,7 +57,20 @@
 /*                                                           */
 /*            Converted API macros to function calls.        */
 /*                                                           */
-/*      6.40: Incremental reset is always enabled.           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            Incremental reset is always enabled.           */
+/*                                                           */
+/*            UDF redesign.                                  */
 /*                                                           */
 /*************************************************************/
 
@@ -67,36 +80,50 @@
 
 #define _H_engine
 
+typedef struct focalModule FocalModule;
+
 #include "lgcldpnd.h"
 #include "ruledef.h"
 #include "network.h"
 #include "moduldef.h"
 #include "retract.h"
 
-struct focus
+struct focalModule
   {
-   struct defmodule *theModule;
+   Defmodule *theModule;
    struct defruleModule *theDefruleModule;
-   struct focus *next;
+   FocalModule *next;
   };
-  
+
+typedef struct ruleFiredFunctionItem RuleFiredFunctionItem;
+typedef void RuleFiredFunction(Environment *,Activation *,void *);
+
+struct ruleFiredFunctionItem
+  {
+   const char *name;
+   RuleFiredFunction *func;
+   int priority;
+   RuleFiredFunctionItem *next;
+   void *context;
+  };
+
 #define ENGINE_DATA 18
 
 struct engineData
-  { 
-   struct defrule *ExecutingRule;
+  {
+   Defrule *ExecutingRule;
    bool HaltRules;
    struct joinNode *TheLogicalJoin;
    struct partialMatch *TheLogicalBind;
    struct dependency *UnsupportedDataEntities;
    bool alreadyEntered;
-   struct callFunctionItem *ListOfRunFunctions;
-   struct callFunctionItemWithArg *ListOfBeforeRunFunctions;
-   struct focus *CurrentFocus;
+   RuleFiredFunctionItem *ListOfAfterRuleFiresFunctions;
+   RuleFiredFunctionItem *ListOfBeforeRuleFiresFunctions;
+   FocalModule *CurrentFocus;
    bool FocusChanged;
 #if DEBUGGING_FUNCTIONS
-   unsigned WatchStatistics;
-   unsigned WatchFocus;
+   bool WatchStatistics;
+   bool WatchFocus;
 #endif
    bool IncrementalResetInProgress;
    bool JoinOperationInProgress;
@@ -124,47 +151,48 @@ struct engineData
 
 #define MAX_PATTERNS_CHECKED 64
 
-   long long               EnvRun(void *,long long);
-   bool                    EnvAddRunFunction(void *,const char *,
-                                                    void (*)(void *),int);
-   bool                    EnvAddRunFunctionWithContext(void *,const char *,
-                                                               void (*)(void *),int,void *);
-   bool                    EnvRemoveRunFunction(void *,const char *);
-   bool                    EnvAddBeforeRunFunction(void *,const char *,
-                                                    void (*)(void *,void *),int);
-   bool                    EnvAddBeforeRunFunctionWithContext(void *,const char *,
-                                                               void (*)(void *, void *),int,void *);
-   bool                    EnvRemoveBeforeRunFunction(void *,const char *);
-   void                    InitializeEngine(void *);
-   void                    EnvSetBreak(void *,void *);
-   void                    EnvHalt(void *);
-   bool                    EnvRemoveBreak(void *,void *);
-   void                    RemoveAllBreakpoints(void *);
-   void                    EnvShowBreaks(void *,const char *,void *);
-   bool                    EnvDefruleHasBreakpoint(void *,void *);
-   void                    RunCommand(UDFContext *,CLIPSValue *);
-   void                    SetBreakCommand(UDFContext *,CLIPSValue *);
-   void                    RemoveBreakCommand(UDFContext *,CLIPSValue *);
-   void                    ShowBreaksCommand(UDFContext *,CLIPSValue *);
-   void                    HaltCommand(UDFContext *,CLIPSValue *);
-   void                    FocusCommand(UDFContext *,CLIPSValue *);
-   void                    ClearFocusStackCommand(UDFContext *,CLIPSValue *);
-   void                    EnvClearFocusStack(void *);
-   void                   *EnvGetNextFocus(void *,void *);
-   void                    EnvFocus(void *,void *);
-   bool                    EnvGetFocusChanged(void *);
-   void                    EnvSetFocusChanged(void *,bool);
-   void                    ListFocusStackCommand(UDFContext *,CLIPSValue *);
-   void                    EnvListFocusStack(void *,const char *);
-   void                    GetFocusStackFunction(UDFContext *,CLIPSValue *);
-   void                    EnvGetFocusStack(void *,CLIPSValue *);
-   void                    PopFocusFunction(UDFContext *,CLIPSValue *);
-   void                    GetFocusFunction(UDFContext *,CLIPSValue *);
-   void                   *EnvPopFocus(void *);
-   void                   *EnvGetFocus(void *);
-   bool                    EnvGetHaltRules(void *);
-   void                    EnvSetHaltRules(void *,bool);
-   struct activation      *NextActivationToFire(void *);
+   long long               Run(Environment *,long long);
+   bool                    AddAfterRuleFiresFunction(Environment *,const char *,
+                                                     RuleFiredFunction *,int,void *);
+   bool                    RemoveAfterRuleFiresFunction(Environment *,const char *);
+   bool                    AddBeforeRuleFiresFunction(Environment *,const char *,
+                                                      RuleFiredFunction *,int,void *);
+   bool                    RemoveBeforeRuleFiresFunction(Environment *,const char *);
+   RuleFiredFunctionItem  *AddRuleFiredFunctionToCallList(Environment *,const char *,int,RuleFiredFunction *,
+                                                          RuleFiredFunctionItem *,void *);
+   RuleFiredFunctionItem  *RemoveRuleFiredFunctionFromCallList(Environment *,const char *,
+                                                               RuleFiredFunctionItem *,bool *);
+   void                    DeallocateRuleFiredCallList(Environment *,RuleFiredFunctionItem *);
+   void                    InitializeEngine(Environment *);
+   void                    SetBreak(Defrule *);
+   void                    Halt(Environment *);
+   bool                    RemoveBreak(Defrule *);
+   void                    RemoveAllBreakpoints(Environment *);
+   void                    ShowBreaks(Environment *,const char *,Defmodule *);
+   bool                    DefruleHasBreakpoint(Defrule *);
+   void                    RunCommand(Environment *,UDFContext *,UDFValue *);
+   void                    SetBreakCommand(Environment *,UDFContext *,UDFValue *);
+   void                    RemoveBreakCommand(Environment *,UDFContext *,UDFValue *);
+   void                    ShowBreaksCommand(Environment *,UDFContext *,UDFValue *);
+   void                    HaltCommand(Environment *,UDFContext *,UDFValue *);
+   void                    FocusCommand(Environment *,UDFContext *,UDFValue *);
+   void                    ClearFocusStackCommand(Environment *,UDFContext *,UDFValue *);
+   void                    ClearFocusStack(Environment *);
+   FocalModule            *GetNextFocus(Environment *,FocalModule *);
+   const char             *FocalModuleName(FocalModule *);
+   Defmodule              *FocalModuleModule(FocalModule *);
+   void                    Focus(Defmodule *);
+   bool                    GetFocusChanged(Environment *);
+   void                    SetFocusChanged(Environment *,bool);
+   void                    ListFocusStackCommand(Environment *,UDFContext *,UDFValue *);
+   void                    ListFocusStack(Environment *,const char *);
+   void                    GetFocusStackFunction(Environment *,UDFContext *,UDFValue *);
+   void                    GetFocusStack(Environment *,CLIPSValue *);
+   void                    PopFocusFunction(Environment *,UDFContext *,UDFValue *);
+   Defmodule              *PopFocus(Environment *);
+   bool                    GetHaltRules(Environment *);
+   void                    SetHaltRules(Environment *,bool);
+   Activation             *NextActivationToFire(Environment *);
 
 #endif /* _H_engine */
 

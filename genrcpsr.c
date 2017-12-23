@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  11/01/16             */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -46,6 +46,13 @@
 /*            imported modules are search when locating a    */
 /*            named construct.                               */
 /*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 /* =========================================
@@ -53,6 +60,7 @@
                EXTERNAL DEFINITIONS
    =========================================
    ***************************************** */
+
 #include "setup.h"
 
 #if DEFGENERIC_CONSTRUCT && (! BLOAD_ONLY) && (! RUN_TIME)
@@ -70,6 +78,7 @@
 #include "classcom.h"
 #endif
 
+#include "cstrccom.h"
 #include "cstrcpsr.h"
 #include "envrnmnt.h"
 #include "exprnpsr.h"
@@ -77,8 +86,10 @@
 #include "immthpsr.h"
 #include "memalloc.h"
 #include "modulutl.h"
+#include "pprint.h"
 #include "prcdrpsr.h"
 #include "prccode.h"
+#include "prntutil.h"
 #include "router.h"
 #include "scanner.h"
 #include "sysdep.h"
@@ -96,31 +107,33 @@
 
 #define CURR_ARG_VAR "current-argument"
 
+#define PARAMETER_ERROR USHRT_MAX
+
 /* =========================================
    *****************************************
       INTERNALLY VISIBLE FUNCTION HEADERS
    =========================================
    ***************************************** */
 
-static bool ValidGenericName(void *,const char *);
-static SYMBOL_HN *ParseMethodNameAndIndex(void *,const char *,int *);
+   static bool                    ValidGenericName(Environment *,const char *);
+   static CLIPSLexeme            *ParseMethodNameAndIndex(Environment *,const char *,unsigned short *,struct token *);
 
 #if DEBUGGING_FUNCTIONS
-static void CreateDefaultGenericPPForm(void *,DEFGENERIC *);
+   static void                    CreateDefaultGenericPPForm(Environment *,Defgeneric *);
 #endif
 
-static int ParseMethodParameters(void *,const char *,EXPRESSION **,SYMBOL_HN **);
-static RESTRICTION *ParseRestriction(void *,const char *);
-static void ReplaceCurrentArgRefs(void *,EXPRESSION *);
-static bool DuplicateParameters(void *,EXPRESSION *,EXPRESSION **,SYMBOL_HN *);
-static EXPRESSION *AddParameter(void *,EXPRESSION *,EXPRESSION *,SYMBOL_HN *,RESTRICTION *);
-static EXPRESSION *ValidType(void *,SYMBOL_HN *);
-static bool RedundantClasses(void *,void *,void *);
-static DEFGENERIC *AddGeneric(void *,SYMBOL_HN *,bool *);
-static DEFMETHOD *AddGenericMethod(void *,DEFGENERIC *,int,short);
-static int RestrictionsCompare(EXPRESSION *,int,int,int,DEFMETHOD *);
-static int TypeListCompare(RESTRICTION *,RESTRICTION *);
-static DEFGENERIC *NewGeneric(void *,SYMBOL_HN *);
+   static unsigned short          ParseMethodParameters(Environment *,const char *,Expression **,CLIPSLexeme **,struct token *);
+   static RESTRICTION            *ParseRestriction(Environment *,const char *);
+   static void                    ReplaceCurrentArgRefs(Environment *,Expression *);
+   static bool                    DuplicateParameters(Environment *,Expression *,Expression **,CLIPSLexeme *);
+   static Expression             *AddParameter(Environment *,Expression *,Expression *,CLIPSLexeme *,RESTRICTION *);
+   static Expression             *ValidType(Environment *,CLIPSLexeme *);
+   static bool                    RedundantClasses(Environment *,void *,void *);
+   static Defgeneric             *AddGeneric(Environment *,CLIPSLexeme *,bool *);
+   static Defmethod              *AddGenericMethod(Environment *,Defgeneric *,int,unsigned short);
+   static int                     RestrictionsCompare(Expression *,int,int,int,Defmethod *);
+   static int                     TypeListCompare(RESTRICTION *,RESTRICTION *);
+   static Defgeneric             *NewGeneric(Environment *,CLIPSLexeme *);
 
 /* =========================================
    *****************************************
@@ -132,18 +145,19 @@ static DEFGENERIC *NewGeneric(void *,SYMBOL_HN *);
   NAME         : ParseDefgeneric
   DESCRIPTION  : Parses the defgeneric construct
   INPUTS       : The input logical name
-  RETURNS      : false if successful parse, true otherwise
+  RETURNS      : False if successful parse, true otherwise
   SIDE EFFECTS : Inserts valid generic function defn into generic entry
   NOTES        : H/L Syntax :
                  (defgeneric <name> [<comment>])
  ***************************************************************************/
 bool ParseDefgeneric(
-  void *theEnv,
+  Environment *theEnv,
   const char *readSource)
   {
-   SYMBOL_HN *gname;
-   DEFGENERIC *gfunc;
+   CLIPSLexeme *gname;
+   Defgeneric *gfunc;
    bool newGeneric;
+   struct token genericInputToken;
 
    SetPPBufferStatus(theEnv,true);
    FlushPPBuffer(theEnv);
@@ -154,24 +168,24 @@ bool ParseDefgeneric(
    if ((Bloaded(theEnv) == true) && (! ConstructData(theEnv)->CheckSyntaxMode))
      {
       CannotLoadWithBloadMessage(theEnv,"defgeneric");
-      return(true);
+      return true;
      }
 #endif
 
-   gname = GetConstructNameAndComment(theEnv,readSource,&DefgenericData(theEnv)->GenericInputToken,"defgeneric",
-                                      EnvFindDefgenericInModule,NULL,"^",true,
-                                      true,true,false);
+   gname = GetConstructNameAndComment(theEnv,readSource,&genericInputToken,"defgeneric",
+                                      (FindConstructFunction *) FindDefgenericInModule,
+                                      NULL,"^",true,true,true,false);
    if (gname == NULL)
-     return(true);
+     return true;
 
-   if (ValidGenericName(theEnv,ValueToString(gname)) == false)
-     return(true);
+   if (ValidGenericName(theEnv,gname->contents) == false)
+     return true;
 
-   if (DefgenericData(theEnv)->GenericInputToken.type != RPAREN)
+   if (genericInputToken.tknType != RIGHT_PARENTHESIS_TOKEN)
      {
       PrintErrorID(theEnv,"GENRCPSR",1,false);
-      EnvPrintRouter(theEnv,WERROR,"Expected ')' to complete defgeneric.\n");
-      return(true);
+      WriteString(theEnv,STDERR,"Expected ')' to complete defgeneric.\n");
+      return true;
      }
    SavePPBuffer(theEnv,"\n");
 
@@ -181,21 +195,21 @@ bool ParseDefgeneric(
       ======================================================== */
 
    if (ConstructData(theEnv)->CheckSyntaxMode)
-     { return(false); }
+     { return false; }
 
    gfunc = AddGeneric(theEnv,gname,&newGeneric);
 
 #if DEBUGGING_FUNCTIONS
-   EnvSetDefgenericPPForm(theEnv,(void *) gfunc,EnvGetConserveMemory(theEnv) ? NULL : CopyPPBuffer(theEnv));
+   SetDefgenericPPForm(theEnv,gfunc,GetConserveMemory(theEnv) ? NULL : CopyPPBuffer(theEnv));
 #endif
-   return(false);
+   return false;
   }
 
 /***************************************************************************
   NAME         : ParseDefmethod
   DESCRIPTION  : Parses the defmethod construct
   INPUTS       : The input logical name
-  RETURNS      : false if successful parse, true otherwise
+  RETURNS      : False if successful parse, true otherwise
   SIDE EFFECTS : Inserts valid method definition into generic entry
   NOTES        : H/L Syntax :
                  (defmethod <name> [<index>] [<comment>]
@@ -207,19 +221,23 @@ bool ParseDefgeneric(
                                    ($?<name> <type>* [<restriction-query>])
  ***************************************************************************/
 bool ParseDefmethod(
-  void *theEnv,
+  Environment *theEnv,
   const char *readSource)
   {
-   SYMBOL_HN *gname;
-   int rcnt,mposn,mi, lvars;
+   CLIPSLexeme *gname;
+   unsigned short rcnt;
+   int mposn;
+   unsigned short mi;
+   unsigned short lvars;
    bool newMethod;
    bool mnew = false;
    bool error;
-   EXPRESSION *params,*actions,*tmp;
-   SYMBOL_HN *wildcard;
-   DEFMETHOD *meth;
-   DEFGENERIC *gfunc;
-   int theIndex;
+   Expression *params,*actions,*tmp;
+   CLIPSLexeme *wildcard;
+   Defmethod *meth;
+   Defgeneric *gfunc;
+   unsigned short theIndex;
+   struct token genericInputToken;
 
    SetPPBufferStatus(theEnv,true);
    FlushPPBuffer(theEnv);
@@ -230,16 +248,16 @@ bool ParseDefmethod(
    if ((Bloaded(theEnv) == true) && (! ConstructData(theEnv)->CheckSyntaxMode))
      {
       CannotLoadWithBloadMessage(theEnv,"defmethod");
-      return(true);
+      return true;
      }
 #endif
 
-   gname = ParseMethodNameAndIndex(theEnv,readSource,&theIndex);
+   gname = ParseMethodNameAndIndex(theEnv,readSource,&theIndex,&genericInputToken);
    if (gname == NULL)
-     return(true);
+     return true;
 
-   if (ValidGenericName(theEnv,ValueToString(gname)) == false)
-     return(true);
+   if (ValidGenericName(theEnv,gname->contents) == false)
+     return true;
 
    /* ========================================================
       Go ahead and add the header so that the generic function
@@ -253,9 +271,9 @@ bool ParseDefmethod(
 #endif
 
    IncrementIndentDepth(theEnv,1);
-   rcnt = ParseMethodParameters(theEnv,readSource,&params,&wildcard);
+   rcnt = ParseMethodParameters(theEnv,readSource,&params,&wildcard,&genericInputToken);
    DecrementIndentDepth(theEnv,1);
-   if (rcnt == -1)
+   if (rcnt == PARAMETER_ERROR)
      goto DefmethodParseError;
    PPCRAndIndent(theEnv);
    for (tmp = params ; tmp != NULL ; tmp = tmp->nextArg)
@@ -275,33 +293,33 @@ bool ParseDefmethod(
       if (meth->system)
         {
          PrintErrorID(theEnv,"GENRCPSR",17,false);
-         EnvPrintRouter(theEnv,WERROR,"Cannot replace the implicit system method #");
-         PrintLongInteger(theEnv,WERROR,(long long) meth->index);
-         EnvPrintRouter(theEnv,WERROR,".\n");
+         WriteString(theEnv,STDERR,"Cannot replace the implicit system method #");
+         PrintUnsignedInteger(theEnv,STDERR,meth->index);
+         WriteString(theEnv,STDERR,".\n");
          error = true;
         }
       else if ((theIndex != 0) && (theIndex != meth->index))
         {
          PrintErrorID(theEnv,"GENRCPSR",2,false);
-         EnvPrintRouter(theEnv,WERROR,"New method #");
-         PrintLongInteger(theEnv,WERROR,(long long) theIndex);
-         EnvPrintRouter(theEnv,WERROR," would be indistinguishable from method #");
-         PrintLongInteger(theEnv,WERROR,(long long) meth->index);
-         EnvPrintRouter(theEnv,WERROR,".\n");
+         WriteString(theEnv,STDERR,"New method #");
+         PrintUnsignedInteger(theEnv,STDERR,theIndex);
+         WriteString(theEnv,STDERR," would be indistinguishable from method #");
+         PrintUnsignedInteger(theEnv,STDERR,meth->index);
+         WriteString(theEnv,STDERR,".\n");
          error = true;
         }
      }
    else if (theIndex != 0)
      {
       mi = FindMethodByIndex(gfunc,theIndex);
-      if (mi == -1)
+      if (mi == METHOD_NOT_FOUND)
         mnew = true;
       else if (gfunc->methods[mi].system)
         {
          PrintErrorID(theEnv,"GENRCPSR",17,false);
-         EnvPrintRouter(theEnv,WERROR,"Cannot replace the implicit system method #");
-         PrintLongInteger(theEnv,WERROR,(long long) theIndex);
-         EnvPrintRouter(theEnv,WERROR,".\n");
+         WriteString(theEnv,STDERR,"Cannot replace the implicit system method #");
+         PrintUnsignedInteger(theEnv,STDERR,theIndex);
+         WriteString(theEnv,STDERR,".\n");
          error = true;
         }
      }
@@ -314,14 +332,14 @@ bool ParseDefmethod(
      }
    ExpressionData(theEnv)->ReturnContext = true;
    actions = ParseProcActions(theEnv,"method",readSource,
-                              &DefgenericData(theEnv)->GenericInputToken,params,wildcard,
+                              &genericInputToken,params,wildcard,
                               NULL,NULL,&lvars,NULL);
-                              
+
    /*===========================================================*/
    /* Check for the closing right parenthesis of the defmethod. */
    /*===========================================================*/
 
-   if ((DefgenericData(theEnv)->GenericInputToken.type != RPAREN) &&  /* DR0872 */
+   if ((genericInputToken.tknType != RIGHT_PARENTHESIS_TOKEN) &&  /* DR0872 */
        (actions != NULL))
      {
       SyntaxErrorMessage(theEnv,"defmethod");
@@ -347,20 +365,20 @@ bool ParseDefmethod(
       ReturnPackedExpression(theEnv,actions);
       if (newMethod)
         {
-         RemoveConstructFromModule(theEnv,(struct constructHeader *) gfunc);
-         RemoveDefgeneric(theEnv,(struct constructHeader *) gfunc);
+         RemoveConstructFromModule(theEnv,&gfunc->header);
+         RemoveDefgeneric(theEnv,gfunc);
         }
-      return(false);
+      return false;
      }
 
    PPBackup(theEnv);
    PPBackup(theEnv);
-   SavePPBuffer(theEnv,DefgenericData(theEnv)->GenericInputToken.printForm);
+   SavePPBuffer(theEnv,genericInputToken.printForm);
    SavePPBuffer(theEnv,"\n");
 
 #if DEBUGGING_FUNCTIONS
-   meth = AddMethod(theEnv,gfunc,meth,mposn,(short) theIndex,params,rcnt,lvars,wildcard,actions,
-             EnvGetConserveMemory(theEnv) ? NULL : CopyPPBuffer(theEnv),false);
+   meth = AddMethod(theEnv,gfunc,meth,mposn,theIndex,params,rcnt,lvars,wildcard,actions,
+             GetConserveMemory(theEnv) ? NULL : CopyPPBuffer(theEnv),false);
 #else
    meth = AddMethod(theEnv,gfunc,meth,mposn,theIndex,params,rcnt,lvars,wildcard,actions,NULL,false);
 #endif
@@ -368,32 +386,32 @@ bool ParseDefmethod(
    if (GetPrintWhileLoading(theEnv) && GetCompilationsWatch(theEnv) &&
        (! ConstructData(theEnv)->CheckSyntaxMode))
      {
-      const char *outRouter = WDIALOG;
-     
+      const char *outRouter = STDOUT;
+
       if (mnew)
         {
-         EnvPrintRouter(theEnv,outRouter,"   Method #");
-         PrintLongInteger(theEnv,outRouter,(long long) meth->index);
-         EnvPrintRouter(theEnv,outRouter," defined.\n");
+         WriteString(theEnv,outRouter,"   Method #");
+         PrintUnsignedInteger(theEnv,outRouter,meth->index);
+         WriteString(theEnv,outRouter," defined.\n");
         }
       else
         {
-         outRouter = WWARNING;
+         outRouter = STDWRN;
          PrintWarningID(theEnv,"CSTRCPSR",1,true);
-         EnvPrintRouter(theEnv,outRouter,"Method #");
-         PrintLongInteger(theEnv,outRouter,(long long) meth->index);
-         EnvPrintRouter(theEnv,outRouter," redefined.\n");
+         WriteString(theEnv,outRouter,"Method #");
+         PrintUnsignedInteger(theEnv,outRouter,meth->index);
+         WriteString(theEnv,outRouter," redefined.\n");
         }
      }
-   return(false);
+   return false;
 
 DefmethodParseError:
    if (newMethod)
      {
-      RemoveConstructFromModule(theEnv,(struct constructHeader *) gfunc);
-      RemoveDefgeneric(theEnv,(void *) gfunc);
+      RemoveConstructFromModule(theEnv,&gfunc->header);
+      RemoveDefgeneric(theEnv,gfunc);
      }
-   return(true);
+   return true;
   }
 
 /************************************************************************
@@ -425,29 +443,29 @@ DefmethodParseError:
                    is already present or not.  Arguments #1 and #2
                    should be the values obtained from FindMethod...().
  ************************************************************************/
-DEFMETHOD *AddMethod(
-  void *theEnv,
-  DEFGENERIC *gfunc,
-  DEFMETHOD *meth,
+Defmethod *AddMethod(
+  Environment *theEnv,
+  Defgeneric *gfunc,
+  Defmethod *meth,
   int mposn,
-  short mi,
-  EXPRESSION *params,
-  int rcnt,
-  int lvars,
-  SYMBOL_HN *wildcard,
-  EXPRESSION *actions,
+  unsigned short mi,
+  Expression *params,
+  unsigned short rcnt,
+  unsigned short lvars,
+  CLIPSLexeme *wildcard,
+  Expression *actions,
   char *ppForm,
   bool copyRestricts)
   {
-   RESTRICTION *rptr,*rtmp;
-   register int i,j;
-   int mai;
+   RESTRICTION *rptr, *rtmp;
+   int i,j;
+   unsigned short mai;
 
    SaveBusyCount(gfunc);
    if (meth == NULL)
      {
-      mai = (mi != 0) ? FindMethodByIndex(gfunc,mi) : -1;
-      if (mai == -1)
+      mai = (mi != 0) ? FindMethodByIndex(gfunc,mi) : METHOD_NOT_FOUND;
+      if (mai == METHOD_NOT_FOUND)
         meth = AddGenericMethod(theEnv,gfunc,mposn,mi);
       else
         {
@@ -456,12 +474,12 @@ DEFMETHOD *AddMethod(
            {
             mposn--;
             for (i = mai+1 ; i <= mposn ; i++)
-              GenCopyMemory(DEFMETHOD,1,&gfunc->methods[i-1],&gfunc->methods[i]);
+              GenCopyMemory(Defmethod,1,&gfunc->methods[i-1],&gfunc->methods[i]);
            }
          else
            {
             for (i = mai-1 ; i >= mposn ; i--)
-              GenCopyMemory(DEFMETHOD,1,&gfunc->methods[i+1],&gfunc->methods[i]);
+              GenCopyMemory(Defmethod,1,&gfunc->methods[i+1],&gfunc->methods[i]);
            }
          meth = &gfunc->methods[mposn];
          meth->index = mi;
@@ -474,28 +492,32 @@ DEFMETHOD *AddMethod(
          ================================ */
       ExpressionDeinstall(theEnv,meth->actions);
       ReturnPackedExpression(theEnv,meth->actions);
-      if (meth->ppForm != NULL)
-        rm(theEnv,(void *) meth->ppForm,(sizeof(char) * (strlen(meth->ppForm)+1)));
+      if (meth->header.ppForm != NULL)
+        rm(theEnv,(void *) meth->header.ppForm,(sizeof(char) * (strlen(meth->header.ppForm)+1)));
      }
    meth->system = 0;
    meth->actions = actions;
    ExpressionInstall(theEnv,meth->actions);
-   meth->ppForm = ppForm;
+   meth->header.ppForm = ppForm;
    if (mposn == -1)
      {
       RestoreBusyCount(gfunc);
       return(meth);
      }
 
-   meth->localVarCount = (short) lvars;
-   meth->restrictionCount = (short) rcnt;
+   meth->localVarCount = lvars;
+   meth->restrictionCount = rcnt;
+      
    if (wildcard != NULL)
      {
-      meth->minRestrictions = (short) (rcnt-1);
-      meth->maxRestrictions = -1;
+      if (rcnt == 0)
+        { meth->minRestrictions = RESTRICTIONS_UNBOUNDED; }
+      else
+        { meth->minRestrictions = rcnt - 1; }
+      meth->maxRestrictions = RESTRICTIONS_UNBOUNDED;
      }
    else
-     meth->minRestrictions = meth->maxRestrictions = (short) rcnt;
+     meth->minRestrictions = meth->maxRestrictions = rcnt;
    if (rcnt != 0)
      meth->restrictions = (RESTRICTION *)
                           gm2(theEnv,(sizeof(RESTRICTION) * rcnt));
@@ -531,9 +553,9 @@ DEFMETHOD *AddMethod(
       ExpressionInstall(theEnv,rptr->query);
       for (j = 0 ; j < rptr->tcnt ; j++)
 #if OBJECT_SYSTEM
-        IncrementDefclassBusyCount(theEnv,rptr->types[j]);
+        IncrementDefclassBusyCount(theEnv,(Defclass *) rptr->types[j]);
 #else
-        IncrementIntegerCount((INTEGER_HN *) rptr->types[j]);
+        IncrementIntegerCount((CLIPSInteger *) rptr->types[j]);
 #endif
       params = params->nextArg;
      }
@@ -553,11 +575,11 @@ DEFMETHOD *AddMethod(
   NOTES        : None
  *****************************************************/
 void PackRestrictionTypes(
-  void *theEnv,
+  Environment *theEnv,
   RESTRICTION *rptr,
-  EXPRESSION *types)
+  Expression *types)
   {
-   EXPRESSION *tmp;
+   Expression *tmp;
    long i;
 
    rptr->tcnt = 0;
@@ -568,7 +590,7 @@ void PackRestrictionTypes(
    else
      rptr->types = NULL;
    for (i = 0 , tmp = types ; i < rptr->tcnt ; i++ , tmp = tmp->nextArg)
-     rptr->types[i] = (void *) tmp->value;
+     rptr->types[i] = tmp->value;
    ReturnExpression(theEnv,types);
   }
 
@@ -582,10 +604,10 @@ void PackRestrictionTypes(
   NOTES        : None
  ***************************************************/
 void DeleteTempRestricts(
-  void *theEnv,
-  EXPRESSION *phead)
+  Environment *theEnv,
+  Expression *phead)
   {
-   EXPRESSION *ptmp;
+   Expression *ptmp;
    RESTRICTION *rtmp;
 
    while (phead != NULL)
@@ -596,7 +618,7 @@ void DeleteTempRestricts(
       rtn_struct(theEnv,expr,ptmp);
       ReturnExpression(theEnv,rtmp->query);
       if (rtmp->tcnt != 0)
-        rm(theEnv,(void *) rtmp->types,(sizeof(void *) * rtmp->tcnt));
+        rm(theEnv,rtmp->types,(sizeof(void *) * rtmp->tcnt));
       rtn_struct(theEnv,restriction,rtmp);
      }
   }
@@ -619,14 +641,14 @@ void DeleteTempRestricts(
                    already present
   NOTES        : None
  **********************************************************/
-DEFMETHOD *FindMethodByRestrictions(
-  DEFGENERIC *gfunc,
-  EXPRESSION *params,
+Defmethod *FindMethodByRestrictions(
+  Defgeneric *gfunc,
+  Expression *params,
   int rcnt,
-  SYMBOL_HN *wildcard,
+  CLIPSLexeme *wildcard,
   int *posn)
   {
-   register int i,cmp;
+   int i,cmp;
    int min,max;
 
    if (wildcard != NULL)
@@ -647,11 +669,11 @@ DEFMETHOD *FindMethodByRestrictions(
       else if (cmp == HIGHER_PRECEDENCE)
         {
          *posn = i;
-         return(NULL);
+         return NULL;
         }
      }
    *posn = i;
-   return(NULL);
+   return NULL;
   }
 
 /* =========================================
@@ -665,7 +687,7 @@ DEFMETHOD *FindMethodByRestrictions(
   DESCRIPTION  : Determines if a particular function name
                     can be overloaded
   INPUTS       : The name
-  RETURNS      : true if OK, false otherwise
+  RETURNS      : True if OK, false otherwise
   SIDE EFFECTS : Error message printed
   NOTES        : GetConstructNameAndComment() (called before
                  this function) ensures that the defgeneric
@@ -673,25 +695,26 @@ DEFMETHOD *FindMethodByRestrictions(
                  another module
  ***********************************************************/
 static bool ValidGenericName(
-  void *theEnv,
+  Environment *theEnv,
   const char *theDefgenericName)
   {
-   struct constructHeader *theDefgeneric;
+   Defgeneric *theDefgeneric;
 #if DEFFUNCTION_CONSTRUCT
-   struct defmodule *theModule;
-   struct constructHeader *theDeffunction;
+   Defmodule *theModule;
+   Deffunction *theDeffunction;
 #endif
-   struct FunctionDefinition *systemFunction;
+   struct functionDefinition *systemFunction;
 
-   /* ============================================
-      A defgeneric cannot be named the same as a
-      construct type, e.g, defclass, defrule, etc.
-      ============================================ */
+   /*==============================================*/
+   /* A defgeneric cannot be named the same as a   */
+   /* construct type, e.g, defclass, defrule, etc. */
+   /*==============================================*/
+
    if (FindConstruct(theEnv,theDefgenericName) != NULL)
      {
       PrintErrorID(theEnv,"GENRCPSR",3,false);
-      EnvPrintRouter(theEnv,WERROR,"Defgenerics are not allowed to replace constructs.\n");
-      return(false);
+      WriteString(theEnv,STDERR,"Defgenerics are not allowed to replace constructs.\n");
+      return false;
      }
 
 #if DEFFUNCTION_CONSTRUCT
@@ -700,35 +723,35 @@ static bool ValidGenericName(
       a defffunction (either in this module or
       imported from another)
       ======================================== */
-   theDeffunction =
-      (struct constructHeader *) LookupDeffunctionInScope(theEnv,theDefgenericName);
+   theDeffunction = LookupDeffunctionInScope(theEnv,theDefgenericName);
    if (theDeffunction != NULL)
      {
-      theModule = GetConstructModuleItem(theDeffunction)->theModule;
-      if (theModule != ((struct defmodule *) EnvGetCurrentModule(theEnv)))
+      theModule = GetConstructModuleItem(&theDeffunction->header)->theModule;
+      if (theModule != GetCurrentModule(theEnv))
         {
          PrintErrorID(theEnv,"GENRCPSR",4,false);
-         EnvPrintRouter(theEnv,WERROR,"Deffunction ");
-         EnvPrintRouter(theEnv,WERROR,EnvGetDeffunctionName(theEnv,(void *) theDeffunction));
-         EnvPrintRouter(theEnv,WERROR," imported from module ");
-         EnvPrintRouter(theEnv,WERROR,EnvGetDefmoduleName(theEnv,(void *) theModule));
-         EnvPrintRouter(theEnv,WERROR," conflicts with this defgeneric.\n");
-         return(false);
+         WriteString(theEnv,STDERR,"Deffunction '");
+         WriteString(theEnv,STDERR,DeffunctionName(theDeffunction));
+         WriteString(theEnv,STDERR,"' imported from module '");
+         WriteString(theEnv,STDERR,DefmoduleName(theModule));
+         WriteString(theEnv,STDERR,"' conflicts with this defgeneric.\n");
+         return false;
         }
       else
         {
          PrintErrorID(theEnv,"GENRCPSR",5,false);
-         EnvPrintRouter(theEnv,WERROR,"Defgenerics are not allowed to replace deffunctions.\n");
+         WriteString(theEnv,STDERR,"Defgenerics are not allowed to replace deffunctions.\n");
         }
-      return(false);
+      return false;
      }
 #endif
 
-   /* =========================================
-      See if the defgeneric already exists in
-      this module (or is imported from another)
-      ========================================= */
-   theDefgeneric = (struct constructHeader *) EnvFindDefgenericInModule(theEnv,theDefgenericName);
+   /*===========================================*/
+   /* See if the defgeneric already exists in   */
+   /* this module (or is imported from another) */
+   /*===========================================*/
+
+   theDefgeneric = FindDefgenericInModule(theEnv,theDefgenericName);
    if (theDefgeneric != NULL)
      {
       /* ===========================================
@@ -736,10 +759,10 @@ static bool ValidGenericName(
          the current module is only valid if none
          of its methods are executing
          =========================================== */
-      if (MethodsExecuting((DEFGENERIC *) theDefgeneric))
+      if (MethodsExecuting(theDefgeneric))
         {
-         MethodAlterError(theEnv,(DEFGENERIC *) theDefgeneric);
-         return(false);
+         MethodAlterError(theEnv,theDefgeneric);
+         return false;
         }
      }
 
@@ -752,12 +775,12 @@ static bool ValidGenericName(
        (systemFunction->overloadable == false) : false)
      {
       PrintErrorID(theEnv,"GENRCPSR",16,false);
-      EnvPrintRouter(theEnv,WERROR,"The system function ");
-      EnvPrintRouter(theEnv,WERROR,theDefgenericName);
-      EnvPrintRouter(theEnv,WERROR," cannot be overloaded.\n");
-      return(false);
+      WriteString(theEnv,STDERR,"The system function '");
+      WriteString(theEnv,STDERR,theDefgenericName);
+      WriteString(theEnv,STDERR,"' cannot be overloaded.\n");
+      return false;
      }
-   return(true);
+   return true;
   }
 
 #if DEBUGGING_FUNCTIONS
@@ -775,17 +798,17 @@ static bool ValidGenericName(
   NOTES        : None
  ***************************************************/
 static void CreateDefaultGenericPPForm(
-  void *theEnv,
-  DEFGENERIC *gfunc)
+  Environment *theEnv,
+  Defgeneric *gfunc)
   {
    const char *moduleName, *genericName;
    char *buf;
 
-   moduleName = EnvGetDefmoduleName(theEnv,(void *) ((struct defmodule *) EnvGetCurrentModule(theEnv)));
-   genericName = EnvGetDefgenericName(theEnv,(void *) gfunc);
+   moduleName = DefmoduleName(GetCurrentModule(theEnv));
+   genericName = DefgenericName(gfunc);
    buf = (char *) gm2(theEnv,(sizeof(char) * (strlen(moduleName) + strlen(genericName) + 17)));
    gensprintf(buf,"(defgeneric %s::%s)\n",moduleName,genericName);
-   EnvSetDefgenericPPForm(theEnv,(void *) gfunc,buf);
+   SetDefgenericPPForm(theEnv,gfunc,buf);
   }
 
 #endif
@@ -801,45 +824,47 @@ static void CreateDefaultGenericPPForm(
   SIDE EFFECTS : None
   NOTES        : Assumes "(defmethod " already parsed
  *******************************************************/
-static SYMBOL_HN *ParseMethodNameAndIndex(
-  void *theEnv,
+static CLIPSLexeme *ParseMethodNameAndIndex(
+  Environment *theEnv,
   const char *readSource,
-  int *theIndex)
+  unsigned short *theIndex,
+  struct token *genericInputToken)
   {
-   SYMBOL_HN *gname;
+   CLIPSLexeme *gname;
 
    *theIndex = 0;
-   gname = GetConstructNameAndComment(theEnv,readSource,&DefgenericData(theEnv)->GenericInputToken,"defgeneric",
-                                      EnvFindDefgenericInModule,NULL,"&",true,false,true,true);
+   gname = GetConstructNameAndComment(theEnv,readSource,genericInputToken,"defgeneric",
+                                      (FindConstructFunction *) FindDefgenericInModule,
+                                      NULL,"&",true,false,true,true);
    if (gname == NULL)
-     return(NULL);
-   if (GetType(DefgenericData(theEnv)->GenericInputToken) == INTEGER)
+     return NULL;
+   if (genericInputToken->tknType == INTEGER_TOKEN)
      {
-      int tmp;
+      unsigned short tmp;
 
       PPBackup(theEnv);
       PPBackup(theEnv);
       SavePPBuffer(theEnv," ");
-      SavePPBuffer(theEnv,DefgenericData(theEnv)->GenericInputToken.printForm);
-      tmp = (int) ValueToLong(GetValue(DefgenericData(theEnv)->GenericInputToken));
+      SavePPBuffer(theEnv,genericInputToken->printForm);
+      tmp = (unsigned short) genericInputToken->integerValue->contents;
       if (tmp < 1)
         {
          PrintErrorID(theEnv,"GENRCPSR",6,false);
-         EnvPrintRouter(theEnv,WERROR,"Method index out of range.\n");
-         return(NULL);
+         WriteString(theEnv,STDERR,"Method index out of range.\n");
+         return NULL;
         }
       *theIndex = tmp;
       PPCRAndIndent(theEnv);
-      GetToken(theEnv,readSource,&DefgenericData(theEnv)->GenericInputToken);
+      GetToken(theEnv,readSource,genericInputToken);
      }
-   if (GetType(DefgenericData(theEnv)->GenericInputToken) == STRING)
+   if (genericInputToken->tknType == STRING_TOKEN)
      {
       PPBackup(theEnv);
       PPBackup(theEnv);
       SavePPBuffer(theEnv," ");
-      SavePPBuffer(theEnv,DefgenericData(theEnv)->GenericInputToken.printForm);
+      SavePPBuffer(theEnv,genericInputToken->printForm);
       PPCRAndIndent(theEnv);
-      GetToken(theEnv,readSource,&DefgenericData(theEnv)->GenericInputToken);
+      GetToken(theEnv,readSource,genericInputToken);
      }
    return(gname);
   }
@@ -860,44 +885,46 @@ static SYMBOL_HN *ParseMethodNameAndIndex(
   NOTES        : Any memory allocated is freed on errors
                  Assumes first opening parenthesis has been scanned
  ************************************************************************/
-static int ParseMethodParameters(
-  void *theEnv,
+static unsigned short ParseMethodParameters(
+  Environment *theEnv,
   const char *readSource,
-  EXPRESSION **params,
-  SYMBOL_HN **wildcard)
+  Expression **params,
+  CLIPSLexeme **wildcard,
+  struct token *genericInputToken)
   {
-   EXPRESSION *phead = NULL,*pprv;
-   SYMBOL_HN *pname;
+   Expression *phead = NULL,*pprv;
+   CLIPSLexeme *pname;
    RESTRICTION *rtmp;
-   int rcnt = 0;
+   unsigned short rcnt = 0;
 
    *wildcard = NULL;
    *params = NULL;
-   if (GetType(DefgenericData(theEnv)->GenericInputToken) != LPAREN)
+   if (genericInputToken->tknType != LEFT_PARENTHESIS_TOKEN)
      {
       PrintErrorID(theEnv,"GENRCPSR",7,false);
-      EnvPrintRouter(theEnv,WERROR,"Expected a '(' to begin method parameter restrictions.\n");
-      return(-1);
+      WriteString(theEnv,STDERR,"Expected a '(' to begin method parameter restrictions.\n");
+      return PARAMETER_ERROR;
      }
-   GetToken(theEnv,readSource,&DefgenericData(theEnv)->GenericInputToken);
-   while (DefgenericData(theEnv)->GenericInputToken.type != RPAREN)
+   GetToken(theEnv,readSource,genericInputToken);
+   while (genericInputToken->tknType != RIGHT_PARENTHESIS_TOKEN)
      {
       if (*wildcard != NULL)
         {
          DeleteTempRestricts(theEnv,phead);
          PrintErrorID(theEnv,"PRCCODE",8,false);
-         EnvPrintRouter(theEnv,WERROR,"No parameters allowed after wildcard parameter.\n");
-         return(-1);
+         WriteString(theEnv,STDERR,"No parameters allowed after wildcard parameter.\n");
+         return PARAMETER_ERROR;
         }
-      if ((DefgenericData(theEnv)->GenericInputToken.type == SF_VARIABLE) || (DefgenericData(theEnv)->GenericInputToken.type == MF_VARIABLE))
+      if ((genericInputToken->tknType == SF_VARIABLE_TOKEN) ||
+          (genericInputToken->tknType == MF_VARIABLE_TOKEN))
         {
-         pname = (SYMBOL_HN *) DefgenericData(theEnv)->GenericInputToken.value;
+         pname = genericInputToken->lexemeValue;
          if (DuplicateParameters(theEnv,phead,&pprv,pname))
            {
             DeleteTempRestricts(theEnv,phead);
-            return(-1);
+            return PARAMETER_ERROR;
            }
-         if (DefgenericData(theEnv)->GenericInputToken.type == MF_VARIABLE)
+         if (genericInputToken->tknType == MF_VARIABLE_TOKEN)
            *wildcard = pname;
          rtmp = get_struct(theEnv,restriction);
          PackRestrictionTypes(theEnv,rtmp,NULL);
@@ -905,31 +932,31 @@ static int ParseMethodParameters(
          phead = AddParameter(theEnv,phead,pprv,pname,rtmp);
          rcnt++;
         }
-      else if (DefgenericData(theEnv)->GenericInputToken.type == LPAREN)
+      else if (genericInputToken->tknType == LEFT_PARENTHESIS_TOKEN)
         {
-         GetToken(theEnv,readSource,&DefgenericData(theEnv)->GenericInputToken);
-         if ((DefgenericData(theEnv)->GenericInputToken.type != SF_VARIABLE) &&
-             (DefgenericData(theEnv)->GenericInputToken.type != MF_VARIABLE))
+         GetToken(theEnv,readSource,genericInputToken);
+         if ((genericInputToken->tknType != SF_VARIABLE_TOKEN) &&
+             (genericInputToken->tknType != MF_VARIABLE_TOKEN))
            {
             DeleteTempRestricts(theEnv,phead);
             PrintErrorID(theEnv,"GENRCPSR",8,false);
-            EnvPrintRouter(theEnv,WERROR,"Expected a variable for parameter specification.\n");
-            return(-1);
+            WriteString(theEnv,STDERR,"Expected a variable for parameter specification.\n");
+            return PARAMETER_ERROR;
            }
-         pname = (SYMBOL_HN *) DefgenericData(theEnv)->GenericInputToken.value;
+         pname = genericInputToken->lexemeValue;
          if (DuplicateParameters(theEnv,phead,&pprv,pname))
            {
             DeleteTempRestricts(theEnv,phead);
-            return(-1);
+            return PARAMETER_ERROR;
            }
-         if (DefgenericData(theEnv)->GenericInputToken.type == MF_VARIABLE)
+         if (genericInputToken->tknType == MF_VARIABLE_TOKEN)
            *wildcard = pname;
          SavePPBuffer(theEnv," ");
          rtmp = ParseRestriction(theEnv,readSource);
          if (rtmp == NULL)
            {
             DeleteTempRestricts(theEnv,phead);
-            return(-1);
+            return PARAMETER_ERROR;
            }
          phead = AddParameter(theEnv,phead,pprv,pname,rtmp);
          rcnt++;
@@ -938,11 +965,11 @@ static int ParseMethodParameters(
         {
          DeleteTempRestricts(theEnv,phead);
          PrintErrorID(theEnv,"GENRCPSR",9,false);
-         EnvPrintRouter(theEnv,WERROR,"Expected a variable or '(' for parameter specification.\n");
-         return(-1);
+         WriteString(theEnv,STDERR,"Expected a variable or '(' for parameter specification.\n");
+         return PARAMETER_ERROR;
         }
       PPCRAndIndent(theEnv);
-      GetToken(theEnv,readSource,&DefgenericData(theEnv)->GenericInputToken);
+      GetToken(theEnv,readSource,genericInputToken);
      }
    if (rcnt != 0)
      {
@@ -974,33 +1001,34 @@ static int ParseMethodParameters(
                  H/L Syntax: <type>* [<query>])
  ************************************************************/
 static RESTRICTION *ParseRestriction(
-  void *theEnv,
+  Environment *theEnv,
   const char *readSource)
   {
-   EXPRESSION *types = NULL,*new_types,
+   Expression *types = NULL,*new_types,
               *typesbot,*tmp,*tmp2,
               *query = NULL;
    RESTRICTION *rptr;
+   struct token genericInputToken;
 
-   GetToken(theEnv,readSource,&DefgenericData(theEnv)->GenericInputToken);
-   while (DefgenericData(theEnv)->GenericInputToken.type != RPAREN)
+   GetToken(theEnv,readSource,&genericInputToken);
+   while (genericInputToken.tknType != RIGHT_PARENTHESIS_TOKEN)
      {
       if (query != NULL)
         {
          PrintErrorID(theEnv,"GENRCPSR",10,false);
-         EnvPrintRouter(theEnv,WERROR,"Query must be last in parameter restriction.\n");
+         WriteString(theEnv,STDERR,"Query must be last in parameter restriction.\n");
          ReturnExpression(theEnv,query);
          ReturnExpression(theEnv,types);
-         return(NULL);
+         return NULL;
         }
-      if (DefgenericData(theEnv)->GenericInputToken.type == SYMBOL)
+      if (genericInputToken.tknType == SYMBOL_TOKEN)
         {
-         new_types = ValidType(theEnv,(SYMBOL_HN *) DefgenericData(theEnv)->GenericInputToken.value);
+         new_types = ValidType(theEnv,genericInputToken.lexemeValue);
          if (new_types == NULL)
            {
             ReturnExpression(theEnv,types);
             ReturnExpression(theEnv,query);
-            return(NULL);
+            return NULL;
            }
          if (types == NULL)
            types = new_types;
@@ -1014,21 +1042,21 @@ static RESTRICTION *ParseRestriction(
                     {
                      PrintErrorID(theEnv,"GENRCPSR",11,false);
 #if OBJECT_SYSTEM
-                     EnvPrintRouter(theEnv,WERROR,"Duplicate classes not allowed in parameter restriction.\n");
+                     WriteString(theEnv,STDERR,"Duplicate classes not allowed in parameter restriction.\n");
 #else
-                     EnvPrintRouter(theEnv,WERROR,"Duplicate types not allowed in parameter restriction.\n");
+                     WriteString(theEnv,STDERR,"Duplicate types not allowed in parameter restriction.\n");
 #endif
                      ReturnExpression(theEnv,query);
                      ReturnExpression(theEnv,types);
                      ReturnExpression(theEnv,new_types);
-                     return(NULL);
+                     return NULL;
                     }
                   if (RedundantClasses(theEnv,tmp->value,tmp2->value))
                     {
                      ReturnExpression(theEnv,query);
                      ReturnExpression(theEnv,types);
                      ReturnExpression(theEnv,new_types);
-                     return(NULL);
+                     return NULL;
                     }
                  }
                typesbot = tmp;
@@ -1036,41 +1064,41 @@ static RESTRICTION *ParseRestriction(
             typesbot->nextArg = new_types;
            }
         }
-      else if (DefgenericData(theEnv)->GenericInputToken.type == LPAREN)
+      else if (genericInputToken.tknType == LEFT_PARENTHESIS_TOKEN)
         {
          query = Function1Parse(theEnv,readSource);
          if (query == NULL)
            {
             ReturnExpression(theEnv,types);
-            return(NULL);
+            return NULL;
            }
          if (GetParsedBindNames(theEnv) != NULL)
            {
             PrintErrorID(theEnv,"GENRCPSR",12,false);
-            EnvPrintRouter(theEnv,WERROR,"Binds are not allowed in query expressions.\n");
+            WriteString(theEnv,STDERR,"Binds are not allowed in query expressions.\n");
             ReturnExpression(theEnv,query);
             ReturnExpression(theEnv,types);
-            return(NULL);
+            return NULL;
            }
         }
 #if DEFGLOBAL_CONSTRUCT
-      else if (DefgenericData(theEnv)->GenericInputToken.type == GBL_VARIABLE)
-        query = GenConstant(theEnv,GBL_VARIABLE,DefgenericData(theEnv)->GenericInputToken.value);
+      else if (genericInputToken.tknType == GBL_VARIABLE_TOKEN)
+        query = GenConstant(theEnv,GBL_VARIABLE,genericInputToken.value);
 #endif
       else
         {
          PrintErrorID(theEnv,"GENRCPSR",13,false);
 #if OBJECT_SYSTEM
-         EnvPrintRouter(theEnv,WERROR,"Expected a valid class name or query.\n");
+         WriteString(theEnv,STDERR,"Expected a valid class name or query.\n");
 #else
-         EnvPrintRouter(theEnv,WERROR,"Expected a valid type name or query.\n");
+         WriteString(theEnv,STDERR,"Expected a valid type name or query.\n");
 #endif
          ReturnExpression(theEnv,query);
          ReturnExpression(theEnv,types);
-         return(NULL);
+         return NULL;
         }
       SavePPBuffer(theEnv," ");
-      GetToken(theEnv,readSource,&DefgenericData(theEnv)->GenericInputToken);
+      GetToken(theEnv,readSource,&genericInputToken);
      }
    PPBackup(theEnv);
    PPBackup(theEnv);
@@ -1079,11 +1107,11 @@ static RESTRICTION *ParseRestriction(
      {
       PrintErrorID(theEnv,"GENRCPSR",13,false);
 #if OBJECT_SYSTEM
-      EnvPrintRouter(theEnv,WERROR,"Expected a valid class name or query.\n");
+      WriteString(theEnv,STDERR,"Expected a valid class name or query.\n");
 #else
-      EnvPrintRouter(theEnv,WERROR,"Expected a valid type name or query.\n");
+      WriteString(theEnv,STDERR,"Expected a valid type name or query.\n");
 #endif
-      return(NULL);
+      return NULL;
      }
    rptr = get_struct(theEnv,restriction);
    rptr->query = query;
@@ -1102,16 +1130,16 @@ static RESTRICTION *ParseRestriction(
   NOTES        : None
  *****************************************************************/
 static void ReplaceCurrentArgRefs(
-  void *theEnv,
-  EXPRESSION *query)
+  Environment *theEnv,
+  Expression *query)
   {
    while (query != NULL)
      {
       if ((query->type != SF_VARIABLE) ? false :
-          (strcmp(ValueToString(query->value),CURR_ARG_VAR) == 0))
+          (strcmp(query->lexemeValue->contents,CURR_ARG_VAR) == 0))
         {
          query->type = FCALL;
-         query->value = (void *) FindFunction(theEnv,"(gnrc-current-arg)");
+         query->value = FindFunction(theEnv,"(gnrc-current-arg)");
         }
       if (query->argList != NULL)
         ReplaceCurrentArgRefs(theEnv,query->argList);
@@ -1128,15 +1156,15 @@ static void ReplaceCurrentArgRefs(
                     last node searched (can be used to
                     later attach new parameter)
                  3) The name of the parameter being checked
-  RETURNS      : true if duplicates found, false otherwise
+  RETURNS      : True if duplicates found, false otherwise
   SIDE EFFECTS : Caller's prv address set
   NOTES        : Assumes all parameter list nodes are WORDS
  **********************************************************/
 static bool DuplicateParameters(
-  void *theEnv,
-  EXPRESSION *head,
-  EXPRESSION **prv,
-  SYMBOL_HN *name)
+  Environment *theEnv,
+  Expression *head,
+  Expression **prv,
+  CLIPSLexeme *name)
   {
    *prv = NULL;
    while (head != NULL)
@@ -1144,13 +1172,13 @@ static bool DuplicateParameters(
       if (head->value == (void *) name)
         {
          PrintErrorID(theEnv,"PRCCODE",7,false);
-         EnvPrintRouter(theEnv,WERROR,"Duplicate parameter names not allowed.\n");
-         return(true);
+         WriteString(theEnv,STDERR,"Duplicate parameter names not allowed.\n");
+         return true;
         }
       *prv = head;
       head = head->nextArg;
      }
-   return(false);
+   return false;
   }
 
 /*****************************************************************
@@ -1169,21 +1197,21 @@ static bool DuplicateParameters(
                    and attached
   NOTES        : None
  *****************************************************************/
-static EXPRESSION *AddParameter(
-  void *theEnv,
-  EXPRESSION *phead,
-  EXPRESSION *pprv,
-  SYMBOL_HN *pname,
+static Expression *AddParameter(
+  Environment *theEnv,
+  Expression *phead,
+  Expression *pprv,
+  CLIPSLexeme *pname,
   RESTRICTION *rptr)
   {
-   EXPRESSION *ptmp;
+   Expression *ptmp;
 
-   ptmp = GenConstant(theEnv,SYMBOL,(void *) pname);
+   ptmp = GenConstant(theEnv,SYMBOL_TYPE,pname);
    if (phead == NULL)
      phead = ptmp;
    else
      pprv->nextArg = ptmp;
-   ptmp->argList = (EXPRESSION *) rptr;
+   ptmp->argList = (Expression *) rptr;
    return(phead);
   }
 
@@ -1200,62 +1228,62 @@ static EXPRESSION *AddParameter(
                    (or class addresses)
   NOTES        : None
  *************************************************************/
-static EXPRESSION *ValidType(
-  void *theEnv,
-  SYMBOL_HN *tname)
+static Expression *ValidType(
+  Environment *theEnv,
+  CLIPSLexeme *tname)
   {
 #if OBJECT_SYSTEM
-   DEFCLASS *cls;
+   Defclass *cls;
 
-   if (FindModuleSeparator(ValueToString(tname)))
+   if (FindModuleSeparator(tname->contents))
      IllegalModuleSpecifierMessage(theEnv);
    else
      {
-      cls = LookupDefclassInScope(theEnv,ValueToString(tname));
+      cls = LookupDefclassInScope(theEnv,tname->contents);
       if (cls == NULL)
         {
          PrintErrorID(theEnv,"GENRCPSR",14,false);
-         EnvPrintRouter(theEnv,WERROR,"Unknown class in method.\n");
-         return(NULL);
+         WriteString(theEnv,STDERR,"Unknown class in method.\n");
+         return NULL;
         }
-      return(GenConstant(theEnv,DEFCLASS_PTR,(void *) cls));
+      return(GenConstant(theEnv,DEFCLASS_PTR,cls));
      }
 #else
-   if (strcmp(ValueToString(tname),INTEGER_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) INTEGER)));
-   if (strcmp(ValueToString(tname),FLOAT_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) FLOAT)));
-   if (strcmp(ValueToString(tname),SYMBOL_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) SYMBOL)));
-   if (strcmp(ValueToString(tname),STRING_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) STRING)));
-   if (strcmp(ValueToString(tname),MULTIFIELD_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) MULTIFIELD)));
-   if (strcmp(ValueToString(tname),EXTERNAL_ADDRESS_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) EXTERNAL_ADDRESS)));
-   if (strcmp(ValueToString(tname),FACT_ADDRESS_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) FACT_ADDRESS)));
-   if (strcmp(ValueToString(tname),NUMBER_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) NUMBER_TYPE_CODE)));
-   if (strcmp(ValueToString(tname),LEXEME_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) LEXEME_TYPE_CODE)));
-   if (strcmp(ValueToString(tname),ADDRESS_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) ADDRESS_TYPE_CODE)));
-   if (strcmp(ValueToString(tname),PRIMITIVE_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) PRIMITIVE_TYPE_CODE)));
-   if (strcmp(ValueToString(tname),OBJECT_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) OBJECT_TYPE_CODE)));
-   if (strcmp(ValueToString(tname),INSTANCE_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) INSTANCE_TYPE_CODE)));
-   if (strcmp(ValueToString(tname),INSTANCE_NAME_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) INSTANCE_NAME)));
-   if (strcmp(ValueToString(tname),INSTANCE_ADDRESS_TYPE_NAME) == 0)
-     return(GenConstant(theEnv,INTEGER,(void *) EnvAddLong(theEnv,(long long) INSTANCE_ADDRESS)));
+   if (strcmp(tname->contents,INTEGER_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,INTEGER_TYPE)));
+   if (strcmp(tname->contents,FLOAT_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,FLOAT_TYPE)));
+   if (strcmp(tname->contents,SYMBOL_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,SYMBOL_TYPE)));
+   if (strcmp(tname->contents,STRING_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,STRING_TYPE)));
+   if (strcmp(tname->contents,MULTIFIELD_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,MULTIFIELD_TYPE)));
+   if (strcmp(tname->contents,EXTERNAL_ADDRESS_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,EXTERNAL_ADDRESS_TYPE)));
+   if (strcmp(tname->contents,FACT_ADDRESS_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,FACT_ADDRESS_TYPE)));
+   if (strcmp(tname->contents,NUMBER_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,NUMBER_TYPE_CODE)));
+   if (strcmp(tname->contents,LEXEME_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,LEXEME_TYPE_CODE)));
+   if (strcmp(tname->contents,ADDRESS_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,ADDRESS_TYPE_CODE)));
+   if (strcmp(tname->contents,PRIMITIVE_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,PRIMITIVE_TYPE_CODE)));
+   if (strcmp(tname->contents,OBJECT_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,OBJECT_TYPE_CODE)));
+   if (strcmp(tname->contents,INSTANCE_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,INSTANCE_TYPE_CODE)));
+   if (strcmp(tname->contents,INSTANCE_NAME_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,INSTANCE_NAME_TYPE)));
+   if (strcmp(tname->contents,INSTANCE_ADDRESS_TYPE_NAME) == 0)
+     return(GenConstant(theEnv,INTEGER_TYPE,CreateInteger(theEnv,INSTANCE_ADDRESS_TYPE)));
 
    PrintErrorID(theEnv,"GENRCPSR",14,false);
-   EnvPrintRouter(theEnv,WERROR,"Unknown type in method.\n");
+   WriteString(theEnv,STDERR,"Unknown type in method.\n");
 #endif
-   return(NULL);
+   return NULL;
   }
 
 /*************************************************************
@@ -1265,34 +1293,35 @@ static EXPRESSION *ValidType(
   INPUTS       : Two void pointers which are class pointers
                  if COOL is installed or integer hash nodes
                  for type codes otherwise.
-  RETURNS      : true if there is subsumption, false otherwise
+  RETURNS      : True if there is subsumption, false otherwise
   SIDE EFFECTS : An error message is printed, if appropriate.
   NOTES        : None
  *************************************************************/
 static bool RedundantClasses(
-  void *theEnv,
+  Environment *theEnv,
   void *c1,
   void *c2)
   {
    const char *tname;
 
 #if OBJECT_SYSTEM
-   if (HasSuperclass((DEFCLASS *) c1,(DEFCLASS *) c2))
-     tname = EnvGetDefclassName(theEnv,c1);
-   else if (HasSuperclass((DEFCLASS *) c2,(DEFCLASS *) c1))
-     tname = EnvGetDefclassName(theEnv,c2);
+   if (HasSuperclass((Defclass *) c1,(Defclass *) c2))
+     tname = DefclassName((Defclass *) c1);
+   else if (HasSuperclass((Defclass *) c2,(Defclass *) c1))
+     tname = DefclassName((Defclass *) c2);
 #else
-   if (SubsumeType(ValueToInteger(c1),ValueToInteger(c2)))
-     tname = TypeName(theEnv,ValueToInteger(c1));
-   else if (SubsumeType(ValueToInteger(c2),ValueToInteger(c1)))
-     tname = TypeName(theEnv,ValueToInteger(c2));
+   if (SubsumeType(((CLIPSInteger *) c1)->contents,((CLIPSInteger *) c2)->contents))
+     tname = TypeName(theEnv,((CLIPSInteger *) c1)->contents);
+   else if (SubsumeType(((CLIPSInteger *) c2)->contents,((CLIPSInteger *) c1)->contents))
+     tname = TypeName(theEnv,((CLIPSInteger *) c2)->contents);
 #endif
    else
-     return(false);
+     return false;
    PrintErrorID(theEnv,"GENRCPSR",15,false);
-   EnvPrintRouter(theEnv,WERROR,tname);
-   EnvPrintRouter(theEnv,WERROR," class is redundant.\n");
-   return(true);
+   WriteString(theEnv,STDERR,"Class '");
+   WriteString(theEnv,STDERR,tname);
+   WriteString(theEnv,STDERR,"' is redundant.\n");
+   return true;
   }
 
 /*********************************************************
@@ -1310,14 +1339,14 @@ static bool RedundantClasses(
                    the new node is inserted at the end
   NOTES        : None
  *********************************************************/
-static DEFGENERIC *AddGeneric(
-  void *theEnv,
-  SYMBOL_HN *name,
+static Defgeneric *AddGeneric(
+  Environment *theEnv,
+  CLIPSLexeme *name,
   bool *newGeneric)
   {
-   DEFGENERIC *gfunc;
+   Defgeneric *gfunc;
 
-   gfunc = (DEFGENERIC *) EnvFindDefgenericInModule(theEnv,ValueToString(name));
+   gfunc = FindDefgenericInModule(theEnv,name->contents);
    if (gfunc != NULL)
      {
       *newGeneric = false;
@@ -1328,16 +1357,16 @@ static DEFGENERIC *AddGeneric(
       /* ================================
          The old trace state is preserved
          ================================ */
-      RemoveConstructFromModule(theEnv,(struct constructHeader *) gfunc);
+      RemoveConstructFromModule(theEnv,&gfunc->header);
      }
    else
      {
       *newGeneric = true;
       gfunc = NewGeneric(theEnv,name);
-      IncrementSymbolCount(name);
+      IncrementLexemeCount(name);
       AddImplicitMethods(theEnv,gfunc);
      }
-   AddConstructToModule((struct constructHeader *) gfunc);
+   AddConstructToModule(&gfunc->header);
    return(gfunc);
   }
 
@@ -1355,21 +1384,21 @@ static DEFGENERIC *AddGeneric(
                    by user-index if > current new method-index
   NOTES        : None
  **********************************************************************/
-static DEFMETHOD *AddGenericMethod(
-  void *theEnv,
-  DEFGENERIC *gfunc,
+static Defmethod *AddGenericMethod(
+  Environment *theEnv,
+  Defgeneric *gfunc,
   int mposn,
-  short mi)
+  unsigned short mi)
   {
-   DEFMETHOD *narr;
+   Defmethod *narr;
    long b, e;
 
-   narr = (DEFMETHOD *) gm2(theEnv,(sizeof(DEFMETHOD) * (gfunc->mcnt+1)));
+   narr = (Defmethod *) gm2(theEnv,(sizeof(Defmethod) * (gfunc->mcnt+1)));
    for (b = e = 0 ; b < gfunc->mcnt ; b++ , e++)
      {
       if (b == mposn)
         e++;
-      GenCopyMemory(DEFMETHOD,1,&narr[e],&gfunc->methods[b]);
+      GenCopyMemory(Defmethod,1,&narr[e],&gfunc->methods[b]);
      }
    if (mi == 0)
      narr[mposn].index = gfunc->new_index++;
@@ -1377,7 +1406,7 @@ static DEFMETHOD *AddGenericMethod(
      {
       narr[mposn].index = mi;
       if (mi >= gfunc->new_index)
-        gfunc->new_index = (short) (mi+1);
+        gfunc->new_index = mi + 1;
      }
    narr[mposn].busy = 0;
 #if DEBUGGING_FUNCTIONS
@@ -1390,10 +1419,16 @@ static DEFMETHOD *AddGenericMethod(
    narr[mposn].system = 0;
    narr[mposn].restrictions = NULL;
    narr[mposn].actions = NULL;
-   narr[mposn].ppForm = NULL;
-   narr[mposn].usrData = NULL;
+   narr[mposn].header.name = NULL;
+   narr[mposn].header.next = NULL;
+   narr[mposn].header.constructType = DEFMETHOD;
+   narr[mposn].header.env = theEnv;
+   narr[mposn].header.whichModule = gfunc->header.whichModule;
+   narr[mposn].header.ppForm = NULL;
+   narr[mposn].header.usrData = NULL;
+
    if (gfunc->mcnt != 0)
-     rm(theEnv,(void *) gfunc->methods,(sizeof(DEFMETHOD) * gfunc->mcnt));
+     rm(theEnv,gfunc->methods,(sizeof(Defmethod) * gfunc->mcnt));
    gfunc->mcnt++;
    gfunc->methods = narr;
    return(&narr[mposn]);
@@ -1419,14 +1454,14 @@ static DEFMETHOD *AddGenericMethod(
                    pointers of the parameter expressions
  ****************************************************************/
 static int RestrictionsCompare(
-  EXPRESSION *params,
+  Expression *params,
   int rcnt,
   int min,
   int max,
-  DEFMETHOD *meth)
+  Defmethod *meth)
   {
-   register int i;
-   register RESTRICTION *r1,*r2;
+   int i;
+   RESTRICTION *r1,*r2;
    bool diff = false;
    int rtn;
 
@@ -1437,11 +1472,11 @@ static int RestrictionsCompare(
          a regular parameter, regardless of the class restriction list
          ============================================================= */
       if ((i == rcnt-1) && (max == -1) &&
-          (meth->maxRestrictions != -1))
-        return(LOWER_PRECEDENCE);
+          (meth->maxRestrictions != RESTRICTIONS_UNBOUNDED))
+        return LOWER_PRECEDENCE;
       if ((i == meth->restrictionCount-1) && (max != -1) &&
-          (meth->maxRestrictions == -1))
-        return(HIGHER_PRECEDENCE);
+          (meth->maxRestrictions == RESTRICTIONS_UNBOUNDED))
+        return HIGHER_PRECEDENCE;
 
       /* =============================================================
          The parameter with the most specific type list has precedence
@@ -1450,15 +1485,15 @@ static int RestrictionsCompare(
       r2 = &meth->restrictions[i];
       rtn = TypeListCompare(r1,r2);
       if (rtn != IDENTICAL)
-        return(rtn);
+        return rtn;
 
       /* =====================================================
          The parameter with a query restriction has precedence
          ===================================================== */
       if ((r1->query == NULL) && (r2->query != NULL))
-        return(LOWER_PRECEDENCE);
+        return LOWER_PRECEDENCE;
       if ((r1->query != NULL) && (r2->query == NULL))
-        return(HIGHER_PRECEDENCE);
+        return HIGHER_PRECEDENCE;
 
       /* ==========================================================
          Remember if the method restrictions differ at all - query
@@ -1486,9 +1521,9 @@ static int RestrictionsCompare(
       then one without a wildcard has precedence
       ============================================= */
    if (min > meth->minRestrictions)
-     return(HIGHER_PRECEDENCE);
+     return HIGHER_PRECEDENCE;
    if (meth->minRestrictions < min)
-     return(LOWER_PRECEDENCE);
+     return LOWER_PRECEDENCE;
    return((max == - 1) ? LOWER_PRECEDENCE : HIGHER_PRECEDENCE);
   }
 
@@ -1523,14 +1558,14 @@ static int TypeListCompare(
         {
          diff = true;
 #if OBJECT_SYSTEM
-         if (HasSuperclass((DEFCLASS *) r1->types[i],(DEFCLASS *) r2->types[i]))
+         if (HasSuperclass((Defclass *) r1->types[i],(Defclass *) r2->types[i]))
            return(HIGHER_PRECEDENCE);
-         if (HasSuperclass((DEFCLASS *) r2->types[i],(DEFCLASS *) r1->types[i]))
+         if (HasSuperclass((Defclass *) r2->types[i],(Defclass *) r1->types[i]))
            return(LOWER_PRECEDENCE);
 #else
-         if (SubsumeType(ValueToInteger(r1->types[i]),ValueToInteger(r2->types[i])))
+         if (SubsumeType(((CLIPSInteger *) r1->types[i])->contents,((CLIPSInteger *) r2->types[i])->contents))
            return(HIGHER_PRECEDENCE);
-         if (SubsumeType(ValueToInteger(r2->types[i]),ValueToInteger(r1->types[i])))
+         if (SubsumeType(((CLIPSInteger *) r2->types[i])->contents,((CLIPSInteger *) r1->types[i])->contents))
            return(LOWER_PRECEDENCE);
 #endif
         }
@@ -1553,14 +1588,14 @@ static int TypeListCompare(
   SIDE EFFECTS : Generic function  header created
   NOTES        : None
  ***************************************************/
-static DEFGENERIC *NewGeneric(
-  void *theEnv,
-  SYMBOL_HN *gname)
+static Defgeneric *NewGeneric(
+  Environment *theEnv,
+  CLIPSLexeme *gname)
   {
-   DEFGENERIC *ngen;
+   Defgeneric *ngen;
 
    ngen = get_struct(theEnv,defgeneric);
-   InitializeConstructHeader(theEnv,"defgeneric",(struct constructHeader *) ngen,gname);
+   InitializeConstructHeader(theEnv,"defgeneric",DEFGENERIC,&ngen->header,gname);
    ngen->busy = 0;
    ngen->new_index = 1;
    ngen->methods = NULL;

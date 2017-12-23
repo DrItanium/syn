@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  07/30/16             */
    /*                                                     */
    /*          CONSTRUCT BINARY LOAD/SAVE MODULE          */
    /*******************************************************/
@@ -16,6 +16,13 @@
 /* Contributing Programmer(s):                               */
 /*                                                           */
 /* Revision History:                                         */
+/*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
 /*                                                           */
 /*************************************************************/
 
@@ -49,8 +56,8 @@
   NOTES        : None
  ***************************************************/
 void MarkConstructHeaderNeededItems(
-  struct constructHeader *theConstruct,
-  long theBsaveID)
+  ConstructHeader *theConstruct,
+  unsigned long theBsaveID)
   {
    theConstruct->name->neededSymbol = true;
    theConstruct->bsaveID = theBsaveID;
@@ -75,14 +82,23 @@ void MarkConstructHeaderNeededItems(
  ******************************************************/
 void AssignBsaveConstructHeaderVals(
   struct bsaveConstructHeader *theBsaveConstruct,
-  struct constructHeader *theConstruct)
+  ConstructHeader *theConstruct)
   {
-   theBsaveConstruct->name = (long) theConstruct->name->bucket;
-   theBsaveConstruct->whichModule = theConstruct->whichModule->theModule->bsaveID;
-   if (theConstruct->next != NULL)
-     theBsaveConstruct->next = ((struct constructHeader *) theConstruct->next)->bsaveID;
+   if (theConstruct->name != NULL)
+     { theBsaveConstruct->name = theConstruct->name->bucket; }
    else
-     theBsaveConstruct->next = -1L;
+     { theBsaveConstruct->name = ULONG_MAX; }
+   
+   if ((theConstruct->whichModule != NULL) &&
+       (theConstruct->whichModule->theModule != NULL))
+     { theBsaveConstruct->whichModule = theConstruct->whichModule->theModule->header.bsaveID; }
+   else
+     { theBsaveConstruct->whichModule = ULONG_MAX; }
+     
+   if (theConstruct->next != NULL)
+     theBsaveConstruct->next = theConstruct->next->bsaveID;
+   else
+     theBsaveConstruct->next = ULONG_MAX;
   }
 
 #endif /* BLOAD_AND_BSAVE */
@@ -106,28 +122,44 @@ void AssignBsaveConstructHeaderVals(
   NOTES        : None
  ***************************************************/
 void UpdateConstructHeader(
-  void *theEnv,
+  Environment *theEnv,
   struct bsaveConstructHeader *theBsaveConstruct,
-  struct constructHeader *theConstruct,
-  int itemModuleSize,
+  ConstructHeader *theConstruct,
+  ConstructType theType,
+  size_t itemModuleSize,
   void *itemModuleArray,
-  int itemSize,
+  size_t itemSize,
   void *itemArray)
   {
-   long moduleOffset, itemOffset;
+   size_t moduleOffset, itemOffset;
 
-   moduleOffset = itemModuleSize * theBsaveConstruct->whichModule;
-   theConstruct->whichModule =
-     (struct defmoduleItemHeader *) &((char *) itemModuleArray)[moduleOffset];
-   theConstruct->name = SymbolPointer(theBsaveConstruct->name);
-   IncrementSymbolCount(theConstruct->name);
-   if (theBsaveConstruct->next != -1L)
+   if (theBsaveConstruct->whichModule != ULONG_MAX)
      {
-      itemOffset = itemSize * theBsaveConstruct->next;
-      theConstruct->next = (struct constructHeader *) &((char *) itemArray)[itemOffset];
+      moduleOffset = itemModuleSize * theBsaveConstruct->whichModule;
+      theConstruct->whichModule =
+        (struct defmoduleItemHeader *) &((char *) itemModuleArray)[moduleOffset];
      }
    else
-     theConstruct->next = NULL;
+     { theConstruct->whichModule = NULL; }
+     
+   if (theBsaveConstruct->name != ULONG_MAX)
+     {
+      theConstruct->name = SymbolPointer(theBsaveConstruct->name);
+      IncrementLexemeCount(theConstruct->name);
+     }
+   else
+     { theConstruct->name = NULL; }
+     
+   if (theBsaveConstruct->next != ULONG_MAX)
+     {
+      itemOffset = itemSize * theBsaveConstruct->next;
+      theConstruct->next = (ConstructHeader *) &((char *) itemArray)[itemOffset];
+     }
+   else
+     { theConstruct->next = NULL; }
+
+   theConstruct->constructType = theType;
+   theConstruct->env = theEnv;
    theConstruct->ppForm = NULL;
    theConstruct->bsaveID = 0L;
    theConstruct->usrData = NULL;
@@ -143,10 +175,10 @@ void UpdateConstructHeader(
   NOTES        : None
  *******************************************************/
 void UnmarkConstructHeader(
-  void *theEnv,
-  struct constructHeader *theConstruct)
+  Environment *theEnv,
+  ConstructHeader *theConstruct)
   {
-   DecrementSymbolCount(theEnv,theConstruct->name);
+   ReleaseLexeme(theEnv,theConstruct->name);
   }
 
 #endif /* BLOAD || BLOAD_ONLY || BLOAD_AND_BSAVE */

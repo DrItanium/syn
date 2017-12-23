@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*      DEFTEMPLATE CONSTRUCT COMPILER HEADER FILE     */
    /*******************************************************/
@@ -35,6 +35,10 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_tmpltcmp
@@ -43,8 +47,11 @@
 
 #define _H_tmpltcmp
 
-   void                           DeftemplateCompilerSetup(void *);
-   void                           DeftemplateCModuleReference(void *,FILE *,int,int,int);
-   void                           DeftemplateCConstructReference(void *,FILE *,void *,int,int);
+#include "tmpltdef.h"
+
+   void                           DeftemplateCompilerSetup(Environment *);
+   void                           DeftemplateCModuleReference(Environment *,FILE *,unsigned long,unsigned int,unsigned int);
+   void                           DeftemplateCConstructReference(Environment *,FILE *,Deftemplate *,
+                                                                 unsigned int,unsigned int);
 
 #endif /* _H_tmpltcmp */

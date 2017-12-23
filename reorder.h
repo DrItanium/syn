@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                 REORDER HEADER FILE                 */
    /*******************************************************/
@@ -35,8 +35,17 @@
 /*                                                           */
 /*            Added support for hashed alpha memories.       */
 /*                                                           */
-/*      6.40: Removed the marked flag used for not/and       */
+/*      6.31: Removed the marked flag used for not/and       */
 /*            unification.                                   */
+/*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
 /*                                                           */
 /*************************************************************/
 
@@ -52,14 +61,50 @@ struct lhsParseNode;
 #include "pattern.h"
 #include "ruledef.h"
 
+typedef enum
+  {
+   PATTERN_CE_NODE = 2049,
+   AND_CE_NODE,
+   OR_CE_NODE,
+   NOT_CE_NODE,
+   TEST_CE_NODE,
+   NAND_CE_NODE,
+   EXISTS_CE_NODE,
+   FORALL_CE_NODE,
+   SF_WILDCARD_NODE,
+   MF_WILDCARD_NODE,
+   SF_VARIABLE_NODE,
+   MF_VARIABLE_NODE,
+   GBL_VARIABLE_NODE,
+   PREDICATE_CONSTRAINT_NODE,
+   RETURN_VALUE_CONSTRAINT_NODE,
+   FCALL_NODE,
+   GCALL_NODE,
+   PCALL_NODE,
+   INTEGER_NODE,
+   FLOAT_NODE,
+   SYMBOL_NODE,
+   STRING_NODE,
+   INSTANCE_NAME_NODE,
+   UNKNOWN_NODE
+  } ParseNodeType;
+
+#define UNSPECIFIED_SLOT USHRT_MAX
+#define NO_INDEX USHRT_MAX
+
 /***********************************************************************/
 /* lhsParseNode structure: Stores information about the intermediate   */
 /*   parsed representation of the lhs of a rule.                       */
 /***********************************************************************/
 struct lhsParseNode
   {
-   unsigned short type;
-   void *value;
+   ParseNodeType pnType;
+   union
+     {
+      void *value;
+      CLIPSLexeme *lexemeValue;
+      struct functionDefinition *functionValue;
+     };
    unsigned int negated : 1;
    unsigned int exists : 1;
    unsigned int existsNand : 1;
@@ -79,12 +124,12 @@ struct lhsParseNode
    struct lhsParseNode *referringNode;
    struct patternParser *patternType;
    short pattern;
-   short index;
-   struct symbolHashNode *slot;
-   short slotNumber;
+   unsigned short index; // TBD is this 1 or 0 based?
+   CLIPSLexeme *slot;
+   unsigned short slotNumber; // TBD 1 or 0 based?
    int beginNandDepth;
    int endNandDepth;
-   int joinDepth;
+   unsigned short joinDepth;
    struct expr *networkTest;
    struct expr *externalNetworkTest;
    struct expr *secondaryNetworkTest;
@@ -102,17 +147,19 @@ struct lhsParseNode
    struct lhsParseNode *bottom;
   };
 
-   struct lhsParseNode           *ReorderPatterns(void *,struct lhsParseNode *,bool *);
-   struct lhsParseNode           *CopyLHSParseNodes(void *,struct lhsParseNode *);
-   void                           CopyLHSParseNode(void *,struct lhsParseNode *,struct lhsParseNode *,bool);
-   struct lhsParseNode           *GetLHSParseNode(void *);
-   void                           ReturnLHSParseNodes(void *,struct lhsParseNode *);
-   struct lhsParseNode           *ExpressionToLHSParseNodes(void *,struct expr *);
-   struct expr                   *LHSParseNodesToExpression(void *,struct lhsParseNode *);
-   void                           AddInitialPatterns(void *,struct lhsParseNode *);
+   struct lhsParseNode           *ReorderPatterns(Environment *,struct lhsParseNode *,bool *);
+   struct lhsParseNode           *CopyLHSParseNodes(Environment *,struct lhsParseNode *);
+   void                           CopyLHSParseNode(Environment *,struct lhsParseNode *,struct lhsParseNode *,bool);
+   struct lhsParseNode           *GetLHSParseNode(Environment *);
+   void                           ReturnLHSParseNodes(Environment *,struct lhsParseNode *);
+   struct lhsParseNode           *ExpressionToLHSParseNodes(Environment *,struct expr *);
+   struct expr                   *LHSParseNodesToExpression(Environment *,struct lhsParseNode *);
+   void                           AddInitialPatterns(Environment *,struct lhsParseNode *);
    bool                           IsExistsSubjoin(struct lhsParseNode *,int);
-   struct lhsParseNode           *CombineLHSParseNodes(void *,struct lhsParseNode *,struct lhsParseNode *);
-   //void                           AssignPatternMarkedFlag(struct lhsParseNode *,short);
+   struct lhsParseNode           *CombineLHSParseNodes(Environment *,struct lhsParseNode *,struct lhsParseNode *);
+   bool                           ConstantNode(struct lhsParseNode *);
+   unsigned short                 NodeTypeToType(struct lhsParseNode *);
+   ParseNodeType                  TypeToNodeType(unsigned short);
 
 #endif /* _H_reorder */
 

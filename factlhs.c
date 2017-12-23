@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  07/30/16             */
    /*                                                     */
    /*           FACT LHS PATTERN PARSING MODULE           */
    /*******************************************************/
@@ -29,7 +29,14 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
-/*      6.40: Removed initial-fact support.                  */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Removed initial-fact support.                  */
 /*                                                           */
 /*************************************************************/
 
@@ -44,6 +51,8 @@
 #include "modulpsr.h"
 #include "modulutl.h"
 #include "pattern.h"
+#include "pprint.h"
+#include "prntutil.h"
 #include "reorder.h"
 #include "router.h"
 #include "tmpltdef.h"
@@ -61,7 +70,7 @@
 /*             ::= (<symbol> <constraint>+)    */
 /***********************************************/
 struct lhsParseNode *SequenceRestrictionParse(
-  void *theEnv,
+  Environment *theEnv,
   const char *readSource,
   struct token *theToken)
   {
@@ -73,16 +82,16 @@ struct lhsParseNode *SequenceRestrictionParse(
    /*================================================*/
 
    topNode = GetLHSParseNode(theEnv);
-   topNode->type = SF_WILDCARD;
+   topNode->pnType = SF_WILDCARD_NODE;
    topNode->negated = false;
    topNode->exists = false;
-   topNode->index = -1;
+   topNode->index = NO_INDEX;
    topNode->slotNumber = 1;
    topNode->bottom = GetLHSParseNode(theEnv);
-   topNode->bottom->type = SYMBOL;
+   topNode->bottom->pnType = SYMBOL_NODE;
    topNode->bottom->negated = false;
    topNode->bottom->exists = false;
-   topNode->bottom->value = (void *) theToken->value;
+   topNode->bottom->value = theToken->value;
 
    /*======================================================*/
    /* Connective constraints cannot be used in conjunction */
@@ -91,11 +100,12 @@ struct lhsParseNode *SequenceRestrictionParse(
 
    SavePPBuffer(theEnv," ");
    GetToken(theEnv,readSource,theToken);
-   if ((theToken->type == OR_CONSTRAINT) || (theToken->type == AND_CONSTRAINT))
+   if ((theToken->tknType == OR_CONSTRAINT_TOKEN) ||
+       (theToken->tknType == AND_CONSTRAINT_TOKEN))
      {
       ReturnLHSParseNodes(theEnv,topNode);
       SyntaxErrorMessage(theEnv,"the first field of a pattern");
-      return(NULL);
+      return NULL;
      }
 
    /*============================================================*/
@@ -107,7 +117,7 @@ struct lhsParseNode *SequenceRestrictionParse(
    if (nextField == NULL)
      {
       ReturnLHSParseNodes(theEnv,topNode);
-      return(NULL);
+      return NULL;
      }
    topNode->right = nextField;
 
@@ -115,14 +125,14 @@ struct lhsParseNode *SequenceRestrictionParse(
    /* The pattern must end with a right parenthesis. */
    /*================================================*/
 
-   if (theToken->type != RPAREN)
+   if (theToken->tknType != RIGHT_PARENTHESIS_TOKEN)
      {
       PPBackup(theEnv);
       SavePPBuffer(theEnv," ");
       SavePPBuffer(theEnv,theToken->printForm);
       SyntaxErrorMessage(theEnv,"fact patterns");
       ReturnLHSParseNodes(theEnv,topNode);
-      return(NULL);
+      return NULL;
      }
 
    /*====================================*/
@@ -153,12 +163,12 @@ struct lhsParseNode *SequenceRestrictionParse(
 /*   can be parsed as a fact pattern.                                 */
 /**********************************************************************/
 bool FactPatternParserFind(
-  SYMBOL_HN *theRelation)
+  CLIPSLexeme *theRelation)
   {
 #if MAC_XCD
 #pragma unused(theRelation)
 #endif
-   return(true);
+   return true;
   }
 
 /******************************************************/
@@ -166,36 +176,36 @@ bool FactPatternParserFind(
 /*  both deftemplate and ordered fact patterns.       */
 /******************************************************/
 struct lhsParseNode *FactPatternParse(
-  void *theEnv,
+  Environment *theEnv,
   const char *readSource,
   struct token *theToken)
   {
-   struct deftemplate *theDeftemplate;
-   int count;
+   Deftemplate *theDeftemplate;
+   unsigned int count;
 
    /*=========================================*/
    /* A module separator can not be included  */
    /* as part of the pattern's relation name. */
    /*=========================================*/
 
-   if (FindModuleSeparator(ValueToString(theToken->value)))
+   if (FindModuleSeparator(theToken->lexemeValue->contents))
      {
       IllegalModuleSpecifierMessage(theEnv);
-      return(NULL);
+      return NULL;
      }
 
    /*=========================================================*/
    /* Find the deftemplate associated with the relation name. */
    /*=========================================================*/
 
-   theDeftemplate = (struct deftemplate *)
-                    FindImportedConstruct(theEnv,"deftemplate",NULL,ValueToString(theToken->value),
+   theDeftemplate = (Deftemplate *)
+                    FindImportedConstruct(theEnv,"deftemplate",NULL,theToken->lexemeValue->contents,
                                           &count,true,NULL);
 
    if (count > 1)
      {
-      AmbiguousReferenceErrorMessage(theEnv,"deftemplate",ValueToString(theToken->value));
-      return(NULL);
+      AmbiguousReferenceErrorMessage(theEnv,"deftemplate",theToken->lexemeValue->contents);
+      return NULL;
      }
 
    /*======================================================*/
@@ -206,15 +216,15 @@ struct lhsParseNode *FactPatternParse(
    if (theDeftemplate == NULL)
      {
 #if DEFMODULE_CONSTRUCT
-      if (FindImportExportConflict(theEnv,"deftemplate",((struct defmodule *) EnvGetCurrentModule(theEnv)),ValueToString(theToken->value)))
+      if (FindImportExportConflict(theEnv,"deftemplate",GetCurrentModule(theEnv),theToken->lexemeValue->contents))
         {
-         ImportExportConflictMessage(theEnv,"implied deftemplate",ValueToString(theToken->value),NULL,NULL);
-         return(NULL);
+         ImportExportConflictMessage(theEnv,"implied deftemplate",theToken->lexemeValue->contents,NULL,NULL);
+         return NULL;
         }
 #endif /* DEFMODULE_CONSTRUCT */
 
       if (! ConstructData(theEnv)->CheckSyntaxMode)
-        { theDeftemplate = CreateImpliedDeftemplate(theEnv,(SYMBOL_HN *) theToken->value,true); }
+        { theDeftemplate = CreateImpliedDeftemplate(theEnv,theToken->lexemeValue,true); }
       else
         { theDeftemplate = NULL; }
      }

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*          DEFTEMPLATE UTILITIES HEADER FILE          */
    /*******************************************************/
@@ -34,7 +34,16 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
-/*      6.40: Watch facts for modify command only prints     */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Watch facts for modify command only prints     */
 /*            changed slots.                                 */
 /*                                                           */
 /*************************************************************/
@@ -51,17 +60,17 @@
 #include "factmngr.h"
 #include "symbol.h"
 
-   void                           InvalidDeftemplateSlotMessage(void *,const char *,const char *,bool);
-   void                           SingleFieldSlotCardinalityError(void *,const char *);
-   void                           MultiIntoSingleFieldSlotError(void *,struct templateSlot *,struct deftemplate *);
-   void                           CheckTemplateFact(void *,struct fact *);
-   bool                           CheckRHSSlotTypes(void *,struct expr *,struct templateSlot *,const char *);
-   struct templateSlot           *GetNthSlot(struct deftemplate *,int);
-   int                            FindSlotPosition(struct deftemplate *,struct symbolHashNode *);
-   void                           PrintTemplateFact(void *,const char *,struct fact *,int,int,const char *);
-   void                           UpdateDeftemplateScope(void *);
-   struct templateSlot           *FindSlot(struct deftemplate *,struct symbolHashNode *,short *);
-   struct deftemplate            *CreateImpliedDeftemplate(void *,SYMBOL_HN *,bool);
+   void                           InvalidDeftemplateSlotMessage(Environment *,const char *,const char *,bool);
+   void                           SingleFieldSlotCardinalityError(Environment *,const char *);
+   void                           MultiIntoSingleFieldSlotError(Environment *,struct templateSlot *,Deftemplate *);
+   void                           CheckTemplateFact(Environment *,Fact *);
+   bool                           CheckRHSSlotTypes(Environment *,struct expr *,struct templateSlot *,const char *);
+   struct templateSlot           *GetNthSlot(Deftemplate *,long long);
+   int                            FindSlotPosition(Deftemplate *,CLIPSLexeme *);
+   void                           PrintTemplateFact(Environment *,const char *,Fact *,bool,bool,const char *);
+   void                           UpdateDeftemplateScope(Environment *);
+   struct templateSlot           *FindSlot(Deftemplate *,CLIPSLexeme *,unsigned short *);
+   Deftemplate                   *CreateImpliedDeftemplate(Environment *,CLIPSLexeme *,bool);
 
 #endif /* _H_tmpltutl */
 

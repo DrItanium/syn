@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/01/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -40,6 +40,17 @@
 /*                                                           */
 /*            Added support for hashed comparisons to        */
 /*            constants.                                     */
+/*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
 /*                                                           */
 /*************************************************************/
 
@@ -91,44 +102,44 @@ typedef struct objectPatternNode
    unsigned whichField     : 8;
    unsigned short leaveFields;
    unsigned long long matchTimeTag;
-   int slotNameID;
-   EXPRESSION *networkTest;
+   unsigned short slotNameID;
+   Expression *networkTest;
    struct objectPatternNode *nextLevel;
    struct objectPatternNode *lastLevel;
    struct objectPatternNode *leftNode;
    struct objectPatternNode *rightNode;
    OBJECT_ALPHA_NODE *alphaNode;
-   long bsaveID;
+   unsigned long bsaveID;
   } OBJECT_PATTERN_NODE;
 
 struct objectAlphaNode
   {
    struct patternNodeHeader header;
    unsigned long long matchTimeTag;
-   BITMAP_HN *classbmp,*slotbmp;
+   CLIPSBitMap *classbmp,*slotbmp;
    OBJECT_PATTERN_NODE *patternNode;
    struct objectAlphaNode *nxtInGroup,
                           *nxtTerminal;
-   long bsaveID;
+   unsigned long bsaveID;
   };
 
 typedef struct objectMatchAction
   {
    int type;
-   INSTANCE_TYPE *ins;
+   Instance *ins;
    SLOT_BITMAP *slotNameIDs;
    struct objectMatchAction *nxt;
   } OBJECT_MATCH_ACTION;
 
-   void                  ObjectMatchDelay(UDFContext *,CLIPSValue *);
-   bool                  SetDelayObjectPatternMatching(void *,bool);
-   bool                  GetDelayObjectPatternMatching(void *);
-   OBJECT_PATTERN_NODE  *ObjectNetworkPointer(void *);
-   OBJECT_ALPHA_NODE    *ObjectNetworkTerminalPointer(void *);
-   void                  SetObjectNetworkPointer(void *,OBJECT_PATTERN_NODE *);
-   void                  SetObjectNetworkTerminalPointer(void *,OBJECT_ALPHA_NODE *);
-   void                  ObjectNetworkAction(void *,int,INSTANCE_TYPE *,int);
-   void                  ResetObjectMatchTimeTags(void *);
+   void                  ObjectMatchDelay(Environment *,UDFContext *,UDFValue *);
+   bool                  SetDelayObjectPatternMatching(Environment *,bool);
+   bool                  GetDelayObjectPatternMatching(Environment *);
+   OBJECT_PATTERN_NODE  *ObjectNetworkPointer(Environment *);
+   OBJECT_ALPHA_NODE    *ObjectNetworkTerminalPointer(Environment *);
+   void                  SetObjectNetworkPointer(Environment *,OBJECT_PATTERN_NODE *);
+   void                  SetObjectNetworkTerminalPointer(Environment *,OBJECT_ALPHA_NODE *);
+   void                  ObjectNetworkAction(Environment *,int,Instance *,int);
+   void                  ResetObjectMatchTimeTags(Environment *);
 
 #endif /* DEFRULE_CONSTRUCT && OBJECT_SYSTEM */
 

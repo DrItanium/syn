@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/18/16            */
    /*                                                     */
    /*           CONSTRAINT OPERATIONS HEADER FILE         */
    /*******************************************************/
@@ -18,6 +18,15 @@
 /*                                                           */
 /* Revision History:                                         */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_cstrnops
@@ -26,17 +35,13 @@
 
 #define _H_cstrnops
 
-#if (! RUN_TIME)
-
 #include "evaluatn.h"
 #include "constrnt.h"
 
-   struct constraintRecord       *IntersectConstraints(void *,struct constraintRecord *,struct constraintRecord *);
+   struct constraintRecord       *IntersectConstraints(Environment *,struct constraintRecord *,struct constraintRecord *);
+   struct constraintRecord       *UnionConstraints(Environment *,struct constraintRecord *,struct constraintRecord *);
 #if (! BLOAD_ONLY)
-   struct constraintRecord       *UnionConstraints(void *,struct constraintRecord *,struct constraintRecord *);
-   void                           RemoveConstantFromConstraint(void *,int,void *,CONSTRAINT_RECORD *);
+   void                           RemoveConstantFromConstraint(Environment *,int,void *,CONSTRAINT_RECORD *);
 #endif
-
-#endif /* (! RUN_TIME) */
 
 #endif /* _H_cstrnops */

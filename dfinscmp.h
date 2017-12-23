@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -19,6 +19,13 @@
 /*      6.30: Added support for path name argument to        */
 /*            constructs-to-c.                               */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_dfinscmp
@@ -31,8 +38,8 @@
 
 #include <stdio.h>
 
-   void                           SetupDefinstancesCompiler(void *);
-   void                           DefinstancesCModuleReference(void *,FILE *,int,int,int);
+   void                           SetupDefinstancesCompiler(Environment *);
+   void                           DefinstancesCModuleReference(Environment *,FILE *,unsigned long,unsigned int,unsigned int);
 
 #endif /* DEFINSTANCES_CONSTRUCT && CONSTRUCT_COMPILER && (! RUN_TIME) */
 

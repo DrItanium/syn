@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -24,6 +24,13 @@
 /*                                                           */
 /*            Changed integer type/precision.                */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_dfinsbin
@@ -39,17 +46,17 @@
 #define DFINSBIN_DATA 25
 
 struct definstancesBinaryData
-  { 
-   DEFINSTANCES *DefinstancesArray;
-   long DefinstancesCount;
-   long ModuleCount;
+  {
+   Definstances *DefinstancesArray;
+   unsigned long DefinstancesCount;
+   unsigned long ModuleCount;
    DEFINSTANCES_MODULE *ModuleArray;
   };
-  
+
 #define DefinstancesBinaryData(theEnv) ((struct definstancesBinaryData *) GetEnvironmentData(theEnv,DFINSBIN_DATA))
 
-   void                           SetupDefinstancesBload(void *);
-   void                          *BloadDefinstancesModuleRef(void *,int);
+   void                           SetupDefinstancesBload(Environment *);
+   void                          *BloadDefinstancesModuleRef(Environment *,unsigned long);
 
 #endif /* DEFINSTANCES_CONSTRUCT && (BLOAD || BLOAD_ONLY || BLOAD_AND_BSAVE) */
 

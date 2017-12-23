@@ -1,9 +1,9 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/18/16            */
    /*                                                     */
-   /*                                                     */
+   /*               CLASS PARSER HEADER FILE              */
    /*******************************************************/
 
 /*************************************************************/
@@ -35,6 +35,17 @@
 /*                                                            */
 /*            Converted API macros to function calls.         */
 /*                                                            */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_classpsr
@@ -43,17 +54,20 @@
 
 #define _H_classpsr
 
-#if OBJECT_SYSTEM && (! BLOAD_ONLY) && (! RUN_TIME)
+#if OBJECT_SYSTEM
 
-bool ParseDefclass(void *,const char *);
+#if (! BLOAD_ONLY) && (! RUN_TIME)
+   bool                    ParseDefclass(Environment *,const char *);
+
+#endif
 
 #if DEFMODULE_CONSTRUCT
-void *CreateClassScopeMap(void *,DEFCLASS *);
+   void                   *CreateClassScopeMap(Environment *,Defclass *);
 #endif
 
-#endif
+#endif /* OBJECT_SYSTEM */
 
-#endif
+#endif /* _H_classpsr */
 
 
 

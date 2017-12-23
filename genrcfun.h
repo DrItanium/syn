@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  11/01/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -42,6 +42,17 @@
 /*            Fixed typing issue when OBJECT_SYSTEM          */
 /*            compiler flag is set to 0.                     */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_genrcfun
@@ -52,11 +63,12 @@
 
 typedef struct defgenericModule DEFGENERIC_MODULE;
 typedef struct restriction RESTRICTION;
-typedef struct method DEFMETHOD;
-typedef struct defgeneric DEFGENERIC;
+typedef struct defmethod Defmethod;
+typedef struct defgeneric Defgeneric;
 
 #include <stdio.h>
 
+#include "entities.h"
 #include "conscomp.h"
 #include "constrct.h"
 #include "expressn.h"
@@ -64,9 +76,8 @@ typedef struct defgeneric DEFGENERIC;
 #include "moduldef.h"
 #include "symbol.h"
 
-#if OBJECT_SYSTEM
-#include "object.h"
-#endif
+#define METHOD_NOT_FOUND USHRT_MAX
+#define RESTRICTIONS_UNBOUNDED USHRT_MAX
 
 struct defgenericModule
   {
@@ -76,58 +87,54 @@ struct defgenericModule
 struct restriction
   {
    void **types;
-   EXPRESSION *query;
-   short tcnt;
+   Expression *query;
+   unsigned short tcnt;
   };
 
-struct method
+struct defmethod
   {
-   short index;
+   ConstructHeader header;
+   unsigned short index;
    unsigned busy;
-   short restrictionCount;
-   short minRestrictions;
-   short maxRestrictions;
-   short localVarCount;
+   unsigned short restrictionCount;
+   unsigned short minRestrictions;
+   unsigned short maxRestrictions;
+   unsigned short localVarCount;
    unsigned system : 1;
    unsigned trace : 1;
    RESTRICTION *restrictions;
-   EXPRESSION *actions;
-   char *ppForm;
-   struct userData *usrData;
+   Expression *actions;
   };
 
 struct defgeneric
   {
-   struct constructHeader header;
-   unsigned busy;
+   ConstructHeader header;
+   unsigned busy; // TBD bool?
    bool trace;
-   DEFMETHOD *methods;
-   short mcnt;
-   short new_index;
+   Defmethod *methods;
+   unsigned short mcnt;
+   unsigned short new_index;
   };
 
 #define DEFGENERIC_DATA 27
 
 struct defgenericData
-  { 
-   struct construct *DefgenericConstruct;
-   int DefgenericModuleIndex;
-   ENTITY_RECORD GenericEntityRecord;
+  {
+   Construct *DefgenericConstruct;
+   unsigned int DefgenericModuleIndex;
+   EntityRecord GenericEntityRecord;
 #if DEBUGGING_FUNCTIONS
-   unsigned WatchGenerics;
-   unsigned WatchMethods;
+   bool WatchGenerics;
+   bool WatchMethods;
 #endif
-   DEFGENERIC *CurrentGeneric;
-   DEFMETHOD *CurrentMethod;
-   DATA_OBJECT *GenericCurrentArgument;
+   Defgeneric *CurrentGeneric;
+   Defmethod *CurrentMethod;
+   UDFValue *GenericCurrentArgument;
 #if (! RUN_TIME) && (! BLOAD_ONLY)
    unsigned OldGenericBusySave;
 #endif
 #if CONSTRUCT_COMPILER && (! RUN_TIME)
    struct CodeGeneratorItem *DefgenericCodeItem;
-#endif
-#if (! BLOAD_ONLY) && (! RUN_TIME)
-   struct token GenericInputToken;
 #endif
   };
 
@@ -136,41 +143,43 @@ struct defgenericData
 #define RestoreBusyCount(gfunc) (gfunc->busy = DefgenericData(theEnv)->OldGenericBusySave)
 
 #if ! RUN_TIME
-   bool                           ClearDefgenericsReady(void *);
-   void                          *AllocateDefgenericModule(void *);
-   void                           FreeDefgenericModule(void *,void *);
+   bool                           ClearDefgenericsReady(Environment *,void *);
+   void                          *AllocateDefgenericModule(Environment *);
+   void                           FreeDefgenericModule(Environment *,void *);
+#else
+   void                           DefgenericRunTimeInitialize(Environment *);
 #endif
 
 #if (! BLOAD_ONLY) && (! RUN_TIME)
 
-   bool                           ClearDefmethods(void *);
-   bool                           RemoveAllExplicitMethods(void *,DEFGENERIC *);
-   void                           RemoveDefgeneric(void *,void *);
-   bool                           ClearDefgenerics(void *);
-   void                           MethodAlterError(void *,DEFGENERIC *);
-   void                           DeleteMethodInfo(void *,DEFGENERIC *,DEFMETHOD *);
-   void                           DestroyMethodInfo(void *,DEFGENERIC *,DEFMETHOD *);
-   bool                           MethodsExecuting(DEFGENERIC *);
+   bool                           ClearDefmethods(Environment *);
+   bool                           RemoveAllExplicitMethods(Environment *,Defgeneric *);
+   void                           RemoveDefgeneric(Environment *,Defgeneric *);
+   bool                           ClearDefgenerics(Environment *);
+   void                           MethodAlterError(Environment *,Defgeneric *);
+   void                           DeleteMethodInfo(Environment *,Defgeneric *,Defmethod *);
+   void                           DestroyMethodInfo(Environment *,Defgeneric *,Defmethod *);
+   bool                           MethodsExecuting(Defgeneric *);
 #endif
 #if ! OBJECT_SYSTEM
    bool                           SubsumeType(int,int);
 #endif
 
-   long                           FindMethodByIndex(DEFGENERIC *,long);
+   unsigned short                 FindMethodByIndex(Defgeneric *,unsigned short);
 #if DEBUGGING_FUNCTIONS || PROFILING_FUNCTIONS
-   void                           PrintMethod(void *,char *,size_t,DEFMETHOD *);
+   void                           PrintMethod(Environment *,Defmethod *,StringBuilder *);
 #endif
 #if DEBUGGING_FUNCTIONS
-   void                           PreviewGeneric(UDFContext *,CLIPSValue *);
+   void                           PreviewGeneric(Environment *,UDFContext *,UDFValue *);
 #endif
-   DEFGENERIC                    *CheckGenericExists(void *,const char *,const char *);
-   long                           CheckMethodExists(void *,const char *,DEFGENERIC *,long);
+   Defgeneric                    *CheckGenericExists(Environment *,const char *,const char *);
+   unsigned short                 CheckMethodExists(Environment *,const char *,Defgeneric *,unsigned short);
 
 #if ! OBJECT_SYSTEM
-   const char                    *TypeName(void *,int);
+   const char                    *TypeName(Environment *,int);
 #endif
 
-   void                           PrintGenericName(void *,const char *,DEFGENERIC *);
+   void                           PrintGenericName(Environment *,const char *,Defgeneric *);
 
 #endif /* _H_genrcfun */
 

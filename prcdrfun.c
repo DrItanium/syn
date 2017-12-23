@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/13/16             */
+   /*            CLIPS Version 6.40  10/18/16             */
    /*                                                     */
    /*             PROCEDURAL FUNCTIONS MODULE             */
    /*******************************************************/
@@ -37,6 +37,20 @@
 /*      6.40: Added Env prefix to GetHaltExecution and       */
 /*            SetHaltExecution functions.                    */
 /*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
+/*            Added GCBlockStart and GCBlockEnd functions    */
+/*            for garbage collection blocks.                 */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
+/*                                                           */
 /*************************************************************/
 
 #include <stdio.h>
@@ -66,30 +80,32 @@
 /* LOCAL INTERNAL FUNCTION DEFINITIONS */
 /***************************************/
 
-   static void                    DeallocateProceduralFunctionData(void *);
+   static void                    DeallocateProceduralFunctionData(Environment *);
 
 /**********************************************/
 /* ProceduralFunctionDefinitions: Initializes */
 /*   the procedural functions.                */
 /**********************************************/
 void ProceduralFunctionDefinitions(
-  void *theEnv)
+  Environment *theEnv)
   {
    AllocateEnvironmentData(theEnv,PRCDRFUN_DATA,sizeof(struct procedureFunctionData),DeallocateProceduralFunctionData);
 
 #if ! RUN_TIME
-   EnvAddUDF(theEnv,"if",    "*",  IfFunction, "IfFunction", 0,UNBOUNDED,NULL,NULL);
-   EnvAddUDF(theEnv,"while", "*",  WhileFunction, "WhileFunction", 0,UNBOUNDED,NULL,NULL);
-   EnvAddUDF(theEnv,"loop-for-count",   "*",  LoopForCountFunction, "LoopForCountFunction", 0,UNBOUNDED,NULL,NULL);
-   EnvAddUDF(theEnv,"(get-loop-count)", "l",  GetLoopCount, "GetLoopCount", 1,1,NULL,NULL);
-   EnvAddUDF(theEnv,"bind",   "*",  BindFunction, "BindFunction", 0,UNBOUNDED,NULL,NULL);
-   EnvAddUDF(theEnv,"progn",  "*",  PrognFunction, "PrognFunction", 0,UNBOUNDED,NULL,NULL);
-   EnvAddUDF(theEnv,"return", "*",  ReturnFunction, "ReturnFunction",0,UNBOUNDED,NULL,NULL);
-   EnvAddUDF(theEnv,"break",  "v",BreakFunction, "BreakFunction",0,0,NULL,NULL);
-   EnvAddUDF(theEnv,"switch", "*",  SwitchFunction, "SwitchFunction",0,UNBOUNDED,NULL,NULL);
+   AddUDF(theEnv,"if","*",0,UNBOUNDED,NULL,IfFunction,"IfFunction",NULL);
+   AddUDF(theEnv,"while","*",0,UNBOUNDED,NULL,WhileFunction,"WhileFunction",NULL);
+   AddUDF(theEnv,"loop-for-count","*",0,UNBOUNDED,NULL,LoopForCountFunction,"LoopForCountFunction",NULL);
+   AddUDF(theEnv,"(get-loop-count)","l",1,1,NULL,GetLoopCount,"GetLoopCount",NULL);
+   AddUDF(theEnv,"bind","*",0,UNBOUNDED,NULL,BindFunction,"BindFunction",NULL);
+   AddUDF(theEnv,"progn","*",0,UNBOUNDED,NULL,PrognFunction,"PrognFunction",NULL);
+   AddUDF(theEnv,"return","*",0,UNBOUNDED,NULL,ReturnFunction,"ReturnFunction",NULL);
+   AddUDF(theEnv,"break","v",0,0,NULL,BreakFunction,"BreakFunction",NULL);
+   AddUDF(theEnv,"switch","*",0,UNBOUNDED,NULL,SwitchFunction,"SwitchFunction",NULL);
+#endif
 
    ProceduralFunctionParsers(theEnv);
 
+#if ! RUN_TIME
    FuncSeqOvlFlags(theEnv,"progn",false,false);
    FuncSeqOvlFlags(theEnv,"if",false,false);
    FuncSeqOvlFlags(theEnv,"while",false,false);
@@ -98,8 +114,8 @@ void ProceduralFunctionDefinitions(
    FuncSeqOvlFlags(theEnv,"switch",false,false);
 #endif
 
-   EnvAddResetFunction(theEnv,"bind",FlushBindList,0);
-   EnvAddClearFunction(theEnv,"bind",FlushBindList,0);
+   AddResetFunction(theEnv,"bind",FlushBindList,0,NULL);
+   AddClearFunction(theEnv,"bind",FlushBindList,0,NULL);
   }
 
 /*************************************************************/
@@ -107,16 +123,16 @@ void ProceduralFunctionDefinitions(
 /*    data for procedural functions.                         */
 /*************************************************************/
 static void DeallocateProceduralFunctionData(
-  void *theEnv)
+  Environment *theEnv)
   {
-   DATA_OBJECT_PTR nextPtr, garbagePtr;
+   UDFValue *nextPtr, *garbagePtr;
 
    garbagePtr = ProcedureFunctionData(theEnv)->BindList;
 
    while (garbagePtr != NULL)
      {
       nextPtr = garbagePtr->next;
-      rtn_struct(theEnv,dataObject,garbagePtr);
+      rtn_struct(theEnv,udfValue,garbagePtr);
       garbagePtr = nextPtr;
      }
   }
@@ -126,29 +142,28 @@ static void DeallocateProceduralFunctionData(
 /*   for the while function.           */
 /***************************************/
 void WhileFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   DATA_OBJECT theResult;
-   struct CLIPSBlock gcBlock;
-   Environment *theEnv = UDFContextEnvironment(context);
-   
+   UDFValue theResult;
+   GCBlock gcb;
+
    /*====================================================*/
    /* Evaluate the body of the while loop as long as the */
-   /* while condition evaluates to a non-false value.    */
+   /* while condition evaluates to a non-FALSE value.    */
    /*====================================================*/
-   
-   CLIPSBlockStart(theEnv,&gcBlock);
 
-   EnvRtnUnknown(theEnv,1,&theResult);
-   while (((theResult.value != EnvFalseSymbol(theEnv)) ||
-           (theResult.type != SYMBOL)) &&
-           (EvaluationData(theEnv)->HaltExecution != true))
+   GCBlockStart(theEnv,&gcb);
+
+   UDFNthArgument(context,1,ANY_TYPE_BITS,&theResult);
+   while ((theResult.value != FalseSymbol(theEnv)) &&
+          (EvaluationData(theEnv)->HaltExecution != true))
      {
       if ((ProcedureFunctionData(theEnv)->BreakFlag == true) || (ProcedureFunctionData(theEnv)->ReturnFlag == true))
         break;
-        
-      EnvRtnUnknown(theEnv,2,&theResult);
+
+      UDFNthArgument(context,2,ANY_TYPE_BITS,&theResult);
 
       if ((ProcedureFunctionData(theEnv)->BreakFlag == true) || (ProcedureFunctionData(theEnv)->ReturnFlag == true))
         break;
@@ -156,7 +171,7 @@ void WhileFunction(
       CleanCurrentGarbageFrame(theEnv,NULL);
       CallPeriodicTasks(theEnv);
 
-      EnvRtnUnknown(theEnv,1,&theResult);
+      UDFNthArgument(context,1,ANY_TYPE_BITS,&theResult);
      }
 
    /*=====================================================*/
@@ -175,18 +190,16 @@ void WhileFunction(
 
    if (ProcedureFunctionData(theEnv)->ReturnFlag == true)
      {
-      returnValue->type = theResult.type;
       returnValue->value = theResult.value;
       returnValue->begin = theResult.begin;
-      returnValue->end = theResult.end;
+      returnValue->range = theResult.range;
      }
    else
      {
-      returnValue->type = SYMBOL;
-      returnValue->value = EnvFalseSymbol(theEnv);
+      returnValue->value = FalseSymbol(theEnv);
      }
-   
-   CLIPSBlockEnd(theEnv,&gcBlock,returnValue);
+
+   GCBlockEndUDF(theEnv,&gcb,returnValue);
    CallPeriodicTasks(theEnv);
   }
 
@@ -195,74 +208,71 @@ void WhileFunction(
 /*   for the loop-for-count function.       */
 /********************************************/
 void LoopForCountFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *loopResult)
+  UDFValue *loopResult)
   {
-   DATA_OBJECT arg_ptr;
+   UDFValue theArg;
    long long iterationEnd;
    LOOP_COUNTER_STACK *tmpCounter;
-   struct CLIPSBlock gcBlock;
-   Environment *theEnv = UDFContextEnvironment(context);
+   GCBlock gcb;
 
    tmpCounter = get_struct(theEnv,loopCounterStack);
    tmpCounter->loopCounter = 0L;
    tmpCounter->nxt = ProcedureFunctionData(theEnv)->LoopCounterStack;
    ProcedureFunctionData(theEnv)->LoopCounterStack = tmpCounter;
-   if (EnvArgTypeCheck(theEnv,"loop-for-count",1,INTEGER,&arg_ptr) == false)
+
+   if (! UDFNthArgument(context,1,INTEGER_BIT,&theArg))
      {
-      loopResult->type = SYMBOL;
-      loopResult->value = EnvFalseSymbol(theEnv);
+      loopResult->value = FalseSymbol(theEnv);
       ProcedureFunctionData(theEnv)->LoopCounterStack = tmpCounter->nxt;
       rtn_struct(theEnv,loopCounterStack,tmpCounter);
       return;
      }
-   tmpCounter->loopCounter = DOToLong(arg_ptr);
-   if (EnvArgTypeCheck(theEnv,"loop-for-count",2,INTEGER,&arg_ptr) == false)
+   tmpCounter->loopCounter = theArg.integerValue->contents;
+   if (! UDFNthArgument(context,2,INTEGER_BIT,&theArg))
      {
-      loopResult->type = SYMBOL;
-      loopResult->value = EnvFalseSymbol(theEnv);
+      loopResult->value = FalseSymbol(theEnv);
       ProcedureFunctionData(theEnv)->LoopCounterStack = tmpCounter->nxt;
       rtn_struct(theEnv,loopCounterStack,tmpCounter);
       return;
      }
-     
-   CLIPSBlockStart(theEnv,&gcBlock);
-   
-   iterationEnd = DOToLong(arg_ptr);
+
+   GCBlockStart(theEnv,&gcb);
+
+   iterationEnd = theArg.integerValue->contents;
    while ((tmpCounter->loopCounter <= iterationEnd) &&
           (EvaluationData(theEnv)->HaltExecution != true))
      {
       if ((ProcedureFunctionData(theEnv)->BreakFlag == true) || (ProcedureFunctionData(theEnv)->ReturnFlag == true))
         break;
 
-      EnvRtnUnknown(theEnv,3,&arg_ptr);
+      UDFNthArgument(context,3,ANY_TYPE_BITS,&theArg);
 
       if ((ProcedureFunctionData(theEnv)->BreakFlag == true) || (ProcedureFunctionData(theEnv)->ReturnFlag == true))
         break;
-        
+
       CleanCurrentGarbageFrame(theEnv,NULL);
       CallPeriodicTasks(theEnv);
-        
+
       tmpCounter->loopCounter++;
      }
-     
+
    ProcedureFunctionData(theEnv)->BreakFlag = false;
    if (ProcedureFunctionData(theEnv)->ReturnFlag == true)
      {
-      loopResult->type = arg_ptr.type;
-      loopResult->value = arg_ptr.value;
-      loopResult->begin = arg_ptr.begin;
-      loopResult->end = arg_ptr.end;
+      loopResult->value = theArg.value;
+      loopResult->begin = theArg.begin;
+      loopResult->range = theArg.range;
      }
    else
      {
-      loopResult->type = SYMBOL;
-      loopResult->value = EnvFalseSymbol(theEnv);
+      loopResult->value = FalseSymbol(theEnv);
      }
    ProcedureFunctionData(theEnv)->LoopCounterStack = tmpCounter->nxt;
    rtn_struct(theEnv,loopCounterStack,tmpCounter);
-    
-   CLIPSBlockEnd(theEnv,&gcBlock,loopResult);
+
+   GCBlockEndUDF(theEnv,&gcb,loopResult);
    CallPeriodicTasks(theEnv);
   }
 
@@ -270,25 +280,25 @@ void LoopForCountFunction(
 /* GetLoopCount: */
 /*****************/
 void GetLoopCount(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   int depth;
-   CLIPSValue theArg;
+   long long depth;
+   UDFValue theArg;
    LOOP_COUNTER_STACK *tmpCounter;
-   Environment *theEnv = UDFContextEnvironment(context);
-   
-   if (! UDFFirstArgument(context,INTEGER_TYPE,&theArg))
+
+   if (! UDFFirstArgument(context,INTEGER_BIT,&theArg))
      { return; }
-   depth = mCVToInteger(&theArg);
+   depth = theArg.integerValue->contents;
    tmpCounter = ProcedureFunctionData(theEnv)->LoopCounterStack;
    while (depth > 0)
      {
       tmpCounter = tmpCounter->nxt;
       depth--;
      }
-   
-   mCVSetInteger(returnValue,tmpCounter->loopCounter);
+
+   returnValue->integerValue = CreateInteger(theEnv,tmpCounter->loopCounter);
   }
 
 /************************************/
@@ -296,124 +306,61 @@ void GetLoopCount(
 /*   for the if function.           */
 /************************************/
 void IfFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   int numArgs;
-   struct expr *theExpr;
-   Environment *theEnv = UDFContextEnvironment(context);
-
-   /*============================================*/
-   /* Check for the correct number of arguments. */
-   /*============================================*/
-
-   if ((EvaluationData(theEnv)->CurrentExpression->argList == NULL) ||
-       (EvaluationData(theEnv)->CurrentExpression->argList->nextArg == NULL))
-     {
-      EnvArgRangeCheck(theEnv,"if",2,3);
-      returnValue->type = SYMBOL;
-      returnValue->value = EnvFalseSymbol(theEnv);
-      return;
-     }
-
-   if (EvaluationData(theEnv)->CurrentExpression->argList->nextArg->nextArg == NULL)
-     { numArgs = 2; }
-   else if (EvaluationData(theEnv)->CurrentExpression->argList->nextArg->nextArg->nextArg == NULL)
-     { numArgs = 3; }
-   else
-     {
-      EnvArgRangeCheck(theEnv,"if",2,3);
-      returnValue->type = SYMBOL;
-      returnValue->value = EnvFalseSymbol(theEnv);
-      return;
-     }
+   unsigned int numArgs;
 
    /*=========================*/
    /* Evaluate the condition. */
    /*=========================*/
 
-   EvaluateExpression(theEnv,EvaluationData(theEnv)->CurrentExpression->argList,returnValue);
-
-   if ((ProcedureFunctionData(theEnv)->BreakFlag == true) || (ProcedureFunctionData(theEnv)->ReturnFlag == true))
+   if (! UDFNthArgument(context,1,ANY_TYPE_BITS,returnValue))
      {
-      returnValue->type = SYMBOL;
-      returnValue->value = EnvFalseSymbol(theEnv);
+      returnValue->value = FalseSymbol(theEnv);
+      return;
+     }
+
+   if ((ProcedureFunctionData(theEnv)->BreakFlag == true) ||
+       (ProcedureFunctionData(theEnv)->ReturnFlag == true))
+     {
+      returnValue->value = FalseSymbol(theEnv);
       return;
      }
 
    /*=========================================*/
-   /* If the condition evaluated to false and */
+   /* If the condition evaluated to FALSE and */
    /* an "else" portion exists, evaluate it   */
    /* and return the value.                   */
    /*=========================================*/
 
-   if ((returnValue->value == EnvFalseSymbol(theEnv)) &&
-       (returnValue->type == SYMBOL) &&
+   numArgs = UDFArgumentCount(context);
+   if ((returnValue->value == FalseSymbol(theEnv)) &&
        (numArgs == 3))
      {
-      theExpr = EvaluationData(theEnv)->CurrentExpression->argList->nextArg->nextArg;
-      switch (theExpr->type)
-        {
-         case INTEGER:
-         case FLOAT:
-         case SYMBOL:
-         case STRING:
-#if OBJECT_SYSTEM
-         case INSTANCE_NAME:
-         case INSTANCE_ADDRESS:
-#endif
-         case EXTERNAL_ADDRESS:
-           returnValue->type = theExpr->type;
-           returnValue->value = theExpr->value;
-           break;
-
-         default:
-           EvaluateExpression(theEnv,theExpr,returnValue);
-           break;
-        }
+      UDFNthArgument(context,3,ANY_TYPE_BITS,returnValue);
       return;
      }
 
    /*===================================================*/
-   /* Otherwise if the symbol evaluated to a non-false  */
+   /* Otherwise if the symbol evaluated to a non-FALSE  */
    /* value, evaluate the "then" portion and return it. */
    /*===================================================*/
 
-   else if ((returnValue->value != EnvFalseSymbol(theEnv)) ||
-            (returnValue->type != SYMBOL))
+   else if (returnValue->value != FalseSymbol(theEnv))
      {
-      theExpr = EvaluationData(theEnv)->CurrentExpression->argList->nextArg;
-      switch (theExpr->type)
-        {
-         case INTEGER:
-         case FLOAT:
-         case SYMBOL:
-         case STRING:
-#if OBJECT_SYSTEM
-         case INSTANCE_NAME:
-         case INSTANCE_ADDRESS:
-#endif
-         case EXTERNAL_ADDRESS:
-           returnValue->type = theExpr->type;
-           returnValue->value = theExpr->value;
-           break;
-           
-         default:
-           EvaluateExpression(theEnv,theExpr,returnValue);
-           break;
-        }
+      UDFNthArgument(context,2,ANY_TYPE_BITS,returnValue);
       return;
      }
 
    /*=========================================*/
-   /* Return false if the condition evaluated */
-   /* to false and there is no "else" portion */
+   /* Return FALSE if the condition evaluated */
+   /* to FALSE and there is no "else" portion */
    /* of the if statement.                    */
    /*=========================================*/
 
-   returnValue->type = SYMBOL;
-   returnValue->value = EnvFalseSymbol(theEnv);
-   return;
+   returnValue->value = FalseSymbol(theEnv);
   }
 
 /**************************************/
@@ -421,17 +368,17 @@ void IfFunction(
 /*   for the bind function.           */
 /**************************************/
 void BindFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   DATA_OBJECT *theBind, *lastBind;
+   UDFValue *theBind, *lastBind;
    bool found = false,
        unbindVar = false;
-   SYMBOL_HN *variableName = NULL;
+   CLIPSLexeme *variableName = NULL;
 #if DEFGLOBAL_CONSTRUCT
-   struct defglobal *theGlobal = NULL;
+   Defglobal *theGlobal = NULL;
 #endif
-   Environment *theEnv = UDFContextEnvironment(context);
 
    /*===============================================*/
    /* Determine the name of the variable to be set. */
@@ -439,12 +386,12 @@ void BindFunction(
 
 #if DEFGLOBAL_CONSTRUCT
    if (GetFirstArgument()->type == DEFGLOBAL_PTR)
-     { theGlobal = (struct defglobal *) GetFirstArgument()->value; }
+     { theGlobal = (Defglobal *) GetFirstArgument()->value; }
    else
 #endif
      {
       EvaluateExpression(theEnv,GetFirstArgument(),returnValue);
-      variableName = (SYMBOL_HN *) DOPToPointer(returnValue);
+      variableName = returnValue->lexemeValue;
      }
 
    /*===========================================*/
@@ -498,9 +445,9 @@ void BindFunction(
      {
       if (unbindVar == false)
         {
-         theBind = get_struct(theEnv,dataObject);
+         theBind = get_struct(theEnv,udfValue);
          theBind->supplementalInfo = (void *) variableName;
-         IncrementSymbolCount(variableName);
+         IncrementLexemeCount(variableName);
          theBind->next = NULL;
          if (lastBind == NULL)
            { ProcedureFunctionData(theEnv)->BindList = theBind; }
@@ -509,13 +456,12 @@ void BindFunction(
         }
       else
         {
-         returnValue->type = SYMBOL;
-         returnValue->value = EnvFalseSymbol(theEnv);
+         returnValue->value = FalseSymbol(theEnv);
          return;
         }
      }
    else
-     { ValueDeinstall(theEnv,theBind); }
+     { ReleaseUDFV(theEnv,theBind); }
 
    /*================================*/
    /* Set the value of the variable. */
@@ -523,20 +469,18 @@ void BindFunction(
 
    if (unbindVar == false)
      {
-      theBind->type = returnValue->type;
       theBind->value = returnValue->value;
       theBind->begin = returnValue->begin;
-      theBind->end = returnValue->end;
-      ValueInstall(theEnv,returnValue);
+      theBind->range = returnValue->range;
+      RetainUDFV(theEnv,returnValue);
      }
    else
      {
       if (lastBind == NULL) ProcedureFunctionData(theEnv)->BindList = theBind->next;
       else lastBind->next = theBind->next;
-      DecrementSymbolCount(theEnv,(struct symbolHashNode *) theBind->supplementalInfo);
-      rtn_struct(theEnv,dataObject,theBind);
-      returnValue->type = SYMBOL;
-      returnValue->value = EnvFalseSymbol(theEnv);
+      ReleaseLexeme(theEnv,(CLIPSLexeme *) theBind->supplementalInfo);
+      rtn_struct(theEnv,udfValue,theBind);
+      returnValue->value = FalseSymbol(theEnv);
      }
   }
 
@@ -545,25 +489,24 @@ void BindFunction(
 /*   for a specified variable.             */
 /*******************************************/
 bool GetBoundVariable(
-  void *theEnv,
-  DATA_OBJECT_PTR vPtr,
-  SYMBOL_HN *varName)
+  Environment *theEnv,
+  UDFValue *vPtr,
+  CLIPSLexeme *varName)
   {
-   DATA_OBJECT_PTR bindPtr;
-   
+   UDFValue *bindPtr;
+
    for (bindPtr = ProcedureFunctionData(theEnv)->BindList; bindPtr != NULL; bindPtr = bindPtr->next)
      {
       if (bindPtr->supplementalInfo == (void *) varName)
         {
-         vPtr->type = bindPtr->type;
          vPtr->value = bindPtr->value;
          vPtr->begin = bindPtr->begin;
-         vPtr->end = bindPtr->end;
-         return(true);
+         vPtr->range = bindPtr->range;
+         return true;
         }
      }
 
-   return(false);
+   return false;
   }
 
 /*************************************************/
@@ -571,7 +514,8 @@ bool GetBoundVariable(
 /*   list of currently bound local variables.    */
 /*************************************************/
 void FlushBindList(
-  void *theEnv)
+  Environment *theEnv,
+  void *context)
   {
    ReturnValues(theEnv,ProcedureFunctionData(theEnv)->BindList,true);
    ProcedureFunctionData(theEnv)->BindList = NULL;
@@ -582,22 +526,21 @@ void FlushBindList(
 /*   for the progn function.           */
 /***************************************/
 void PrognFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
    struct expr *argPtr;
-   Environment *theEnv = UDFContextEnvironment(context);
 
    argPtr = EvaluationData(theEnv)->CurrentExpression->argList;
 
    if (argPtr == NULL)
      {
-      returnValue->type = SYMBOL;
-      returnValue->value = EnvFalseSymbol(theEnv);
+      returnValue->value = FalseSymbol(theEnv);
       return;
      }
 
-   while ((argPtr != NULL) && (EnvGetHaltExecution(theEnv) != true))
+   while ((argPtr != NULL) && (GetHaltExecution(theEnv) != true))
      {
       EvaluateExpression(theEnv,argPtr,returnValue);
 
@@ -606,29 +549,29 @@ void PrognFunction(
       argPtr = argPtr->nextArg;
      }
 
-   if (EnvGetHaltExecution(theEnv) == true)
+   if (GetHaltExecution(theEnv) == true)
      {
-      returnValue->type = SYMBOL;
-      returnValue->value = EnvFalseSymbol(theEnv);
+      returnValue->value = FalseSymbol(theEnv);
       return;
      }
 
    return;
   }
 
-/*****************************************************************/
-/* ReturnFunction: H/L access routine for the return function.   */
-/*****************************************************************/
+/***************************************************************/
+/* ReturnFunction: H/L access routine for the return function. */
+/***************************************************************/
 void ReturnFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   Environment *theEnv = UDFContextEnvironment(context);
-   
-   if (EnvRtnArgCount(theEnv) == 0)
-     { mCVSetVoid(returnValue); }
+   if (! UDFHasNextArgument(context))
+     {
+      returnValue->voidValue = VoidConstant(theEnv);
+     }
    else
-     { EnvRtnUnknown(theEnv,1,returnValue); }
+     { UDFNextArgument(context,ANY_TYPE_BITS,returnValue); }
    ProcedureFunctionData(theEnv)->ReturnFlag = true;
   }
 
@@ -636,24 +579,25 @@ void ReturnFunction(
 /* BreakFunction: H/L access routine for the break function.   */
 /***************************************************************/
 void BreakFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   ProcedureFunctionData(UDFContextEnvironment(context))->BreakFlag = true;
+   ProcedureFunctionData(theEnv)->BreakFlag = true;
   }
 
 /*****************************************************************/
 /* SwitchFunction: H/L access routine for the switch function.   */
 /*****************************************************************/
 void SwitchFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   DATA_OBJECT switch_val,case_val;
-   EXPRESSION *theExp;
-   Environment *theEnv = UDFContextEnvironment(context);
+   UDFValue switch_val,case_val;
+   Expression *theExp;
 
-   mCVSetBoolean(returnValue,false);
+   returnValue->lexemeValue = FalseSymbol(theEnv);
 
    /* ==========================
       Get the value to switch on
@@ -664,9 +608,9 @@ void SwitchFunction(
    for (theExp = GetFirstArgument()->nextArg ; theExp != NULL ; theExp = theExp->nextArg->nextArg)
      {
       /* =================================================
-         RVOID is the default case (if any) for the switch
+         VOID_TYPE is the default case (if any) for the switch
          ================================================= */
-      if (theExp->type == RVOID)
+      if (theExp->type == VOID_TYPE)
         {
          EvaluateExpression(theEnv,theExp->nextArg,returnValue);
          return;
@@ -678,9 +622,9 @@ void SwitchFunction(
       EvaluateExpression(theEnv,theExp,&case_val);
       if (EvaluationData(theEnv)->EvaluationError)
         return;
-      if (switch_val.type == case_val.type)
+      if (switch_val.header->type == case_val.header->type)
         {
-         if ((case_val.type == MULTIFIELD) ? MultifieldDOsEqual(&switch_val,&case_val) :
+         if ((case_val.header->type == MULTIFIELD_TYPE) ? MultifieldDOsEqual(&switch_val,&case_val) :
              (switch_val.value == case_val.value))
            {
             EvaluateExpression(theEnv,theExp->nextArg,returnValue);

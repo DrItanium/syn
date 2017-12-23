@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  12/07/17             */
    /*                                                     */
    /*          FACT RETE FUNCTION GENERATION MODULE       */
    /*******************************************************/
@@ -26,8 +26,12 @@
 /*            Increased maximum values for pattern/slot      */
 /*            indices.                                       */
 /*                                                           */
-/*      6.40: Fact ?var:slot references in deffunctions and  */
-/*            defrule actions.                               */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
 /*                                                           */
 /*************************************************************/
 
@@ -63,7 +67,7 @@
 #define FACTGEN_DATA 2
 
 struct factgenData
-  {    
+  {
    struct entityRecord   FactJNGV1Info;
    struct entityRecord   FactJNGV2Info;
    struct entityRecord   FactJNGV3Info;
@@ -78,25 +82,20 @@ struct factgenData
    struct entityRecord   FactPNConstant1Info;
    struct entityRecord   FactPNConstant2Info;
   };
-  
-#define FactgenData(theEnv) ((struct factgenData *) GetEnvironmentData(theEnv,FACTGEN_DATA))
 
-#define SLOT_REF ':'
+#define FactgenData(theEnv) ((struct factgenData *) GetEnvironmentData(theEnv,FACTGEN_DATA))
 
 /***************************************/
 /* LOCAL INTERNAL FUNCTION DEFINITIONS */
 /***************************************/
 
 #if (! RUN_TIME) && (! BLOAD_ONLY)
-   static void                      *FactGetVarJN1(void *,struct lhsParseNode *,int);
-   static void                      *FactGetVarJN2(void *,struct lhsParseNode *,int);
-   static void                      *FactGetVarJN3(void *,struct lhsParseNode *,int);
-   static void                      *FactGetVarPN1(void *,struct lhsParseNode *);
-   static void                      *FactGetVarPN2(void *,struct lhsParseNode *);
-   static void                      *FactGetVarPN3(void *,struct lhsParseNode *);
-   static SYMBOL_HN                 *ExtractSlotName(void *,unsigned,const char *);
-   static SYMBOL_HN                 *ExtractVariableName(void *,unsigned,const char *);
-   static void                       ReplaceVarSlotReference(void *,EXPRESSION *,SYMBOL_HN *,SYMBOL_HN *,SYMBOL_HN *);
+   static void                      *FactGetVarJN1(Environment *,struct lhsParseNode *,int);
+   static void                      *FactGetVarJN2(Environment *,struct lhsParseNode *,int);
+   static void                      *FactGetVarJN3(Environment *,struct lhsParseNode *,int);
+   static void                      *FactGetVarPN1(Environment *,struct lhsParseNode *);
+   static void                      *FactGetVarPN2(Environment *,struct lhsParseNode *);
+   static void                      *FactGetVarPN3(Environment *,struct lhsParseNode *);
 #endif
 
 /*******************************************************************/
@@ -104,7 +103,7 @@ struct factgenData
 /*   and value access routines as primitive operations.            */
 /*******************************************************************/
 void InitializeFactReteFunctions(
-  void *theEnv)
+  Environment *theEnv)
   {
 #if DEFRULE_CONSTRUCT
    struct entityRecord   factJNGV1Info = { "FACT_JN_VAR1", FACT_JN_VAR1,0,1,0,
@@ -164,7 +163,7 @@ void InitializeFactReteFunctions(
    struct entityRecord   factStoreMFInfo = { "FACT_STORE_MULTIFIELD",
                                                     FACT_STORE_MULTIFIELD,0,1,0,
                                                     NULL,NULL,NULL,
-                                                    FactStoreMultifield,
+                                                    (EntityEvaluationFunction *) FactStoreMultifield,
                                                     NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL };
 
    struct entityRecord   factSlotLengthInfo = { "FACT_SLOT_LENGTH",
@@ -189,22 +188,22 @@ void InitializeFactReteFunctions(
                                                         NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL };
 
    AllocateEnvironmentData(theEnv,FACTGEN_DATA,sizeof(struct factgenData),NULL);
-   
-   memcpy(&FactgenData(theEnv)->FactJNGV1Info,&factJNGV1Info,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactJNGV2Info,&factJNGV2Info,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactJNGV3Info,&factJNGV3Info,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactPNGV1Info,&factPNGV1Info,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactPNGV2Info,&factPNGV2Info,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactPNGV3Info,&factPNGV3Info,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactJNCV1Info,&factJNCV1Info,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactJNCV2Info,&factJNCV2Info,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactPNCV1Info,&factPNCV1Info,sizeof(struct entityRecord)); 
-   memcpy(&FactgenData(theEnv)->FactStoreMFInfo,&factStoreMFInfo,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactSlotLengthInfo,&factSlotLengthInfo,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactPNConstant1Info,&factPNConstant1Info,sizeof(struct entityRecord));   
-   memcpy(&FactgenData(theEnv)->FactPNConstant2Info,&factPNConstant2Info,sizeof(struct entityRecord));   
-                                                        
-   InstallPrimitive(theEnv,(ENTITY_RECORD_PTR) &FactData(theEnv)->FactInfo,FACT_ADDRESS);
+
+   memcpy(&FactgenData(theEnv)->FactJNGV1Info,&factJNGV1Info,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactJNGV2Info,&factJNGV2Info,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactJNGV3Info,&factJNGV3Info,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactPNGV1Info,&factPNGV1Info,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactPNGV2Info,&factPNGV2Info,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactPNGV3Info,&factPNGV3Info,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactJNCV1Info,&factJNCV1Info,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactJNCV2Info,&factJNCV2Info,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactPNCV1Info,&factPNCV1Info,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactStoreMFInfo,&factStoreMFInfo,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactSlotLengthInfo,&factSlotLengthInfo,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactPNConstant1Info,&factPNConstant1Info,sizeof(struct entityRecord));
+   memcpy(&FactgenData(theEnv)->FactPNConstant2Info,&factPNConstant2Info,sizeof(struct entityRecord));
+
+   InstallPrimitive(theEnv,(EntityRecord *) &FactData(theEnv)->FactInfo,FACT_ADDRESS_TYPE);
    InstallPrimitive(theEnv,&FactgenData(theEnv)->FactJNGV1Info,FACT_JN_VAR1);
    InstallPrimitive(theEnv,&FactgenData(theEnv)->FactJNGV2Info,FACT_JN_VAR2);
    InstallPrimitive(theEnv,&FactgenData(theEnv)->FactJNGV3Info,FACT_JN_VAR3);
@@ -229,11 +228,11 @@ void InitializeFactReteFunctions(
 /*   multifield slot against a constant.                          */
 /******************************************************************/
 struct expr *FactGenPNConstant(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *theField)
   {
    struct expr *top;
-   unsigned short tempValue;
+   ParseNodeType tempValue;
    struct factConstantPN1Call hack1;
    struct factConstantPN2Call hack2;
 
@@ -250,11 +249,11 @@ struct expr *FactGenPNConstant(
       if (theField->negated) hack1.testForEquality = false;
       else hack1.testForEquality = true;
 
-      hack1.whichSlot = (unsigned short) (theField->slotNumber - 1);
+      hack1.whichSlot = (theField->slotNumber - 1);
 
-      top = GenConstant(theEnv,FACT_PN_CONSTANT1,EnvAddBitMap(theEnv,&hack1,sizeof(struct factConstantPN1Call)));
+      top = GenConstant(theEnv,FACT_PN_CONSTANT1,AddBitMap(theEnv,&hack1,sizeof(struct factConstantPN1Call)));
 
-      top->argList = GenConstant(theEnv,theField->type,theField->value);
+      top->argList = GenConstant(theEnv,NodeTypeToType(theField),theField->value);
 
       return(top);
      }
@@ -274,7 +273,7 @@ struct expr *FactGenPNConstant(
       if (theField->negated) hack2.testForEquality = false;
       else hack2.testForEquality = true;
 
-      hack2.whichSlot = (unsigned short) (theField->slotNumber - 1);
+      hack2.whichSlot = (theField->slotNumber - 1);
 
       if (theField->multiFieldsBefore == 0)
         {
@@ -287,9 +286,9 @@ struct expr *FactGenPNConstant(
          hack2.offset = theField->singleFieldsAfter;
         }
 
-      top = GenConstant(theEnv,FACT_PN_CONSTANT2,EnvAddBitMap(theEnv,&hack2,sizeof(struct factConstantPN2Call)));
+      top = GenConstant(theEnv,FACT_PN_CONSTANT2,AddBitMap(theEnv,&hack2,sizeof(struct factConstantPN2Call)));
 
-      top->argList = GenConstant(theEnv,theField->type,theField->value);
+      top->argList = GenConstant(theEnv,NodeTypeToType(theField),theField->value);
 
       return(top);
      }
@@ -307,12 +306,12 @@ struct expr *FactGenPNConstant(
       else
         { top = GenConstant(theEnv,FCALL,ExpressionData(theEnv)->PTR_EQ); }
 
-      tempValue = theField->type;
-      theField->type = SF_VARIABLE;
+      tempValue = theField->pnType;
+      theField->pnType = SF_VARIABLE_NODE;
       top->argList = FactGenGetfield(theEnv,theField);
-      theField->type = tempValue;
+      theField->pnType = tempValue;
 
-      top->argList->nextArg = GenConstant(theEnv,theField->type,theField->value);
+      top->argList->nextArg = GenConstant(theEnv,NodeTypeToType(theField),theField->value);
      }
 
    /*===============================================================*/
@@ -328,7 +327,7 @@ struct expr *FactGenPNConstant(
 /*   from a single or multifield slot.                 */
 /*******************************************************/
 struct expr *FactGenGetfield(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *theNode)
   {
    /*===================================================*/
@@ -336,7 +335,7 @@ struct expr *FactGenGetfield(
    /* or the fact relation name.                        */
    /*===================================================*/
 
-   if ((theNode->slotNumber > 0) && (theNode->withinMultifieldSlot == false))
+   if ((theNode->slotNumber > 0) && (theNode->slotNumber != UNSPECIFIED_SLOT) && (theNode->withinMultifieldSlot == false))
      { return(GenConstant(theEnv,FACT_PN_VAR2,FactGetVarPN2(theEnv,theNode))); }
 
    /*=====================================================*/
@@ -346,12 +345,12 @@ struct expr *FactGenGetfield(
    /* value to be retrieved.                              */
    /*=====================================================*/
 
-   if (((theNode->type == SF_WILDCARD) || (theNode->type == SF_VARIABLE) || ConstantType(theNode->type)) &&
+   if (((theNode->pnType == SF_WILDCARD_NODE) || (theNode->pnType == SF_VARIABLE_NODE) || ConstantNode(theNode)) &&
        ((theNode->multiFieldsBefore == 0) ||
         ((theNode->multiFieldsBefore == 1) && (theNode->multiFieldsAfter == 0))))
      { return(GenConstant(theEnv,FACT_PN_VAR3,FactGetVarPN3(theEnv,theNode))); }
 
-   if (((theNode->type == MF_WILDCARD) || (theNode->type == MF_VARIABLE)) && 
+   if (((theNode->pnType == MF_WILDCARD_NODE) || (theNode->pnType == MF_VARIABLE_NODE)) &&
        (theNode->multiFieldsBefore == 0) && (theNode->multiFieldsAfter == 0))
      { return(GenConstant(theEnv,FACT_PN_VAR3,FactGetVarPN3(theEnv,theNode))); }
 
@@ -369,7 +368,7 @@ struct expr *FactGenGetfield(
 /*   from a single or multifield slot of a fact.  */
 /**************************************************/
 struct expr *FactGenGetvar(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *theNode,
   int side)
   {
@@ -377,7 +376,7 @@ struct expr *FactGenGetvar(
    /* Generate call to retrieve single field slot value. */
    /*====================================================*/
 
-   if ((theNode->slotNumber > 0) && (theNode->withinMultifieldSlot == false))
+   if ((theNode->slotNumber > 0) && (theNode->slotNumber != UNSPECIFIED_SLOT) && (theNode->withinMultifieldSlot == false))
      { return(GenConstant(theEnv,FACT_JN_VAR2,FactGetVarJN2(theEnv,theNode,side))); }
 
    /*=====================================================*/
@@ -387,12 +386,12 @@ struct expr *FactGenGetvar(
    /* value to be retrieved.                              */
    /*=====================================================*/
 
-   if (((theNode->type == SF_WILDCARD) || (theNode->type == SF_VARIABLE)) &&
+   if (((theNode->pnType == SF_WILDCARD_NODE) || (theNode->pnType == SF_VARIABLE_NODE)) &&
        ((theNode->multiFieldsBefore == 0) ||
         ((theNode->multiFieldsBefore == 1) && (theNode->multiFieldsAfter == 0))))
      { return(GenConstant(theEnv,FACT_JN_VAR3,FactGetVarJN3(theEnv,theNode,side))); }
 
-   if (((theNode->type == MF_WILDCARD) || (theNode->type == MF_VARIABLE)) &&
+   if (((theNode->pnType == MF_WILDCARD_NODE) || (theNode->pnType == MF_VARIABLE_NODE)) &&
        (theNode->multiFieldsBefore == 0) &&
        (theNode->multiFieldsAfter == 0))
      { return(GenConstant(theEnv,FACT_JN_VAR3,FactGetVarJN3(theEnv,theNode,side))); }
@@ -414,7 +413,7 @@ struct expr *FactGenGetvar(
 /*   unless the foo slot contained at least 3 fields.         */
 /**************************************************************/
 struct expr *FactGenCheckLength(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *theNode)
   {
    struct factCheckLengthPNCall hack;
@@ -425,24 +424,24 @@ struct expr *FactGenCheckLength(
    /*===================================================*/
 
    if ((theNode->singleFieldsAfter == 0) &&
-       (theNode->type != SF_VARIABLE) &&
-       (theNode->type != SF_WILDCARD))
-     { return(NULL); }
+       (theNode->pnType != SF_VARIABLE_NODE) &&
+       (theNode->pnType != SF_WILDCARD_NODE))
+     { return NULL; }
 
    /*=======================================*/
    /* Initialize the length test arguments. */
    /*=======================================*/
 
    ClearBitString(&hack,sizeof(struct factCheckLengthPNCall));
-   hack.whichSlot = (unsigned short) (theNode->slotNumber - 1);
+   hack.whichSlot = (theNode->slotNumber - 1);
 
    /*============================================*/
    /* If the slot has no multifield constraints, */
    /* then the length must match exactly.        */
    /*============================================*/
 
-   if ((theNode->type != MF_VARIABLE) &&
-       (theNode->type != MF_WILDCARD) &&
+   if ((theNode->pnType != MF_VARIABLE_NODE) &&
+       (theNode->pnType != MF_WILDCARD_NODE) &&
        (theNode->multiFieldsAfter == 0))
      { hack.exactly = 1; }
    else
@@ -453,8 +452,8 @@ struct expr *FactGenCheckLength(
    /* field constraints contained in the slot.   */
    /*============================================*/
 
-   if ((theNode->type == SF_VARIABLE) || (theNode->type == SF_WILDCARD))
-     { hack.minLength = (unsigned short) (1 + theNode->singleFieldsAfter); }
+   if ((theNode->pnType == SF_VARIABLE_NODE) || (theNode->pnType == SF_WILDCARD_NODE))
+     { hack.minLength = 1 + theNode->singleFieldsAfter; }
    else
      { hack.minLength = theNode->singleFieldsAfter; }
 
@@ -462,7 +461,7 @@ struct expr *FactGenCheckLength(
    /* Generate call to test the length of a multifield slot. */
    /*========================================================*/
 
-   return(GenConstant(theEnv,FACT_SLOT_LENGTH,EnvAddBitMap(theEnv,&hack,sizeof(struct factCheckLengthPNCall))));
+   return(GenConstant(theEnv,FACT_SLOT_LENGTH,AddBitMap(theEnv,&hack,sizeof(struct factCheckLengthPNCall))));
   }
 
 /**************************************************************/
@@ -471,18 +470,18 @@ struct expr *FactGenCheckLength(
 /*   a multifield slot is a zero length multifield value.     */
 /**************************************************************/
 struct expr *FactGenCheckZeroLength(
-  void *theEnv,
-  unsigned theSlot)
+  Environment *theEnv,
+  unsigned short theSlot)
   {
    struct factCheckLengthPNCall hack;
 
    ClearBitString(&hack,sizeof(struct factCheckLengthPNCall));
 
-   hack.whichSlot = (unsigned short) (theSlot - 1);
-   hack.exactly = 1;
+   hack.whichSlot = theSlot - 1;
+   hack.exactly = true;
    hack.minLength = 0;
 
-   return(GenConstant(theEnv,FACT_SLOT_LENGTH,EnvAddBitMap(theEnv,&hack,sizeof(struct factCheckLengthPNCall))));
+   return(GenConstant(theEnv,FACT_SLOT_LENGTH,AddBitMap(theEnv,&hack,sizeof(struct factCheckLengthPNCall))));
   }
 
 /*********************************************************************/
@@ -491,7 +490,7 @@ struct expr *FactGenCheckZeroLength(
 /*   network variable access functions for facts.                    */
 /*********************************************************************/
 void FactReplaceGetvar(
-  void *theEnv,
+  Environment *theEnv,
   struct expr *theItem,
   struct lhsParseNode *theNode,
   int side)
@@ -500,7 +499,9 @@ void FactReplaceGetvar(
    /* Generate call to retrieve single field slot value. */
    /*====================================================*/
 
-   if ((theNode->slotNumber > 0) && (theNode->withinMultifieldSlot == false))
+   if ((theNode->slotNumber > 0) &&
+       (theNode->slotNumber != UNSPECIFIED_SLOT) &&
+       (theNode->withinMultifieldSlot == false))
      {
       theItem->type = FACT_JN_VAR2;
       theItem->value = FactGetVarJN2(theEnv,theNode,side);
@@ -514,7 +515,7 @@ void FactReplaceGetvar(
    /* value to be retrieved.                              */
    /*=====================================================*/
 
-   if (((theNode->type == SF_WILDCARD) || (theNode->type == SF_VARIABLE)) &&
+   if (((theNode->pnType == SF_WILDCARD_NODE) || (theNode->pnType == SF_VARIABLE_NODE)) &&
        ((theNode->multiFieldsBefore == 0) ||
         ((theNode->multiFieldsBefore == 1) && (theNode->multiFieldsAfter == 0))))
      {
@@ -523,7 +524,7 @@ void FactReplaceGetvar(
       return;
      }
 
-   if (((theNode->type == MF_WILDCARD) || (theNode->type == MF_VARIABLE)) &&
+   if (((theNode->pnType == MF_WILDCARD_NODE) || (theNode->pnType == MF_VARIABLE_NODE)) &&
        (theNode->multiFieldsBefore == 0) &&
        (theNode->multiFieldsAfter == 0))
      {
@@ -547,7 +548,7 @@ void FactReplaceGetvar(
 /*   network variable access functions for facts.                      */
 /***********************************************************************/
 void FactReplaceGetfield(
-  void *theEnv,
+  Environment *theEnv,
   struct expr *theItem,
   struct lhsParseNode *theNode)
   {
@@ -569,7 +570,7 @@ void FactReplaceGetfield(
    /* value to be retrieved.                              */
    /*=====================================================*/
 
-   if (((theNode->type == SF_WILDCARD) || (theNode->type == SF_VARIABLE)) &&
+   if (((theNode->pnType == SF_WILDCARD_NODE) || (theNode->pnType == SF_VARIABLE_NODE)) &&
        ((theNode->multiFieldsBefore == 0) ||
         ((theNode->multiFieldsBefore == 1) && (theNode->multiFieldsAfter == 0))))
      {
@@ -578,7 +579,7 @@ void FactReplaceGetfield(
       return;
      }
 
-   if (((theNode->type == MF_WILDCARD) || (theNode->type == MF_VARIABLE)) &&
+   if (((theNode->pnType == MF_WILDCARD_NODE) || (theNode->pnType == MF_VARIABLE_NODE)) &&
        (theNode->multiFieldsBefore == 0) &&
        (theNode->multiFieldsAfter == 0))
      {
@@ -605,7 +606,7 @@ void FactReplaceGetfield(
 /*   rule.                                                   */
 /*************************************************************/
 static void *FactGetVarJN1(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *theNode,
   int side)
   {
@@ -623,29 +624,29 @@ static void *FactGetVarJN1(
    /*=========================================*/
 
    if (side == LHS)
-     { 
-      hack.lhs = 1; 
-      hack.whichPattern = (unsigned short) theNode->joinDepth;
+     {
+      hack.lhs = 1;
+      hack.whichPattern = theNode->joinDepth;
      }
    else if (side == RHS)
-     { 
-      hack.rhs = 1; 
-      hack.whichPattern = (unsigned short) 0;
+     {
+      hack.rhs = 1;
+      hack.whichPattern = 0;
      }
    else if (side == NESTED_RHS)
-     { 
-      hack.rhs = 1; 
-      hack.whichPattern = (unsigned short) theNode->joinDepth;
+     {
+      hack.rhs = 1;
+      hack.whichPattern = theNode->joinDepth;
      }
    else
-     { hack.whichPattern = (unsigned short) theNode->joinDepth; }
-     
+     { hack.whichPattern = theNode->joinDepth; }
+
    /*========================================*/
    /* A slot value of zero indicates that we */
    /* want the pattern address returned.     */
    /*========================================*/
 
-   if (theNode->slotNumber <= 0)
+   if ((theNode->slotNumber == 0) || (theNode->slotNumber == UNSPECIFIED_SLOT))
      {
       hack.factAddress = 1;
       hack.allFields = 0;
@@ -664,7 +665,7 @@ static void *FactGetVarJN1(
      {
       hack.factAddress = 0;
       hack.allFields = 1;
-      hack.whichSlot = (unsigned short) (theNode->slotNumber - 1);
+      hack.whichSlot = theNode->slotNumber - 1;
       hack.whichField = 0;
      }
 
@@ -678,15 +679,15 @@ static void *FactGetVarJN1(
      {
       hack.factAddress = 0;
       hack.allFields = 0;
-      hack.whichSlot = (unsigned short) (theNode->slotNumber - 1);
-      hack.whichField = (unsigned short) (theNode->index - 1);
+      hack.whichSlot = theNode->slotNumber - 1;
+      hack.whichField = theNode->index - 1;
      }
 
    /*=============================*/
    /* Return the argument bitmap. */
    /*=============================*/
 
-   return(EnvAddBitMap(theEnv,&hack,sizeof(struct factGetVarJN1Call)));
+   return(AddBitMap(theEnv,&hack,sizeof(struct factGetVarJN1Call)));
   }
 
 /**************************************************************/
@@ -698,7 +699,7 @@ static void *FactGetVarJN1(
 /*   rule.                                                    */
 /**************************************************************/
 static void *FactGetVarJN2(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *theNode,
   int side)
   {
@@ -716,31 +717,31 @@ static void *FactGetVarJN2(
    /* from which the value will be retrieved.             */
    /*=====================================================*/
 
-   hack.whichSlot = (unsigned short) (theNode->slotNumber - 1);
+   hack.whichSlot = theNode->slotNumber - 1;
 
    if (side == LHS)
-     { 
-      hack.lhs = 1; 
-      hack.whichPattern = (unsigned short) theNode->joinDepth;
+     {
+      hack.lhs = 1;
+      hack.whichPattern = theNode->joinDepth;
      }
    else if (side == RHS)
-     { 
-      hack.rhs = 1; 
-      hack.whichPattern = (unsigned short) 0;
+     {
+      hack.rhs = 1;
+      hack.whichPattern = 0;
      }
    else if (side == NESTED_RHS)
-     { 
-      hack.rhs = 1; 
-      hack.whichPattern = (unsigned short) theNode->joinDepth;
+     {
+      hack.rhs = 1;
+      hack.whichPattern = theNode->joinDepth;
      }
    else
-     { hack.whichPattern = (unsigned short) theNode->joinDepth; }
+     { hack.whichPattern = theNode->joinDepth; }
 
    /*=============================*/
    /* Return the argument bitmap. */
    /*=============================*/
 
-   return(EnvAddBitMap(theEnv,&hack,sizeof(struct factGetVarJN2Call)));
+   return AddBitMap(theEnv,&hack,sizeof(struct factGetVarJN2Call));
   }
 
 /*************************************************************/
@@ -756,7 +757,7 @@ static void *FactGetVarJN2(
 /*   rule.                                                   */
 /*************************************************************/
 static void *FactGetVarJN3(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *theNode,
   int side)
   {
@@ -774,31 +775,31 @@ static void *FactGetVarJN3(
    /* from which the value will be retrieved.             */
    /*=====================================================*/
 
-   hack.whichSlot = (unsigned short) (theNode->slotNumber - 1);
+   hack.whichSlot = theNode->slotNumber - 1;
 
    if (side == LHS)
-     { 
-      hack.lhs = 1; 
-      hack.whichPattern = (unsigned short) theNode->joinDepth;
+     {
+      hack.lhs = 1;
+      hack.whichPattern = theNode->joinDepth;
      }
    else if (side == RHS)
-     { 
-      hack.rhs = 1; 
-      hack.whichPattern = (unsigned short) 0;
+     {
+      hack.rhs = 1;
+      hack.whichPattern = 0;
      }
    else if (side == NESTED_RHS)
-     { 
-      hack.rhs = 1; 
-      hack.whichPattern = (unsigned short) theNode->joinDepth;
+     {
+      hack.rhs = 1;
+      hack.whichPattern = theNode->joinDepth;
      }
    else
-     { hack.whichPattern = (unsigned short) theNode->joinDepth; }
+     { hack.whichPattern = theNode->joinDepth; }
 
    /*==============================================================*/
    /* If a single field variable value is being retrieved, then... */
    /*==============================================================*/
 
-   if ((theNode->type == SF_WILDCARD) || (theNode->type == SF_VARIABLE))
+   if ((theNode->pnType == SF_WILDCARD_NODE) || (theNode->pnType == SF_VARIABLE_NODE))
      {
       /*=========================================================*/
       /* If no multifield values occur before the variable, then */
@@ -833,7 +834,7 @@ static void *FactGetVarJN3(
       /* Return the argument bitmap. */
       /*=============================*/
 
-      return(EnvAddBitMap(theEnv,&hack,sizeof(struct factGetVarJN3Call)));
+      return(AddBitMap(theEnv,&hack,sizeof(struct factGetVarJN3Call)));
      }
 
    /*============================================================*/
@@ -856,7 +857,7 @@ static void *FactGetVarJN3(
    /* Return the argument bitmap. */
    /*=============================*/
 
-   return(EnvAddBitMap(theEnv,&hack,sizeof(struct factGetVarJN3Call)));
+   return AddBitMap(theEnv,&hack,sizeof(struct factGetVarJN3Call));
   }
 
 /**************************************************************/
@@ -868,7 +869,7 @@ static void *FactGetVarJN3(
 /*   network.                                                 */
 /**************************************************************/
 static void *FactGetVarPN1(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *theNode)
   {
    struct factGetVarPN1Call hack;
@@ -884,7 +885,8 @@ static void *FactGetVarPN1(
    /* want the pattern address returned.     */
    /*========================================*/
 
-   if (theNode->slotNumber <= 0)
+   if ((theNode->slotNumber == 0) ||
+       (theNode->slotNumber == UNSPECIFIED_SLOT))
      {
       hack.factAddress = 1;
       hack.allFields = 0;
@@ -903,7 +905,7 @@ static void *FactGetVarPN1(
      {
       hack.factAddress = 0;
       hack.allFields = 1;
-      hack.whichSlot = (unsigned short) (theNode->slotNumber - 1);
+      hack.whichSlot = theNode->slotNumber - 1;
       hack.whichField = 0;
      }
 
@@ -917,15 +919,15 @@ static void *FactGetVarPN1(
      {
       hack.factAddress = 0;
       hack.allFields = 0;
-      hack.whichSlot = (unsigned short) (theNode->slotNumber - 1);
-      hack.whichField = (unsigned short) (theNode->index - 1);
+      hack.whichSlot = theNode->slotNumber - 1;
+      hack.whichField = theNode->index - 1;
      }
 
    /*=============================*/
    /* Return the argument bitmap. */
    /*=============================*/
 
-   return(EnvAddBitMap(theEnv,&hack,sizeof(struct factGetVarPN1Call)));
+   return AddBitMap(theEnv,&hack,sizeof(struct factGetVarPN1Call));
   }
 
 /***************************************************************/
@@ -936,7 +938,7 @@ static void *FactGetVarPN1(
 /*   only used by expressions in the pattern network.          */
 /***************************************************************/
 static void *FactGetVarPN2(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *theNode)
   {
    struct factGetVarPN2Call hack;
@@ -952,13 +954,13 @@ static void *FactGetVarPN2(
    /* the value will be retrieved.          */
    /*=======================================*/
 
-   hack.whichSlot = (unsigned short) (theNode->slotNumber - 1);
+   hack.whichSlot = theNode->slotNumber - 1;
 
    /*=============================*/
    /* Return the argument bitmap. */
    /*=============================*/
 
-   return(EnvAddBitMap(theEnv,&hack,sizeof(struct factGetVarPN2Call)));
+   return AddBitMap(theEnv,&hack,sizeof(struct factGetVarPN2Call));
   }
 
 /*************************************************************/
@@ -973,7 +975,7 @@ static void *FactGetVarPN2(
 /*   used by expressions in the pattern network.             */
 /*************************************************************/
 static void *FactGetVarPN3(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *theNode)
   {
    struct factGetVarPN3Call hack;
@@ -989,13 +991,13 @@ static void *FactGetVarPN3(
    /* the value will be retrieved.          */
    /*=======================================*/
 
-   hack.whichSlot = (unsigned short) (theNode->slotNumber - 1);
+   hack.whichSlot = theNode->slotNumber - 1;
 
    /*==============================================================*/
    /* If a single field variable value is being retrieved, then... */
    /*==============================================================*/
 
-   if ((theNode->type == SF_WILDCARD) || (theNode->type == SF_VARIABLE) || ConstantType(theNode->type))
+   if ((theNode->pnType == SF_WILDCARD_NODE) || (theNode->pnType == SF_VARIABLE_NODE) || ConstantNode(theNode))
      {
       /*=========================================================*/
       /* If no multifield values occur before the variable, then */
@@ -1026,7 +1028,7 @@ static void *FactGetVarPN3(
          hack.endOffset = theNode->singleFieldsAfter;
         }
 
-      return(EnvAddBitMap(theEnv,&hack,sizeof(struct factGetVarPN3Call)));
+      return(AddBitMap(theEnv,&hack,sizeof(struct factGetVarPN3Call)));
      }
 
    /*============================================================*/
@@ -1049,7 +1051,7 @@ static void *FactGetVarPN3(
    /* Return the argument bitmap. */
    /*=============================*/
 
-   return(EnvAddBitMap(theEnv,&hack,sizeof(struct factGetVarPN3Call)));
+   return AddBitMap(theEnv,&hack,sizeof(struct factGetVarPN3Call));
   }
 
 /*************************************************************/
@@ -1058,7 +1060,7 @@ static void *FactGetVarPN3(
 /*   the same name found in the same pattern.                */
 /*************************************************************/
 struct expr *FactPNVariableComparison(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *selfNode,
   struct lhsParseNode *referringNode)
   {
@@ -1078,18 +1080,20 @@ struct expr *FactPNVariableComparison(
 
    if ((selfNode->withinMultifieldSlot == false) &&
        (selfNode->slotNumber > 0) &&
+       (selfNode->slotNumber != UNSPECIFIED_SLOT) &&
        (referringNode->withinMultifieldSlot == false) &&
-       (referringNode->slotNumber > 0))
+       (referringNode->slotNumber > 0) &&
+       (referringNode->slotNumber != UNSPECIFIED_SLOT))
      {
       hack.pass = 0;
       hack.fail = 0;
-      hack.field1 = (unsigned short) (selfNode->slotNumber - 1);
-      hack.field2 = (unsigned short) (referringNode->slotNumber - 1);
+      hack.field1 = selfNode->slotNumber - 1;
+      hack.field2 = referringNode->slotNumber - 1;
 
       if (selfNode->negated) hack.fail = 1;
       else hack.pass = 1;
 
-      top = GenConstant(theEnv,FACT_PN_CMP1,EnvAddBitMap(theEnv,&hack,sizeof(struct factCompVarsPN1Call)));
+      top = GenConstant(theEnv,FACT_PN_CMP1,AddBitMap(theEnv,&hack,sizeof(struct factCompVarsPN1Call)));
      }
 
    /*================================================================*/
@@ -1111,7 +1115,7 @@ struct expr *FactPNVariableComparison(
    /* the variable comparison.             */
    /*======================================*/
 
-   return(top);
+   return top;
   }
 
 /*********************************************************/
@@ -1120,7 +1124,7 @@ struct expr *FactPNVariableComparison(
 /*   the same name found in different patterns.          */
 /*********************************************************/
 struct expr *FactJNVariableComparison(
-  void *theEnv,
+  Environment *theEnv,
   struct lhsParseNode *selfNode,
   struct lhsParseNode *referringNode,
   bool nandJoin)
@@ -1137,8 +1141,10 @@ struct expr *FactJNVariableComparison(
 
    if ((selfNode->withinMultifieldSlot == false) &&
        (selfNode->slotNumber > 0) &&
+       (selfNode->slotNumber != UNSPECIFIED_SLOT) &&
        (referringNode->withinMultifieldSlot == false) &&
-       (referringNode->slotNumber > 0))
+       (referringNode->slotNumber > 0) &&
+       (referringNode->slotNumber != UNSPECIFIED_SLOT))
      {
       ClearBitString(&hack1,sizeof(struct factCompVarsJN1Call));
       hack1.pass = 0;
@@ -1148,26 +1154,26 @@ struct expr *FactJNVariableComparison(
         { firstNode = referringNode; }
       else
         { firstNode = selfNode; }
-      
-      hack1.slot1 = (unsigned short) (firstNode->slotNumber - 1);
-        
+
+      hack1.slot1 = firstNode->slotNumber - 1;
+
       if (nandJoin)
-        { hack1.pattern1 = (unsigned short) referringNode->joinDepth; }
+        { hack1.pattern1 = referringNode->joinDepth; }
       else
         { hack1.pattern1 = 0; }
-        
+
       hack1.p1rhs = true;
       hack1.p2lhs = true;
 
-      hack1.pattern2 = (unsigned short) referringNode->joinDepth; 
-      
-      if (referringNode->index < 0) hack1.slot2 = 0;
-      else hack1.slot2 = (unsigned short) (referringNode->slotNumber - 1);
+      hack1.pattern2 = referringNode->joinDepth;
+
+      if (referringNode->index == NO_INDEX) hack1.slot2 = 0;
+      else hack1.slot2 = referringNode->slotNumber - 1;
 
       if (selfNode->negated) hack1.fail = 1;
       else hack1.pass = 1;
 
-      top = GenConstant(theEnv,FACT_JN_CMP1,EnvAddBitMap(theEnv,&hack1,sizeof(struct factCompVarsJN1Call)));
+      top = GenConstant(theEnv,FACT_JN_CMP1,AddBitMap(theEnv,&hack1,sizeof(struct factCompVarsJN1Call)));
      }
 
    /*===============================================================*/
@@ -1179,12 +1185,14 @@ struct expr *FactJNVariableComparison(
    /*===============================================================*/
 
    else if ((selfNode->slotNumber > 0) &&
-            (selfNode->type == SF_VARIABLE) &&
+            (selfNode->slotNumber != UNSPECIFIED_SLOT) &&
+            (selfNode->pnType == SF_VARIABLE_NODE) &&
             ((selfNode->multiFieldsBefore == 0) ||
              ((selfNode->multiFieldsBefore == 1) &&
               (selfNode->multiFieldsAfter == 0))) &&
             (referringNode->slotNumber > 0) &&
-            (referringNode->type == SF_VARIABLE) &&
+            (referringNode->slotNumber != UNSPECIFIED_SLOT) &&
+            (referringNode->pnType == SF_VARIABLE_NODE) &&
             ((referringNode->multiFieldsBefore == 0) ||
              (referringNode->multiFieldsAfter == 0)))
      {
@@ -1197,18 +1205,18 @@ struct expr *FactJNVariableComparison(
       else
         { firstNode = selfNode; }
 
-      hack2.slot1 = (unsigned short) (firstNode->slotNumber - 1);
+      hack2.slot1 = firstNode->slotNumber - 1;
 
       if (nandJoin)
-        { hack2.pattern1 = (unsigned short) referringNode->joinDepth; }
+        { hack2.pattern1 = referringNode->joinDepth; }
       else
         { hack2.pattern1 = 0; }
-      
+
       hack2.p1rhs = true;
       hack2.p2lhs = true;
-        
-      hack2.pattern2 = (unsigned short) referringNode->joinDepth; 
-      hack2.slot2 = (unsigned short) (referringNode->slotNumber - 1);
+
+      hack2.pattern2 = referringNode->joinDepth;
+      hack2.slot2 = referringNode->slotNumber - 1;
 
       if (firstNode->multiFieldsBefore == 0)
         {
@@ -1235,7 +1243,7 @@ struct expr *FactJNVariableComparison(
       if (selfNode->negated) hack2.fail = 1;
       else hack2.pass = 1;
 
-      top = GenConstant(theEnv,FACT_JN_CMP2,EnvAddBitMap(theEnv,&hack2,sizeof(struct factCompVarsJN2Call)));
+      top = GenConstant(theEnv,FACT_JN_CMP2,AddBitMap(theEnv,&hack2,sizeof(struct factCompVarsJN2Call)));
      }
 
    /*===============================================================*/
@@ -1255,7 +1263,7 @@ struct expr *FactJNVariableComparison(
         { top->argList = FactGenGetvar(theEnv,selfNode,NESTED_RHS); }
       else
         { top->argList = FactGenGetvar(theEnv,selfNode,RHS); }
-        
+
       top->argList->nextArg = FactGenGetvar(theEnv,referringNode,LHS);
      }
 
@@ -1265,289 +1273,6 @@ struct expr *FactJNVariableComparison(
    /*======================================*/
 
    return(top);
-  }
-
-/**************************************************************/
-/* ExtractSlotName: Given the position of the : separator and */
-/*   a variable/slot name joined using the separator, returns */
-/*   a symbol reference to the slot name (or NULL if a slot   */
-/*   name cannot be extracted).                               */
-/**************************************************************/
-static SYMBOL_HN *ExtractSlotName(
-  void *theEnv,
-  unsigned thePosition,
-  const char *theString)
-  {
-   size_t theLength;
-   char *newString;
-   SYMBOL_HN *returnValue;
-
-   /*=====================================*/
-   /* Determine the length of the string. */
-   /*=====================================*/
-
-   theLength = strlen(theString);
-
-   /*================================================*/
-   /* Return NULL if the : is at the very end of the */
-   /* string (and thus there is no slot name).       */
-   /*================================================*/
-
-   if (theLength == (thePosition + 1)) return(NULL);
-
-   /*===================================*/
-   /* Allocate a temporary string large */
-   /* enough to hold the slot name.     */
-   /*===================================*/
-
-   newString = (char *) gm2(theEnv,theLength - thePosition);
-
-   /*=============================================*/
-   /* Copy the slot name portion of the           */
-   /* variable/slot name to the temporary string. */
-   /*=============================================*/
-
-   genstrncpy(newString,&theString[thePosition+1],
-           (STD_SIZE) theLength - thePosition);
-
-   /*========================================*/
-   /* Add the slot name to the symbol table. */
-   /*========================================*/
-
-   returnValue = (SYMBOL_HN *) EnvAddSymbol(theEnv,newString);
-
-   /*=============================================*/
-   /* Return the storage of the temporary string. */
-   /*=============================================*/
-
-   rm(theEnv,newString,theLength - thePosition);
-
-   /*===========================================*/
-   /* Return a pointer to the slot name symbol. */
-   /*===========================================*/
-
-   return(returnValue);
-  }
-
-/******************************************************************/
-/* ExtractVariableName: Given the position of the : separator and */
-/*   a variable/slot name joined using the separator, returns a   */
-/*   symbol reference to the variable name (or NULL if a variable */
-/*   name cannot be extracted).                                   */
-/******************************************************************/
-static SYMBOL_HN *ExtractVariableName(
-  void *theEnv,
-  unsigned thePosition,
-  const char *theString)
-  {
-   char *newString;
-   SYMBOL_HN *returnValue;
-
-   /*============================================*/
-   /* Return NULL if the : is in a position such */
-   /* that a variable name can't be extracted.   */
-   /*============================================*/
-
-   if (thePosition == 0) return(NULL);
-
-   /*==========================================*/
-   /* Allocate storage for a temporary string. */
-   /*==========================================*/
-
-   newString = (char *) gm2(theEnv,thePosition+1);
-
-   /*======================================================*/
-   /* Copy the entire module/construct name to the string. */
-   /*======================================================*/
-
-   genstrncpy(newString,theString,(STD_SIZE) thePosition);
-
-   /*=======================================================*/
-   /* Place an end of string marker where the : is located. */
-   /*=======================================================*/
-
-   newString[thePosition] = EOS;
-
-   /*====================================================*/
-   /* Add the variable name (the truncated variable/slot */
-   /* name) to the symbol table.                         */
-   /*====================================================*/
-
-   returnValue = (SYMBOL_HN *) EnvAddSymbol(theEnv,newString);
-
-   /*=============================================*/
-   /* Return the storage of the temporary string. */
-   /*=============================================*/
-
-   rm(theEnv,newString,thePosition);
-
-   /*===============================================*/
-   /* Return a pointer to the variable name symbol. */
-   /*===============================================*/
-
-   return(returnValue);
-  }
-
-/****************************/
-/* ReplaceVarSlotReference: */
-/****************************/
-static void ReplaceVarSlotReference(
-  void *theEnv,
-  EXPRESSION *theExpr,
-  SYMBOL_HN *variableName,
-  SYMBOL_HN *slotName,
-  SYMBOL_HN *varSlotName)
-  {
-   theExpr->argList = GenConstant(theEnv,SF_VARIABLE,variableName);
-   theExpr->argList->nextArg = GenConstant(theEnv,SYMBOL,slotName);
-   theExpr->argList->nextArg->nextArg = GenConstant(theEnv,SYMBOL,varSlotName);
-
-   theExpr->type = FCALL;
-   theExpr->value = FindFunction(theEnv,"(slot-value)");
-  }
-
-
-/*************************/
-/* FactSlotReferenceVar: */
-/*************************/
-int FactSlotReferenceVar(
-  void *theEnv,
-  EXPRESSION *varexp,
-  void *userBuffer)
-  {
-   const char *fullVar;
-   char *result;
-   size_t position;
-   SYMBOL_HN *slotName, *variableName;
-   
-   /*==============================================*/
-   /* Reference should be a single field variable. */
-   /*==============================================*/
-   
-   if (varexp->type != SF_VARIABLE)
-     { return(0); }
-
-   fullVar = ValueToString(varexp->value);
-   
-   result = strchr(fullVar,SLOT_REF);
-   if (result == NULL)
-     { return(0); }
-   
-   position = result - fullVar;
-     
-   slotName = ExtractSlotName(theEnv,position,fullVar);
-
-   if (slotName == NULL)
-     { return(-1); }
-
-   variableName = ExtractVariableName(theEnv,position,fullVar);
-
-   if (variableName == NULL)
-     { return(-1);}
-    
-   ReplaceVarSlotReference(theEnv,varexp,variableName,slotName,varexp->value);
-   
-   return(1);
-  }
-
-/*****************************/
-/* RuleFactSlotReferenceVar: */
-/*****************************/
-int RuleFactSlotReferenceVar(
-  void *theEnv,
-  EXPRESSION *varexp,
-  struct lhsParseNode *theLHS)
-  {
-   const char *fullVar;
-   char *result;
-   size_t position;
-   SYMBOL_HN *slotName, *variableName;
-   bool boundPosn;
-   SYMBOL_HN *templateName;
-   struct deftemplate *theDeftemplate;
-   short slotPosition;
-
-   /*==============================================*/
-   /* Reference should be a single field variable. */
-   /*==============================================*/
-   
-   if (varexp->type != SF_VARIABLE)
-     { return(0); }
-
-   fullVar = ValueToString(varexp->value);
-   
-   result = strchr(fullVar,SLOT_REF);
-   if (result == NULL)
-     { return(0); }
-   
-   position = result - fullVar;
-     
-   slotName = ExtractSlotName(theEnv,position,fullVar);
-
-   if (slotName == NULL)
-     { return(-1); }
-
-   variableName = ExtractVariableName(theEnv,position,fullVar);
-
-   if (variableName == NULL)
-     { return(-1);}
-
-   /*============================================*/
-   /* If the variable has been bound on the RHS, */
-   /* then the slot name can not be validated.   */
-   /*============================================*/
-   
-   boundPosn = SearchParsedBindNames(theEnv,variableName);
-
-   if (boundPosn != 0)
-     {
-      ReplaceVarSlotReference(theEnv,varexp,variableName,slotName,varexp->value);
-      return (1);
-     }
-
-   /*======================================================*/
-   /* Find the deftemplate type bound to the fact address. */
-   /*======================================================*/
-   
-   templateName = FindTemplateForFactAddress(variableName,theLHS);
-   if (templateName == NULL)
-     {
-      ReplaceVarSlotReference(theEnv,varexp,variableName,slotName,varexp->value);
-      return (1);
-     }
-     
-   theDeftemplate = (struct deftemplate *)
-                    LookupConstruct(theEnv,DeftemplateData(theEnv)->DeftemplateConstruct,
-                                    ValueToString(templateName),
-                                    false);
-
-   if ((theDeftemplate == NULL) || (theDeftemplate->implied))
-     {
-      ReplaceVarSlotReference(theEnv,varexp,variableName,slotName,varexp->value);
-      return (1);
-     }
-
-   /*====================================================*/
-   /* Verify the slot name is valid for the deftemplate. */
-   /*====================================================*/
-   
-   if (FindSlot(theDeftemplate,slotName,&slotPosition) == NULL)
-     {
-      PrintErrorID(theEnv,"FACTGEN",1,true);
-      EnvPrintRouter(theEnv,WERROR,"The variable/slot reference ?");
-      EnvPrintRouter(theEnv,WERROR,ValueToString(varexp->value));
-      EnvPrintRouter(theEnv,WERROR," is invalid because the referenced deftemplate does not contain the specified slot\n");
-      EnvSetEvaluationError(theEnv,true);
-      return(-1);
-     }
-     
-   /*==================================================================*/
-   /* Replace the ?var:slot reference with a slot-value function call. */
-   /*==================================================================*/
-   
-   ReplaceVarSlotReference(theEnv,varexp,variableName,slotName,varexp->value);
-
-   return(1);
   }
 
 #endif /* (! RUN_TIME) && (! BLOAD_ONLY) */

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/18/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -29,6 +29,17 @@
 /*                                                           */
 /*            Fixed ParseSlotOverrides memory release issue. */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_inspsr
@@ -39,12 +50,9 @@
 
 #include "expressn.h"
 
-#if ! RUN_TIME
-   EXPRESSION                    *ParseInitializeInstance(void *,EXPRESSION *,const char *);
-   EXPRESSION                    *ParseSlotOverrides(void *,const char *,bool *);
-#endif
-
-   EXPRESSION                    *ParseSimpleInstance(void *,EXPRESSION *,const char *);
+   Expression                    *ParseInitializeInstance(Environment *,Expression *,const char *);
+   Expression                    *ParseSlotOverrides(Environment *,const char *,bool *);
+   Expression                    *ParseSimpleInstance(Environment *,Expression *,const char *);
 
 #endif /* _H_inspsr */
 

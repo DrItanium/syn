@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/18/16            */
    /*                                                     */
    /*                ENVRNMNT HEADER FILE                 */
    /*******************************************************/
@@ -29,11 +29,11 @@
 /*            environment is created (i.e a pointer from the */
 /*            CLIPS environment to its parent environment).  */
 /*                                                           */
-/*      6.30: Added support for passing context information  */ 
+/*      6.30: Added support for passing context information  */
 /*            to user defined functions and callback         */
 /*            functions.                                     */
 /*                                                           */
-/*            Support for hashing EXTERNAL_ADDRESS data      */
+/*            Support for hashing EXTERNAL_ADDRESS_TYPE data */
 /*            type.                                          */
 /*                                                           */
 /*            Added const qualifiers to remove C++           */
@@ -42,7 +42,18 @@
 /*      6.40: Refactored code to reduce header dependencies  */
 /*            in sysdep.c.                                   */
 /*                                                           */
-/*            Removed support for environment globals.       */
+/*            Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
 /*                                                           */
 /*************************************************************/
 
@@ -53,8 +64,13 @@
 #define _H_envrnmnt
 
 #include <stdbool.h>
+#include <stdlib.h>
 
-#include "symbol.h"
+typedef struct environmentData Environment;
+
+typedef void EnvironmentCleanupFunction(Environment *);
+
+#include "entities.h"
 
 #define USER_ENVIRONMENT_DATA 70
 #define MAXIMUM_ENVIRONMENT_POSITIONS 100
@@ -62,44 +78,35 @@
 struct environmentCleanupFunction
   {
    const char *name;
-   void (*func)(void *);
+   void (*func)(Environment *);
    int priority;
    struct environmentCleanupFunction *next;
   };
 
-typedef struct environmentData
-  {   
+struct environmentData
+  {
    unsigned int initialized : 1;
    void *context;
-   void *routerContext;
-   void *functionContext;
-   void *callbackContext;
+   CLIPSLexeme *TrueSymbol;
+   CLIPSLexeme *FalseSymbol;
+   CLIPSVoid *VoidConstant;
    void **theData;
-   void (**cleanupFunctions)(void *);
+   void (**cleanupFunctions)(Environment *);
    struct environmentCleanupFunction *listOfCleanupEnvironmentFunctions;
    struct environmentData *next;
-  } Environment;
+  };
 
-typedef struct environmentData ENVIRONMENT_DATA;
-typedef struct environmentData * ENVIRONMENT_DATA_PTR;
+#define VoidConstant(theEnv) (theEnv->VoidConstant)
+#define FalseSymbol(theEnv) (theEnv->FalseSymbol)
+#define TrueSymbol(theEnv) (theEnv->TrueSymbol)
 
 #define GetEnvironmentData(theEnv,position) (((struct environmentData *) theEnv)->theData[position])
 #define SetEnvironmentData(theEnv,position,value) (((struct environmentData *) theEnv)->theData[position] = value)
 
-   bool                           AllocateEnvironmentData(void *,unsigned int,unsigned long,void (*)(void *));
-   void                          *CreateEnvironment(void);
-   void                          *CreateRuntimeEnvironment(struct symbolHashNode **,struct floatHashNode **,
-                                                                  struct integerHashNode **,struct bitMapHashNode **);
-   bool                           DestroyEnvironment(void *);
-   bool                           AddEnvironmentCleanupFunction(void *,const char *,void (*)(void *),int);
-   void                          *GetEnvironmentContext(void *);
-   void                          *SetEnvironmentContext(void *,void *);
-   void                          *GetEnvironmentRouterContext(void *);
-   void                          *SetEnvironmentRouterContext(void *,void *);
-   void                          *GetEnvironmentFunctionContext(void *);
-   void                          *SetEnvironmentFunctionContext(void *,void *);
-   void                          *GetEnvironmentCallbackContext(void *);
-   void                          *SetEnvironmentCallbackContext(void *,void *);
+   bool                           AllocateEnvironmentData(Environment *,unsigned,size_t,EnvironmentCleanupFunction *);
+   bool                           AddEnvironmentCleanupFunction(Environment *,const char *,EnvironmentCleanupFunction *,int);
+   void                          *GetEnvironmentContext(Environment *);
+   void                          *SetEnvironmentContext(Environment *,void *);
 
 #endif /* _H_envrnmnt */
 

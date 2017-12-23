@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/20/16             */
+   /*             CLIPS Version 6.40  08/25/16            */
    /*                                                     */
    /*             BASIC MATH FUNCTIONS MODULE             */
    /*******************************************************/
@@ -22,7 +22,20 @@
 /*                                                           */
 /*            Converted API macros to function calls.        */
 /*                                                           */
-/*      6.40: Auto-float-dividend always enabled.            */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
+/*            Auto-float-dividend always enabled.            */
 /*                                                           */
 /*************************************************************/
 
@@ -34,17 +47,17 @@
 
 #include "evaluatn.h"
 
-   void                    BasicMathFunctionDefinitions(void *);
-   void                    AdditionFunction(UDFContext *,CLIPSValue *);
-   void                    MultiplicationFunction(UDFContext *,CLIPSValue *);
-   void                    SubtractionFunction(UDFContext *,CLIPSValue *);
-   void                    DivisionFunction(UDFContext *,CLIPSValue *);
-   void                    DivFunction(UDFContext *,CLIPSValue *);
-   void                    IntegerFunction(UDFContext *,CLIPSValue *);
-   void                    FloatFunction(UDFContext *,CLIPSValue *);
-   void                    AbsFunction(UDFContext *,CLIPSValue *);
-   void                    MinFunction(UDFContext *,CLIPSValue *);
-   void                    MaxFunction(UDFContext *,CLIPSValue *);
+   void                    BasicMathFunctionDefinitions(Environment *);
+   void                    AdditionFunction(Environment *,UDFContext *,UDFValue *);
+   void                    MultiplicationFunction(Environment *,UDFContext *,UDFValue *);
+   void                    SubtractionFunction(Environment *,UDFContext *,UDFValue *);
+   void                    DivisionFunction(Environment *,UDFContext *,UDFValue *);
+   void                    DivFunction(Environment *,UDFContext *,UDFValue *);
+   void                    IntegerFunction(Environment *,UDFContext *,UDFValue *);
+   void                    FloatFunction(Environment *,UDFContext *,UDFValue *);
+   void                    AbsFunction(Environment *,UDFContext *,UDFValue *);
+   void                    MinFunction(Environment *,UDFContext *,UDFValue *);
+   void                    MaxFunction(Environment *,UDFContext *,UDFValue *);
 
 #endif
 

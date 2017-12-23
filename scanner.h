@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                 SCANNER HEADER FILE                 */
    /*******************************************************/
@@ -28,6 +28,15 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_scanner
@@ -36,21 +45,47 @@
 
 #define _H_scanner
 
-struct token;
+typedef struct token Token;
 
-#include "pprint.h"
+typedef enum
+  {
+   SYMBOL_TOKEN = 1025,
+   STRING_TOKEN,
+   INSTANCE_NAME_TOKEN,
+   FLOAT_TOKEN,
+   INTEGER_TOKEN,
+   LEFT_PARENTHESIS_TOKEN,
+   RIGHT_PARENTHESIS_TOKEN,
+   SF_VARIABLE_TOKEN,
+   MF_VARIABLE_TOKEN,
+   GBL_VARIABLE_TOKEN,
+   SF_WILDCARD_TOKEN,
+   MF_WILDCARD_TOKEN,
+   MF_GBL_VARIABLE_TOKEN,
+   NOT_CONSTRAINT_TOKEN,
+   AND_CONSTRAINT_TOKEN,
+   OR_CONSTRAINT_TOKEN,
+   STOP_TOKEN,
+   UNKNOWN_VALUE_TOKEN,
+  } TokenType;
 
 struct token
   {
-   unsigned short type;
-   void *value;
+   TokenType tknType;
+   union
+     {
+      void *value;
+      CLIPSLexeme *lexemeValue;
+      CLIPSFloat *floatValue;
+      CLIPSInteger *integerValue;
+     };
    const char *printForm;
   };
 
 #define SCANNER_DATA 57
 
 struct scannerData
-  { 
+  {
    char *GlobalString;
    size_t GlobalMax;
    size_t GlobalPos;
@@ -60,14 +95,15 @@ struct scannerData
 
 #define ScannerData(theEnv) ((struct scannerData *) GetEnvironmentData(theEnv,SCANNER_DATA))
 
-   void                           InitializeScannerData(void *);
-   void                           GetToken(void *,const char *,struct token *);
+   void                           InitializeScannerData(Environment *);
+   void                           GetToken(Environment *,const char *,struct token *);
    void                           CopyToken(struct token *,struct token *);
-   void                           ResetLineCount(void *);
-   long                           GetLineCount(void *);
-   long                           SetLineCount(void *,long);
-   void                           IncrementLineCount(void *);
-   void                           DecrementLineCount(void *);
+   void                           ResetLineCount(Environment *);
+   long                           GetLineCount(Environment *);
+   long                           SetLineCount(Environment *,long);
+   void                           IncrementLineCount(Environment *);
+   void                           DecrementLineCount(Environment *);
+   unsigned short                 TokenTypeToType(TokenType);
 
 #endif /* _H_scanner */
 

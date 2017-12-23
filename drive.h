@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                  DRIVE HEADER FILE                  */
    /*******************************************************/
@@ -27,6 +27,15 @@
 /*                                                           */
 /*            Removed pseudo-facts used in not CE.           */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_drive
@@ -39,15 +48,15 @@
 #include "match.h"
 #include "network.h"
 
-   void                           NetworkAssert(void *,struct partialMatch *,struct joinNode *);
-   bool                           EvaluateJoinExpression(void *,struct expr *,struct joinNode *);
-   void                           NetworkAssertLeft(void *,struct partialMatch *,struct joinNode *,int);
-   void                           NetworkAssertRight(void *,struct partialMatch *,struct joinNode *,int);
-   void                           PPDrive(void *,struct partialMatch *,struct partialMatch *,struct joinNode *,int);
-   unsigned long                  BetaMemoryHashValue(void *,struct expr *,struct partialMatch *,struct partialMatch *,struct joinNode *);
-   bool                           EvaluateSecondaryNetworkTest(void *,struct partialMatch *,struct joinNode *);
-   void                           EPMDrive(void *,struct partialMatch *,struct joinNode *,int);
-   
+   void                           NetworkAssert(Environment *,struct partialMatch *,struct joinNode *);
+   bool                           EvaluateJoinExpression(Environment *,struct expr *,struct joinNode *);
+   void                           NetworkAssertLeft(Environment *,struct partialMatch *,struct joinNode *,int);
+   void                           NetworkAssertRight(Environment *,struct partialMatch *,struct joinNode *,int);
+   void                           PPDrive(Environment *,struct partialMatch *,struct partialMatch *,struct joinNode *,int);
+   unsigned long                  BetaMemoryHashValue(Environment *,struct expr *,struct partialMatch *,struct partialMatch *,struct joinNode *);
+   bool                           EvaluateSecondaryNetworkTest(Environment *,struct partialMatch *,struct joinNode *);
+   void                           EPMDrive(Environment *,struct partialMatch *,struct joinNode *,int);
+
 #endif /* _H_drive */
 
 

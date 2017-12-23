@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -30,6 +30,13 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_objrtcmp
@@ -42,8 +49,9 @@
 
 #include <stdio.h>
 
-   void                    ObjectPatternsCompilerSetup(void *);
-   void                    ObjectPatternNodeReference(void *,void *,FILE *,int,int);
+   void                    ObjectPatternsCompilerSetup(Environment *);
+   void                    ObjectPatternNodeReference(Environment *,void *,FILE *,
+                                                      unsigned int,unsigned int);
 
 #endif /* DEFRULE_CONSTRUCT && OBJECT_SYSTEM && (! RUN_TIME) && CONSTRUCT_COMPILER */
 

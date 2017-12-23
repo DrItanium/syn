@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -32,6 +32,13 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_objcmp
@@ -48,7 +55,7 @@
 #define OBJECT_COMPILER_DATA 36
 
 struct objectCompilerData
-  { 
+  {
 #if CONSTRUCT_COMPILER && (! RUN_TIME)
    struct CodeGeneratorItem *ObjectCodeItem;
 #endif
@@ -56,9 +63,9 @@ struct objectCompilerData
 
 #define ObjectCompilerData(theEnv) ((struct objectCompilerData *) GetEnvironmentData(theEnv,OBJECT_COMPILER_DATA))
 
-   void                    SetupObjectsCompiler(void *);
-   void                    PrintClassReference(void *,FILE *,DEFCLASS *,int,int);
-   void                    DefclassCModuleReference(void *,FILE *,int,int,int);
+   void                    SetupObjectsCompiler(Environment *);
+   void                    PrintClassReference(Environment *,FILE *,Defclass *,unsigned,unsigned);
+   void                    DefclassCModuleReference(Environment *,FILE *,unsigned long,unsigned int,unsigned int);
 
 #endif /* _H_objcmp */
 

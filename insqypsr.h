@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/18/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -31,6 +31,15 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_insqypsr
@@ -39,12 +48,12 @@
 
 #define _H_insqypsr
 
-#if INSTANCE_SET_QUERIES && (! RUN_TIME)
+#if INSTANCE_SET_QUERIES
 
 #include "expressn.h"
 
-   EXPRESSION                    *ParseQueryNoAction(void *,EXPRESSION *,const char *);
-   EXPRESSION                    *ParseQueryAction(void *,EXPRESSION *,const char *);
+   Expression                    *ParseQueryNoAction(Environment *,Expression *,const char *);
+   Expression                    *ParseQueryAction(Environment *,Expression *,const char *);
 
 #endif /* INSTANCE_SET_QUERIES && (! RUN_TIME) */
 

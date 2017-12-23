@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  07/30/16            */
    /*                                                     */
    /*                ANALYSIS HEADER FILE                 */
    /*******************************************************/
@@ -22,6 +22,15 @@
 /*      6.24: Renamed BOOLEAN macro type to intBool.         */
 /*                                                           */
 /*      6.30: Join network rework and optimizations.         */
+/*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
 /*                                                           */
 /*************************************************************/
 
@@ -46,7 +55,7 @@ struct nandFrame
    struct nandFrame *next;
   };
 
-   bool                           VariableAnalysis(void *,struct lhsParseNode *);
+   bool                           VariableAnalysis(Environment *,struct lhsParseNode *);
 
 #endif
 

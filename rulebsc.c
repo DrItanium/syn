@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  08/25/16             */
    /*                                                     */
    /*          DEFRULE BASIC COMMANDS HEADER FILE         */
    /*******************************************************/
@@ -44,6 +44,17 @@
 /*            being executed during fact assertions via      */
 /*            JoinOperationInProgress mechanism.             */
 /*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #include "setup.h"
@@ -58,6 +69,7 @@
 #include "engine.h"
 #include "envrnmnt.h"
 #include "extnfunc.h"
+#include "multifld.h"
 #include "reteutil.h"
 #include "router.h"
 #include "ruledef.h"
@@ -76,41 +88,41 @@
 /* LOCAL INTERNAL FUNCTION DEFINITIONS */
 /***************************************/
 
-   static void                    ResetDefrules(void *);
-   static void                    ResetDefrulesPrime(void *);
-   static void                    SaveDefrules(void *,void *,const char *);
+   static void                    ResetDefrules(Environment *,void *);
+   static void                    ResetDefrulesPrime(Environment *,void *);
+   static void                    SaveDefrules(Environment *,Defmodule *,const char *,void *);
 #if (! RUN_TIME)
-   static bool                    ClearDefrulesReady(void *);
-   static void                    ClearDefrules(void *);
+   static bool                    ClearDefrulesReady(Environment *,void *);
+   static void                    ClearDefrules(Environment *,void *);
 #endif
 
 /*************************************************************/
 /* DefruleBasicCommands: Initializes basic defrule commands. */
 /*************************************************************/
 void DefruleBasicCommands(
-  void *theEnv)
+  Environment *theEnv)
   {
-   EnvAddResetFunction(theEnv,"defrule",ResetDefrules,70);
-   EnvAddResetFunction(theEnv,"defrule",ResetDefrulesPrime,10);
-   AddSaveFunction(theEnv,"defrule",SaveDefrules,0);
+   AddResetFunction(theEnv,"defrule",ResetDefrules,70,NULL);
+   AddResetFunction(theEnv,"defrule",ResetDefrulesPrime,10,NULL);
+   AddSaveFunction(theEnv,"defrule",SaveDefrules,0,NULL);
 #if (! RUN_TIME)
-   AddClearReadyFunction(theEnv,"defrule",ClearDefrulesReady,0);
-   EnvAddClearFunction(theEnv,"defrule",ClearDefrules,0);
+   AddClearReadyFunction(theEnv,"defrule",ClearDefrulesReady,0,NULL);
+   AddClearFunction(theEnv,"defrule",ClearDefrules,0,NULL);
 #endif
-   
+
 #if DEBUGGING_FUNCTIONS
    AddWatchItem(theEnv,"rules",0,&DefruleData(theEnv)->WatchRules,70,DefruleWatchAccess,DefruleWatchPrint);
 #endif
 
 #if ! RUN_TIME
-   EnvAddUDF(theEnv,"get-defrule-list","m", GetDefruleListFunction,"GetDefruleListFunction",0,1,"y",NULL);
-   EnvAddUDF(theEnv,"undefrule","v", UndefruleCommand,"UndefruleCommand",1,1,"y",NULL);
-   EnvAddUDF(theEnv,"defrule-module","y", DefruleModuleFunction,"DefruleModuleFunction",1,1,"y",NULL);
+   AddUDF(theEnv,"get-defrule-list","m",0,1,"y",GetDefruleListFunction,"GetDefruleListFunction",NULL);
+   AddUDF(theEnv,"undefrule","v",1,1,"y",UndefruleCommand,"UndefruleCommand",NULL);
+   AddUDF(theEnv,"defrule-module","y",1,1,"y",DefruleModuleFunction,"DefruleModuleFunction",NULL);
 
 #if DEBUGGING_FUNCTIONS
-   EnvAddUDF(theEnv,"rules","v", ListDefrulesCommand,"ListDefrulesCommand",0,1,"y",NULL);
-   EnvAddUDF(theEnv,"list-defrules","v",  ListDefrulesCommand,"ListDefrulesCommand",0,1,"y",NULL);
-   EnvAddUDF(theEnv,"ppdefrule","v", PPDefruleCommand,"PPDefruleCommand",1,1,"y",NULL);
+   AddUDF(theEnv,"rules","v",0,1,"y",ListDefrulesCommand,"ListDefrulesCommand",NULL);
+   AddUDF(theEnv,"list-defrules","v",0,1,"y",ListDefrulesCommand,"ListDefrulesCommand",NULL);
+   AddUDF(theEnv,"ppdefrule","v",1,1,"y",PPDefruleCommand,"PPDefruleCommand",NULL);
 #endif
 
 #if (BLOAD || BLOAD_ONLY || BLOAD_AND_BSAVE)
@@ -132,17 +144,18 @@ void DefruleBasicCommands(
 /*   cleared.                                        */
 /*****************************************************/
 static void ResetDefrules(
-  void *theEnv)
+  Environment *theEnv,
+  void *context)
   {
-   struct defmodule *theModule;
+   Defmodule *theModule;
    struct joinLink *theLink;
    struct partialMatch *notParent;
-  
+
    DefruleData(theEnv)->CurrentEntityTimeTag = 1L;
-   EnvClearFocusStack(theEnv);
-   theModule = (struct defmodule *) EnvFindDefmodule(theEnv,"MAIN");
-   EnvFocus(theEnv,(void *) theModule);
-   
+   ClearFocusStack(theEnv);
+   theModule = FindDefmodule(theEnv,"MAIN");
+   Focus(theModule);
+
    for (theLink = DefruleData(theEnv)->RightPrimeJoins;
         theLink != NULL;
         theLink = theLink->next)
@@ -151,39 +164,40 @@ static void ResetDefrules(
    for (theLink = DefruleData(theEnv)->LeftPrimeJoins;
         theLink != NULL;
         theLink = theLink->next)
-     { 
-      if ((theLink->join->patternIsNegated || theLink->join->joinFromTheRight) && 
+     {
+      if ((theLink->join->patternIsNegated || theLink->join->joinFromTheRight) &&
           (! theLink->join->patternIsExists))
         {
          notParent = theLink->join->leftMemory->beta[0];
-         
+
          if (notParent->marker)
            { RemoveBlockedLink(notParent); }
-           
+
          /*==========================================================*/
          /* Prevent any retractions from generating partial matches. */
          /*==========================================================*/
-           
+
          notParent->marker = notParent;
-         
+
          if (notParent->children != NULL)
            { PosEntryRetractBeta(theEnv,notParent,notParent->children,NETWORK_ASSERT); }
            /*
-         if (notParent->dependents != NULL) 
+         if (notParent->dependents != NULL)
            { RemoveLogicalSupport(theEnv,notParent); } */
         }
      }
   }
 
-/*****************************************************/
-/* ResetDefrulesPrime:                      */
-/*****************************************************/
+/***********************/
+/* ResetDefrulesPrime: */
+/***********************/
 static void ResetDefrulesPrime(
-  void *theEnv)
+  Environment *theEnv,
+  void *context)
   {
    struct joinLink *theLink;
    struct partialMatch *notParent;
-      
+
    for (theLink = DefruleData(theEnv)->RightPrimeJoins;
         theLink != NULL;
         theLink = theLink->next)
@@ -192,8 +206,8 @@ static void ResetDefrulesPrime(
    for (theLink = DefruleData(theEnv)->LeftPrimeJoins;
         theLink != NULL;
         theLink = theLink->next)
-     { 
-      if ((theLink->join->patternIsNegated || theLink->join->joinFromTheRight) && 
+     {
+      if ((theLink->join->patternIsNegated || theLink->join->joinFromTheRight) &&
           (! theLink->join->patternIsExists))
         {
          notParent = theLink->join->leftMemory->beta[0];
@@ -218,30 +232,32 @@ static void ResetDefrulesPrime(
 /* ClearDefrulesReady: Indicates whether defrules can be cleared. */
 /******************************************************************/
 static bool ClearDefrulesReady(
-  void *theEnv)
+  Environment *theEnv,
+  void *context)
   {
-   if (EngineData(theEnv)->ExecutingRule != NULL) return(false);
+   if (EngineData(theEnv)->ExecutingRule != NULL) return false;
 
-   if (EngineData(theEnv)->JoinOperationInProgress) return(false);
+   if (EngineData(theEnv)->JoinOperationInProgress) return false;
 
-   EnvClearFocusStack(theEnv);
-   if (EnvGetCurrentModule(theEnv) == NULL) return(false);
+   ClearFocusStack(theEnv);
+   if (GetCurrentModule(theEnv) == NULL) return false;
 
    DefruleData(theEnv)->CurrentEntityTimeTag = 1L;
 
-   return(true);
+   return true;
   }
 
 /***************************************************************/
 /* ClearDefrules: Pushes the MAIN module as the current focus. */
 /***************************************************************/
 static void ClearDefrules(
-  void *theEnv)
+  Environment *theEnv,
+  void *context)
   {
-   struct defmodule *theModule;
+   Defmodule *theModule;
 
-   theModule = (struct defmodule *) EnvFindDefmodule(theEnv,"MAIN");
-   EnvFocus(theEnv,(void *) theModule);
+   theModule = FindDefmodule(theEnv,"MAIN");
+   Focus(theModule);
   }
 
 #endif
@@ -251,11 +267,12 @@ static void ClearDefrules(
 /*   for use with the save command.   */
 /**************************************/
 static void SaveDefrules(
-  void *theEnv,
-  void *theModule,
-  const char *logicalName)
+  Environment *theEnv,
+  Defmodule *theModule,
+  const char *logicalName,
+  void *context)
   {
-   SaveConstruct(theEnv,theModule,logicalName,DefruleData(theEnv)->DefruleConstruct); 
+   SaveConstruct(theEnv,theModule,logicalName,DefruleData(theEnv)->DefruleConstruct);
   }
 
 /******************************************/
@@ -263,22 +280,33 @@ static void SaveDefrules(
 /*   for the undefrule command.           */
 /******************************************/
 void UndefruleCommand(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   void *theEnv = UDFContextEnvironment(context);
    UndefconstructCommand(context,"undefrule",DefruleData(theEnv)->DefruleConstruct);
   }
 
-/**********************************/
-/* EnvUndefrule: C access routine */
-/*   for the undefrule command.   */
-/**********************************/
-bool EnvUndefrule(
-  void *theEnv,
-  void *theDefrule)
+/********************************/
+/* Undefrule: C access routine  */
+/*   for the undefrule command. */
+/********************************/
+bool Undefrule(
+  Defrule *theDefrule,
+  Environment *allEnv)
   {
-   return(Undefconstruct(theEnv,theDefrule,DefruleData(theEnv)->DefruleConstruct)); 
+   Environment *theEnv;
+   
+   if (theDefrule == NULL)
+     {
+      theEnv = allEnv;
+      return Undefconstruct(theEnv,NULL,DefruleData(theEnv)->DefruleConstruct);
+     }
+   else
+     {
+      theEnv = theDefrule->header.env;
+      return Undefconstruct(theEnv,&theDefrule->header,DefruleData(theEnv)->DefruleConstruct);
+     }
   }
 
 /************************************************/
@@ -286,23 +314,27 @@ bool EnvUndefrule(
 /*   for the get-defrule-list function.         */
 /************************************************/
 void GetDefruleListFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   void *theEnv = UDFContextEnvironment(context);
-   GetConstructListFunction(context,"get-defrule-list",returnValue,DefruleData(theEnv)->DefruleConstruct);
+   GetConstructListFunction(context,returnValue,DefruleData(theEnv)->DefruleConstruct);
   }
 
 /****************************************/
-/* EnvGetDefruleList: C access routine  */
+/* GetDefruleList: C access routine     */
 /*   for the get-defrule-list function. */
 /****************************************/
-void EnvGetDefruleList(
-  void *theEnv,
-  DATA_OBJECT_PTR returnValue,
-  void *theModule)
+void GetDefruleList(
+  Environment *theEnv,
+  CLIPSValue *returnValue,
+  Defmodule *theModule)
   {
-   GetConstructList(theEnv,returnValue,DefruleData(theEnv)->DefruleConstruct,(struct defmodule *) theModule);
+   UDFValue result;
+   
+   GetConstructList(theEnv,&result,DefruleData(theEnv)->DefruleConstruct,theModule);
+   NormalizeMultifield(theEnv,&result);
+   returnValue->value = result.value;
   }
 
 /*********************************************/
@@ -310,11 +342,11 @@ void EnvGetDefruleList(
 /*   for the defrule-module function.        */
 /*********************************************/
 void DefruleModuleFunction(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   void *theEnv = UDFContextEnvironment(context);
-   CVSetCLIPSSymbol(returnValue,GetConstructModuleCommand(context,"defrule-module",DefruleData(theEnv)->DefruleConstruct));
+   returnValue->value = GetConstructModuleCommand(context,"defrule-module",DefruleData(theEnv)->DefruleConstruct);
   }
 
 #if DEBUGGING_FUNCTIONS
@@ -324,10 +356,10 @@ void DefruleModuleFunction(
 /*   for the ppdefrule command.           */
 /******************************************/
 void PPDefruleCommand(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   void *theEnv = UDFContextEnvironment(context);
    PPConstructCommand(context,"ppdefrule",DefruleData(theEnv)->DefruleConstruct);
   }
 
@@ -335,8 +367,8 @@ void PPDefruleCommand(
 /* PPDefrule: C access routine for */
 /*   the ppdefrule command.        */
 /***********************************/
-int PPDefrule(
-  void *theEnv,
+bool PPDefrule(
+  Environment *theEnv,
   const char *defruleName,
   const char *logicalName)
   {
@@ -348,106 +380,90 @@ int PPDefrule(
 /*   for the list-defrules command.          */
 /*********************************************/
 void ListDefrulesCommand(
+  Environment *theEnv,
   UDFContext *context,
-  CLIPSValue *returnValue)
+  UDFValue *returnValue)
   {
-   void *theEnv = UDFContextEnvironment(context);
-   ListConstructCommand(context,"list-defrules",DefruleData(theEnv)->DefruleConstruct);
+   ListConstructCommand(context,DefruleData(theEnv)->DefruleConstruct);
   }
 
-/*************************************/
-/* EnvListDefrules: C access routine */
-/*   for the list-defrules command.  */
-/*************************************/
-void EnvListDefrules(
-  void *theEnv,
+/************************************/
+/* ListDefrules: C access routine   */
+/*   for the list-defrules command. */
+/************************************/
+void ListDefrules(
+  Environment *theEnv,
   const char *logicalName,
-  void *theModule)
+  Defmodule *theModule)
   {
-   ListConstruct(theEnv,DefruleData(theEnv)->DefruleConstruct,logicalName,(struct defmodule *) theModule); 
+   ListConstruct(theEnv,DefruleData(theEnv)->DefruleConstruct,logicalName,theModule);
   }
 
 /*******************************************************/
-/* EnvGetDefruleWatchActivations: C access routine for */
+/* DefruleGetWatchActivations: C access routine for    */
 /*   retrieving the current watch value of a defrule's */
 /*   activations.                                      */
 /*******************************************************/
-bool EnvGetDefruleWatchActivations(
-  void *theEnv,
-  void *rulePtr)
+bool DefruleGetWatchActivations(
+  Defrule *rulePtr)
   {
-   struct defrule *thePtr;
-#if MAC_XCD
-#pragma unused(theEnv)
-#endif
+   Defrule *thePtr;
 
-   for (thePtr = (struct defrule *) rulePtr;
+   for (thePtr = rulePtr;
         thePtr != NULL;
         thePtr = thePtr->disjunct)
-     { if (thePtr->watchActivation) return(true); }
+     { if (thePtr->watchActivation) return true; }
 
-   return(false);
+   return false;
   }
 
-/***********************************************/
-/* EnvGetDefruleWatchFirings: C access routine */
-/*   for retrieving the current watch value of */
-/*   a defrule's firings.                      */
-/***********************************************/
-bool EnvGetDefruleWatchFirings(
-  void *theEnv,
-  void *rulePtr)
+/********************************************/
+/* DefruleGetWatchFirings: C access routine */
+/*   for retrieving the current watch value */
+/*   of a defrule's firings.                */
+/********************************************/
+bool DefruleGetWatchFirings(
+  Defrule *rulePtr)
   {
-   struct defrule *thePtr;
-#if MAC_XCD
-#pragma unused(theEnv)
-#endif
+   Defrule *thePtr;
 
-   for (thePtr = (struct defrule *) rulePtr;
+   for (thePtr = rulePtr;
         thePtr != NULL;
         thePtr = thePtr->disjunct)
-     { if (thePtr->watchFiring) return(true); }
+     { if (thePtr->watchFiring) return true; }
 
-   return(false);
+   return false;
   }
 
-/***************************************************/
-/* EnvSetDefruleWatchActivations: C access routine */
-/*   for setting the current watch value of a      */
-/*   defrule's activations.                        */
-/***************************************************/
-void EnvSetDefruleWatchActivations(
-  void *theEnv,
-  bool newState,
-  void *rulePtr)
+/************************************************/
+/* DefruleSetWatchActivations: C access routine */
+/*   for setting the current watch value of a   */
+/*   defrule's activations.                     */
+/************************************************/
+void DefruleSetWatchActivations(
+  Defrule *rulePtr,
+  bool newState)
   {
-   struct defrule *thePtr;
-#if MAC_XCD
-#pragma unused(theEnv)
-#endif
+   Defrule *thePtr;
 
-   for (thePtr = (struct defrule *) rulePtr;
+   for (thePtr = rulePtr;
         thePtr != NULL;
         thePtr = thePtr->disjunct)
      { thePtr->watchActivation = newState; }
   }
 
-/****************************************************/
-/* EnvSetDefruleWatchFirings: C access routine for  */
-/*   setting the current watch value of a defrule's */ 
-/*   firings.                                       */
-/****************************************************/
-void EnvSetDefruleWatchFirings(
-  void *theEnv,
-  bool newState,
-  void *rulePtr)
+/********************************************/
+/* DefruleSetWatchFirings: C access routine */
+/*   for setting the current watch value of */
+/*   a defrule's firings.                   */
+/********************************************/
+void DefruleSetWatchFirings(
+  Defrule *rulePtr,
+  bool newState)
   {
-   struct defrule *thePtr;
-#if MAC_XCD
-#pragma unused(theEnv)
-#endif
+   Defrule *thePtr;
 
-   for (thePtr = (struct defrule *) rulePtr;
+   for (thePtr = rulePtr;
         thePtr != NULL;
         thePtr = thePtr->disjunct)
      { thePtr->watchFiring = newState; }
@@ -458,17 +474,19 @@ void EnvSetDefruleWatchFirings(
 /*   associated with rules (activations and rule firings).         */
 /*******************************************************************/
 bool DefruleWatchAccess(
-  void *theEnv,
+  Environment *theEnv,
   int code,
   bool newState,
   struct expr *argExprs)
   {
    if (code)
      return(ConstructSetWatchAccess(theEnv,DefruleData(theEnv)->DefruleConstruct,newState,argExprs,
-                                    EnvGetDefruleWatchActivations,EnvSetDefruleWatchActivations));
+                                    (ConstructGetWatchFunction *) DefruleGetWatchActivations,
+                                    (ConstructSetWatchFunction *) DefruleSetWatchActivations));
    else
      return(ConstructSetWatchAccess(theEnv,DefruleData(theEnv)->DefruleConstruct,newState,argExprs,
-                                    EnvGetDefruleWatchFirings,EnvSetDefruleWatchFirings));
+                                    (ConstructGetWatchFunction *) DefruleGetWatchFirings,
+                                    (ConstructSetWatchFunction *) DefruleSetWatchFirings));
   }
 
 /*****************************************************************/
@@ -476,21 +494,21 @@ bool DefruleWatchAccess(
 /*   have their watch flag set via the list-watch-items command. */
 /*****************************************************************/
 bool DefruleWatchPrint(
-  void *theEnv,
+  Environment *theEnv,
   const char *logName,
   int code,
   struct expr *argExprs)
-  {   
+  {
    if (code)
      return(ConstructPrintWatchAccess(theEnv,DefruleData(theEnv)->DefruleConstruct,logName,argExprs,
-                                      EnvGetDefruleWatchActivations,EnvSetDefruleWatchActivations));
+                                      (ConstructGetWatchFunction *) DefruleGetWatchActivations,
+                                      (ConstructSetWatchFunction *) DefruleSetWatchActivations));
    else
      return(ConstructPrintWatchAccess(theEnv,DefruleData(theEnv)->DefruleConstruct,logName,argExprs,
-                                      EnvGetDefruleWatchActivations,EnvSetDefruleWatchActivations));
+                                      (ConstructGetWatchFunction *) DefruleGetWatchActivations,
+                                      (ConstructSetWatchFunction *) DefruleGetWatchActivations));
   }
 
 #endif /* DEBUGGING_FUNCTIONS */
 
 #endif /* DEFTEMPLATE_CONSTRUCT */
-
-

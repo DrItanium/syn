@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  07/30/16             */
    /*                                                     */
    /*          DEFTEMPLATE CONSTRUCTS-TO-C MODULE         */
    /*******************************************************/
@@ -37,6 +37,13 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #include "setup.h"
@@ -59,22 +66,26 @@
 /* LOCAL INTERNAL FUNCTION DEFINITIONS */
 /***************************************/
 
-   static bool                    ConstructToCode(void *,const char *,const char *,char *,int,FILE *,int,int);
-   static void                    SlotToCode(void *,FILE *,struct templateSlot *,int,int,int);
-   static void                    DeftemplateModuleToCode(void *,FILE *,struct defmodule *,int,int,int);
-   static void                    DeftemplateToCode(void *,FILE *,struct deftemplate *,
-                                                 int,int,int,int);
-   static void                    CloseDeftemplateFiles(void *,FILE *,FILE *,FILE *,int);
-   static void                    InitDeftemplateCode(void *,FILE *,int,int);
+   static bool                    ConstructToCode(Environment *,const char *,const char *,char *,
+                                                  unsigned int,FILE *,unsigned int,unsigned int);
+   static void                    SlotToCode(Environment *,FILE *,struct templateSlot *,
+                                             unsigned int,unsigned int,unsigned int);
+   static void                    DeftemplateModuleToCode(Environment *,FILE *,Defmodule *,unsigned int,
+                                                          unsigned int,unsigned int);
+   static void                    DeftemplateToCode(Environment *,FILE *,Deftemplate *,
+                                                    unsigned int,unsigned int,unsigned int,unsigned int);
+   static void                    CloseDeftemplateFiles(Environment *,FILE *,FILE *,FILE *,unsigned int);
+   static void                    InitDeftemplateCode(Environment *,FILE *,unsigned int,unsigned int);
 
 /*********************************************************/
 /* DeftemplateCompilerSetup: Initializes the deftemplate */
 /*   construct for use with the constructs-to-c command. */
 /*********************************************************/
 void DeftemplateCompilerSetup(
-  void *theEnv)
+  Environment *theEnv)
   {
-   DeftemplateData(theEnv)->DeftemplateCodeItem = AddCodeGeneratorItem(theEnv,"deftemplate",0,NULL,InitDeftemplateCode,ConstructToCode,3);
+   DeftemplateData(theEnv)->DeftemplateCodeItem =
+      AddCodeGeneratorItem(theEnv,"deftemplate",0,NULL,InitDeftemplateCode,ConstructToCode,3);
   }
 
 /*************************************************************/
@@ -82,22 +93,22 @@ void DeftemplateCompilerSetup(
 /*   module created using the constructs-to-c function.      */
 /*************************************************************/
 static bool ConstructToCode(
-  void *theEnv,
+  Environment *theEnv,
   const char *fileName,
   const char *pathName,
   char *fileNameBuffer,
-  int fileID,
+  unsigned int fileID,
   FILE *headerFP,
-  int imageID,
-  int maxIndices)
+  unsigned int imageID,
+  unsigned int maxIndices)
   {
-   int fileCount = 1;
-   struct defmodule *theModule;
-   struct deftemplate *theTemplate;
+   unsigned int fileCount = 1;
+   Defmodule *theModule;
+   Deftemplate *theTemplate;
    struct templateSlot *slotPtr;
-   int slotCount = 0, slotArrayCount = 0, slotArrayVersion = 1;
-   int moduleCount = 0, moduleArrayCount = 0, moduleArrayVersion = 1;
-   int templateArrayCount = 0, templateArrayVersion = 1;
+   unsigned int slotCount = 0, slotArrayCount = 0, slotArrayVersion = 1;
+   unsigned int moduleCount = 0, moduleArrayCount = 0, moduleArrayVersion = 1;
+   unsigned int templateArrayCount = 0, templateArrayVersion = 1;
    FILE *slotFile = NULL, *moduleFile = NULL, *templateFile = NULL;
 
    /*==================================================*/
@@ -112,11 +123,11 @@ static bool ConstructToCode(
    /* to the file as they are traversed.                          */
    /*=============================================================*/
 
-   theModule = (struct defmodule *) EnvGetNextDefmodule(theEnv,NULL);
+   theModule = GetNextDefmodule(theEnv,NULL);
 
    while (theModule != NULL)
      {
-      EnvSetCurrentModule(theEnv,(void *) theModule);
+      SetCurrentModule(theEnv,theModule);
 
       moduleFile = OpenFileIfNeeded(theEnv,moduleFile,fileName,pathName,fileNameBuffer,fileID,imageID,&fileCount,
                                     moduleArrayVersion,headerFP,
@@ -126,7 +137,7 @@ static bool ConstructToCode(
       if (moduleFile == NULL)
         {
          CloseDeftemplateFiles(theEnv,moduleFile,templateFile,slotFile,maxIndices);
-         return(false);
+         return false;
         }
 
       DeftemplateModuleToCode(theEnv,moduleFile,theModule,imageID,maxIndices,moduleCount);
@@ -137,18 +148,18 @@ static bool ConstructToCode(
       /* Loop through each of the deftemplates in this module. */
       /*=======================================================*/
 
-      theTemplate = (struct deftemplate *) EnvGetNextDeftemplate(theEnv,NULL);
+      theTemplate = GetNextDeftemplate(theEnv,NULL);
 
       while (theTemplate != NULL)
         {
          templateFile = OpenFileIfNeeded(theEnv,templateFile,fileName,pathName,fileNameBuffer,fileID,imageID,&fileCount,
                                          templateArrayVersion,headerFP,
-                                         "struct deftemplate",ConstructPrefix(DeftemplateData(theEnv)->DeftemplateCodeItem),
+                                         "Deftemplate",ConstructPrefix(DeftemplateData(theEnv)->DeftemplateCodeItem),
                                          false,NULL);
          if (templateFile == NULL)
            {
             CloseDeftemplateFiles(theEnv,moduleFile,templateFile,slotFile,maxIndices);
-            return(false);
+            return false;
            }
 
          DeftemplateToCode(theEnv,templateFile,theTemplate,imageID,maxIndices,
@@ -170,7 +181,7 @@ static bool ConstructToCode(
             if (slotFile == NULL)
               {
                CloseDeftemplateFiles(theEnv,moduleFile,templateFile,slotFile,maxIndices);
-               return(false);
+               return false;
               }
 
             SlotToCode(theEnv,slotFile,slotPtr,imageID,maxIndices,slotCount);
@@ -181,10 +192,10 @@ static bool ConstructToCode(
             slotPtr = slotPtr->next;
            }
 
-         theTemplate = (struct deftemplate *) EnvGetNextDeftemplate(theEnv,theTemplate);
+         theTemplate = GetNextDeftemplate(theEnv,theTemplate);
         }
 
-      theModule = (struct defmodule *) EnvGetNextDefmodule(theEnv,theModule);
+      theModule = GetNextDefmodule(theEnv,theModule);
       moduleCount++;
       moduleArrayCount++;
 
@@ -192,7 +203,7 @@ static bool ConstructToCode(
 
    CloseDeftemplateFiles(theEnv,moduleFile,templateFile,slotFile,maxIndices);
 
-   return(true);
+   return true;
   }
 
 /************************************************************/
@@ -201,14 +212,14 @@ static bool ConstructToCode(
 /*   the deftemplates have all been written to the files.   */
 /************************************************************/
 static void CloseDeftemplateFiles(
-  void *theEnv,
+  Environment *theEnv,
   FILE *moduleFile,
   FILE *templateFile,
   FILE *slotFile,
-  int maxIndices)
+  unsigned int maxIndices)
   {
-   int count = maxIndices;
-   int arrayVersion = 0;
+   unsigned int count = maxIndices;
+   unsigned int arrayVersion = 0;
 
    if (slotFile != NULL)
      {
@@ -234,12 +245,12 @@ static void CloseDeftemplateFiles(
 /*   of a single deftemplate module to the specified file.   */
 /*************************************************************/
 static void DeftemplateModuleToCode(
-  void *theEnv,
+  Environment *theEnv,
   FILE *theFile,
-  struct defmodule *theModule,
-  int imageID,
-  int maxIndices,
-  int moduleCount)
+  Defmodule *theModule,
+  unsigned int imageID,
+  unsigned int maxIndices,
+  unsigned int moduleCount)
   {
 #if MAC_XCD
 #pragma unused(moduleCount)
@@ -258,13 +269,13 @@ static void DeftemplateModuleToCode(
 /*   single deftemplate construct to the specified file.    */
 /************************************************************/
 static void DeftemplateToCode(
-  void *theEnv,
+  Environment *theEnv,
   FILE *theFile,
-  struct deftemplate *theTemplate,
-  int imageID,
-  int maxIndices,
-  int moduleCount,
-  int slotCount)
+  Deftemplate *theTemplate,
+  unsigned int imageID,
+  unsigned int maxIndices,
+  unsigned int moduleCount,
+  unsigned int slotCount)
   {
    /*====================*/
    /* Deftemplate Header */
@@ -311,7 +322,7 @@ static void DeftemplateToCode(
    /* Print the factList and lastFact references */
    /* and close the structure.                   */
    /*============================================*/
-   
+
    fprintf(theFile,",NULL,NULL}");
   }
 
@@ -320,12 +331,12 @@ static void DeftemplateToCode(
 /*   single deftemplate slot to the specified file.  */
 /*****************************************************/
 static void SlotToCode(
-  void *theEnv,
+  Environment *theEnv,
   FILE *theFile,
   struct templateSlot *theSlot,
-  int imageID,
-  int maxIndices,
-  int slotCount)
+  unsigned int imageID,
+  unsigned int maxIndices,
+  unsigned int slotCount)
   {
    /*===========*/
    /* Slot Name */
@@ -353,11 +364,11 @@ static void SlotToCode(
 
    fprintf(theFile,",");
    PrintHashedExpressionReference(theEnv,theFile,theSlot->defaultList,imageID,maxIndices);
-   
+
    /*============*/
    /* Facet List */
    /*============*/
-   
+
    fprintf(theFile,",");
    PrintHashedExpressionReference(theEnv,theFile,theSlot->facetList,imageID,maxIndices);
    fprintf(theFile,",");
@@ -381,13 +392,13 @@ static void SlotToCode(
 /*   of a reference to a deftemplate module data structure.      */
 /*****************************************************************/
 void DeftemplateCModuleReference(
-  void *theEnv,
+  Environment *theEnv,
   FILE *theFile,
-  int count,
-  int imageID,
-  int maxIndices)
+  unsigned long count,
+  unsigned int imageID,
+  unsigned int maxIndices)
   {
-   fprintf(theFile,"MIHS &%s%d_%d[%d]",ModulePrefix(DeftemplateData(theEnv)->DeftemplateCodeItem),
+   fprintf(theFile,"MIHS &%s%u_%lu[%lu]",ModulePrefix(DeftemplateData(theEnv)->DeftemplateCodeItem),
                       imageID,
                       (count / maxIndices) + 1,
                       (count % maxIndices));
@@ -398,35 +409,33 @@ void DeftemplateCModuleReference(
 /*   of a reference to a deftemplate data structure.                */
 /********************************************************************/
 void DeftemplateCConstructReference(
-  void *theEnv,
+  Environment *theEnv,
   FILE *theFile,
-  void *vTheTemplate,
-  int imageID,
-  int maxIndices)
+  Deftemplate *theDeftemplate,
+  unsigned int imageID,
+  unsigned int maxIndices)
   {
-   struct deftemplate *theTemplate = (struct deftemplate *) vTheTemplate;
-
-   if (theTemplate == NULL)
+   if (theDeftemplate == NULL)
      { fprintf(theFile,"NULL"); }
    else
      {
-      fprintf(theFile,"&%s%d_%ld[%ld]",ConstructPrefix(DeftemplateData(theEnv)->DeftemplateCodeItem),
+      fprintf(theFile,"&%s%u_%lu[%lu]",ConstructPrefix(DeftemplateData(theEnv)->DeftemplateCodeItem),
                       imageID,
-                      (theTemplate->header.bsaveID / maxIndices) + 1,
-                      theTemplate->header.bsaveID % maxIndices);
+                      (theDeftemplate->header.bsaveID / maxIndices) + 1,
+                      theDeftemplate->header.bsaveID % maxIndices);
      }
 
   }
-  
+
 /*******************************************/
 /* InitDeftemplateCode: Writes out runtime */
 /*   initialization code for deftemplates. */
 /*******************************************/
 static void InitDeftemplateCode(
-  void *theEnv,
+  Environment *theEnv,
   FILE *initFP,
-  int imageID,
-  int maxIndices)
+  unsigned int imageID,
+  unsigned int maxIndices)
   {
 #if MAC_XCD
 #pragma unused(theEnv)

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/01/16            */
    /*                                                     */
    /*                 SYMBOL HEADER FILE                  */
    /*******************************************************/
@@ -38,15 +38,15 @@
 /*            compilers/operating systems (IBM_MCW,          */
 /*            MAC_MCW, and IBM_TBC).                         */
 /*                                                           */
-/*            Support for hashing EXTERNAL_ADDRESS data      */
-/*            type.                                          */
+/*            Support for hashing EXTERNAL_ADDRESS_TYPE      */
+/*            data type.                                     */
 /*                                                           */
 /*            Support for long long integers.                */
 /*                                                           */
 /*            Changed garbage collection algorithm.          */
 /*                                                           */
 /*            Used genstrcpy instead of strcpy.              */
-/*                                                           */             
+/*                                                           */
 /*            Added support for external address hash table  */
 /*            and subtyping.                                 */
 /*                                                           */
@@ -61,6 +61,19 @@
 /*      6.40: Refactored code to reduce header dependencies  */
 /*            in sysdep.c.                                   */
 /*                                                           */
+/*            Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_symbol
@@ -70,6 +83,10 @@
 #define _H_symbol
 
 #include <stdlib.h>
+
+#include "entities.h"
+
+typedef struct genericHashNode GENERIC_HN;
 
 #ifndef SYMBOL_HASH_SIZE
 #define SYMBOL_HASH_SIZE       63559L
@@ -91,83 +108,12 @@
 #define EXTERNAL_ADDRESS_HASH_SIZE        8191
 #endif
 
-/************************************************************/
-/* symbolHashNode STRUCTURE:                                */
-/************************************************************/
-struct symbolHashNode
-  {
-   struct symbolHashNode *next;
-   long count;
-   unsigned int permanent : 1;
-   unsigned int markedEphemeral : 1;
-   unsigned int neededSymbol : 1;
-   unsigned int bucket : 29;
-   const char *contents;
-  };
-
-/************************************************************/
-/* floatHashNode STRUCTURE:                                  */
-/************************************************************/
-struct floatHashNode
-  {
-   struct floatHashNode *next;
-   long count;
-   unsigned int permanent : 1;
-   unsigned int markedEphemeral : 1;
-   unsigned int neededFloat : 1;
-   unsigned int bucket : 29;
-   double contents;
-  };
-
-/************************************************************/
-/* integerHashNode STRUCTURE:                               */
-/************************************************************/
-struct integerHashNode
-  {
-   struct integerHashNode *next;
-   long count;
-   unsigned int permanent : 1;
-   unsigned int markedEphemeral : 1;
-   unsigned int neededInteger : 1;
-   unsigned int bucket : 29;
-   long long contents;
-  };
-
-/************************************************************/
-/* bitMapHashNode STRUCTURE:                                */
-/************************************************************/
-struct bitMapHashNode
-  {
-   struct bitMapHashNode *next;
-   long count;
-   unsigned int permanent : 1;
-   unsigned int markedEphemeral : 1;
-   unsigned int neededBitMap : 1;
-   unsigned int bucket : 29;
-   const char *contents;
-   unsigned short size;
-  };
-
-/************************************************************/
-/* externalAddressHashNode STRUCTURE:                       */
-/************************************************************/
-struct externalAddressHashNode
-  {
-   struct externalAddressHashNode *next;
-   long count;
-   unsigned int permanent : 1;
-   unsigned int markedEphemeral : 1;
-   unsigned int neededPointer : 1;
-   unsigned int bucket : 29;
-   void *externalAddress;
-   unsigned short type;
-  };
-
-/************************************************************/
-/* genericHashNode STRUCTURE:                               */
-/************************************************************/
+/******************************/
+/* genericHashNode STRUCTURE: */
+/******************************/
 struct genericHashNode
   {
+   TypeHeader header;
    struct genericHashNode *next;
    long count;
    unsigned int permanent : 1;
@@ -175,13 +121,6 @@ struct genericHashNode
    unsigned int needed : 1;
    unsigned int bucket : 29;
   };
-
-typedef struct symbolHashNode SYMBOL_HN;
-typedef struct floatHashNode FLOAT_HN;
-typedef struct integerHashNode INTEGER_HN;
-typedef struct bitMapHashNode BITMAP_HN;
-typedef struct externalAddressHashNode EXTERNAL_ADDRESS_HN;
-typedef struct genericHashNode GENERIC_HN;
 
 /**********************************************************/
 /* EPHEMERON STRUCTURE: Data structure used to keep track */
@@ -200,36 +139,20 @@ struct ephemeron
    struct ephemeron *next;
   };
 
-/************************************************************/
-/* symbolMatch STRUCTURE:                               */
-/************************************************************/
+/***************/
+/* symbolMatch */
+/***************/
 struct symbolMatch
   {
-   struct symbolHashNode *match;
+   CLIPSLexeme *match;
    struct symbolMatch *next;
   };
 
-#define ValueToString(target) (((struct symbolHashNode *) (target))->contents)
-#define ValueToDouble(target) (((struct floatHashNode *) (target))->contents)
-#define ValueToLong(target) (((struct integerHashNode *) (target))->contents)
-#define ValueToInteger(target) ((int) (((struct integerHashNode *) (target))->contents))
-#define ValueToBitMap(target) ((void *) ((struct bitMapHashNode *) (target))->contents)
-#define ValueToPointer(target) ((void *) target)
-#define ValueToExternalAddress(target) ((void *) ((struct externalAddressHashNode *) (target))->externalAddress)
-
-#define EnvValueToString(theEnv,target) (((struct symbolHashNode *) (target))->contents)
-#define EnvValueToDouble(theEnv,target) (((struct floatHashNode *) (target))->contents)
-#define EnvValueToLong(theEnv,target) (((struct integerHashNode *) (target))->contents)
-#define EnvValueToInteger(theEnv,target) ((int) (((struct integerHashNode *) (target))->contents))
-#define EnvValueToBitMap(theEnv,target) ((void *) ((struct bitMapHashNode *) (target))->contents)
-#define EnvValueToPointer(theEnv,target) ((void *) target)
-#define EnvValueToExternalAddress(theEnv,target) ((void *) ((struct externalAddressHashNode *) (target))->externalAddress)
-
-#define IncrementSymbolCount(theValue) (((SYMBOL_HN *) theValue)->count++)
-#define IncrementFloatCount(theValue) (((FLOAT_HN *) theValue)->count++)
-#define IncrementIntegerCount(theValue) (((INTEGER_HN *) theValue)->count++)
-#define IncrementBitMapCount(theValue) (((BITMAP_HN *) theValue)->count++)
-#define IncrementExternalAddressCount(theValue) (((EXTERNAL_ADDRESS_HN *) theValue)->count++)
+#define IncrementLexemeCount(theValue) (((CLIPSLexeme *) theValue)->count++)
+#define IncrementFloatCount(theValue) (((CLIPSFloat *) theValue)->count++)
+#define IncrementIntegerCount(theValue) (((CLIPSInteger *) theValue)->count++)
+#define IncrementBitMapCount(theValue) (((CLIPSBitMap *) theValue)->count++)
+#define IncrementExternalAddressCount(theValue) (((CLIPSExternalAddress *) theValue)->count++)
 
 /*==================*/
 /* ENVIRONMENT DATA */
@@ -238,75 +161,81 @@ struct symbolMatch
 #define SYMBOL_DATA 49
 
 struct symbolData
-  { 
-   void *TrueSymbolHN;
-   void *FalseSymbolHN;
-   void *PositiveInfinity;
-   void *NegativeInfinity;
-   void *Zero;
-   SYMBOL_HN **SymbolTable;
-   FLOAT_HN **FloatTable;
-   INTEGER_HN **IntegerTable;
-   BITMAP_HN **BitMapTable;
-   EXTERNAL_ADDRESS_HN **ExternalAddressTable;
+  {
+   CLIPSLexeme *PositiveInfinity;
+   CLIPSLexeme *NegativeInfinity;
+   CLIPSInteger *Zero;
+   CLIPSLexeme **SymbolTable;
+   CLIPSFloat **FloatTable;
+   CLIPSInteger **IntegerTable;
+   CLIPSBitMap **BitMapTable;
+   CLIPSExternalAddress **ExternalAddressTable;
 #if BLOAD || BLOAD_ONLY || BLOAD_AND_BSAVE || BLOAD_INSTANCES || BSAVE_INSTANCES
-   long NumberOfSymbols;
-   long NumberOfFloats;
-   long NumberOfIntegers;
-   long NumberOfBitMaps;
-   long NumberOfExternalAddresses;
-   SYMBOL_HN **SymbolArray;
-   struct floatHashNode **FloatArray;
-   INTEGER_HN **IntegerArray;
-   BITMAP_HN **BitMapArray;
-   EXTERNAL_ADDRESS_HN **ExternalAddressArray;
+   unsigned long NumberOfSymbols;
+   unsigned long NumberOfFloats;
+   unsigned long NumberOfIntegers;
+   unsigned long NumberOfBitMaps;
+   unsigned long NumberOfExternalAddresses;
+   CLIPSLexeme **SymbolArray;
+   CLIPSFloat **FloatArray;
+   CLIPSInteger **IntegerArray;
+   CLIPSBitMap **BitMapArray;
+   CLIPSExternalAddress **ExternalAddressArray;
 #endif
   };
 
 #define SymbolData(theEnv) ((struct symbolData *) GetEnvironmentData(theEnv,SYMBOL_DATA))
 
-   void                           InitializeAtomTables(void *,struct symbolHashNode **,struct floatHashNode **,
-                                                              struct integerHashNode **,struct bitMapHashNode **,
-                                                              struct externalAddressHashNode **);
-   void                          *EnvAddSymbol(void *,const char *);
-   SYMBOL_HN                     *FindSymbolHN(void *,const char *);
-   void                          *EnvAddDouble(void *,double);
-   void                          *EnvAddLong(void *,long long);
-   void                          *EnvAddBitMap(void *,void *,unsigned);
-   void                          *EnvAddExternalAddress(void *,void *,unsigned);
-   INTEGER_HN                    *FindLongHN(void *,long long);
-   unsigned long                  HashSymbol(const char *,unsigned long);
-   unsigned long                  HashFloat(double,unsigned long);
-   unsigned long                  HashInteger(long long,unsigned long);
-   unsigned long                  HashBitMap(const char *,unsigned long,unsigned);
-   unsigned long                  HashExternalAddress(void *,unsigned long);
-   void                           DecrementSymbolCount(void *,struct symbolHashNode *);
-   void                           DecrementFloatCount(void *,struct floatHashNode *);
-   void                           DecrementIntegerCount(void *,struct integerHashNode *);
-   void                           DecrementBitMapCount(void *,struct bitMapHashNode *);
-   void                           DecrementExternalAddressCount(void *,struct externalAddressHashNode *);
-   void                           RemoveEphemeralAtoms(void *);
-   struct symbolHashNode        **GetSymbolTable(void *);
-   void                           SetSymbolTable(void *,struct symbolHashNode **);
-   struct floatHashNode          **GetFloatTable(void *);
-   void                           SetFloatTable(void *,struct floatHashNode **);
-   struct integerHashNode       **GetIntegerTable(void *);
-   void                           SetIntegerTable(void *,struct integerHashNode **);
-   struct bitMapHashNode        **GetBitMapTable(void *);
-   void                           SetBitMapTable(void *,struct bitMapHashNode **);
-   struct externalAddressHashNode        
-                                       **GetExternalAddressTable(void *);
-   void                           SetExternalAddressTable(void *,struct externalAddressHashNode **);
-   void                           RefreshSpecialSymbols(void *);
-   struct symbolMatch            *FindSymbolMatches(void *,const char *,unsigned *,size_t *);
-   void                           ReturnSymbolMatches(void *,struct symbolMatch *);
-   SYMBOL_HN                     *GetNextSymbolMatch(void *,const char *,size_t,SYMBOL_HN *,bool,size_t *);
-   void                           ClearBitString(void *,unsigned);
-   void                           SetAtomicValueIndices(void *,bool);
-   void                           RestoreAtomicValueBuckets(void *);
-   void                          *EnvFalseSymbol(void *);
-   void                          *EnvTrueSymbol(void *);
-   void                           EphemerateValue(void *,int,void *);
+   void                           InitializeAtomTables(Environment *,CLIPSLexeme **,CLIPSFloat **,
+                                                              CLIPSInteger **,CLIPSBitMap **,
+                                                              CLIPSExternalAddress **);
+   CLIPSLexeme                   *AddSymbol(Environment *,const char *,unsigned short);
+   CLIPSLexeme                   *FindSymbolHN(Environment *,const char *,unsigned short);
+   CLIPSFloat                    *CreateFloat(Environment *,double);
+   CLIPSInteger                  *CreateInteger(Environment *,long long);
+   void                          *AddBitMap(Environment *,void *,unsigned short);
+   CLIPSExternalAddress          *CreateExternalAddress(Environment *,void *,unsigned short);
+   CLIPSExternalAddress          *CreateCExternalAddress(Environment *,void *);
+   CLIPSInteger                  *FindLongHN(Environment *,long long);
+   size_t                         HashSymbol(const char *,size_t);
+   size_t                         HashFloat(double,size_t);
+   size_t                         HashInteger(long long,size_t);
+   size_t                         HashBitMap(const char *,size_t,unsigned);
+   size_t                         HashExternalAddress(void *,size_t);
+   void                           RetainLexeme(Environment *,CLIPSLexeme *);
+   void                           RetainFloat(Environment *,CLIPSFloat *);
+   void                           RetainInteger(Environment *,CLIPSInteger *);
+   void                           IncrementBitMapReferenceCount(Environment *,CLIPSBitMap *);
+   void                           RetainExternalAddress(Environment *,CLIPSExternalAddress *);
+   void                           ReleaseLexeme(Environment *,CLIPSLexeme *);
+   void                           ReleaseFloat(Environment *,CLIPSFloat *);
+   void                           ReleaseInteger(Environment *,CLIPSInteger *);
+   void                           DecrementBitMapReferenceCount(Environment *,CLIPSBitMap *);
+   void                           ReleaseExternalAddress(Environment *,CLIPSExternalAddress *);
+   void                           RemoveEphemeralAtoms(Environment *);
+   CLIPSLexeme                  **GetSymbolTable(Environment *);
+   void                           SetSymbolTable(Environment *,CLIPSLexeme **);
+   CLIPSFloat                   **GetFloatTable(Environment *);
+   void                           SetFloatTable(Environment *,CLIPSFloat **);
+   CLIPSInteger                 **GetIntegerTable(Environment *);
+   void                           SetIntegerTable(Environment *,CLIPSInteger **);
+   CLIPSBitMap                  **GetBitMapTable(Environment *);
+   void                           SetBitMapTable(Environment *,CLIPSBitMap **);
+   CLIPSExternalAddress         **GetExternalAddressTable(Environment *);
+   void                           SetExternalAddressTable(Environment *,CLIPSExternalAddress **);
+   void                           RefreshSpecialSymbols(Environment *);
+   struct symbolMatch            *FindSymbolMatches(Environment *,const char *,unsigned *,size_t *);
+   void                           ReturnSymbolMatches(Environment *,struct symbolMatch *);
+   CLIPSLexeme                   *GetNextSymbolMatch(Environment *,const char *,size_t,CLIPSLexeme *,bool,size_t *);
+   void                           ClearBitString(void *,size_t);
+   void                           SetAtomicValueIndices(Environment *,bool);
+   void                           RestoreAtomicValueBuckets(Environment *);
+   void                           EphemerateValue(Environment *,void *);
+   CLIPSLexeme                   *CreateSymbol(Environment *,const char *);
+   CLIPSLexeme                   *CreateString(Environment *,const char *);
+   CLIPSLexeme                   *CreateInstanceName(Environment *,const char *);
+   CLIPSLexeme                   *CreateBoolean(Environment *,bool);
+   bool                           BitStringHasBitsSet(void *,unsigned);
 
 #endif /* _H_symbol */
 

@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/19/17            */
    /*                                                     */
    /*             FILE I/O ROUTER HEADER FILE             */
    /*******************************************************/
@@ -36,6 +36,17 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            Added flush, rewind, tell, and seek functions. */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_filertr
@@ -47,7 +58,7 @@
 #include <stdio.h>
 
 #define FILE_ROUTER_DATA 47
-   
+
 struct fileRouter
   {
    const char *logicalName;
@@ -56,18 +67,23 @@ struct fileRouter
   };
 
 struct fileRouterData
-  { 
+  {
    struct fileRouter *ListOfFileRouters;
   };
 
 #define FileRouterData(theEnv) ((struct fileRouterData *) GetEnvironmentData(theEnv,FILE_ROUTER_DATA))
 
-   void                           InitializeFileRouter(void *);
-   FILE                          *FindFptr(void *,const char *);
-   bool                           OpenAFile(void *,const char *,const char *,const char *);
-   bool                           CloseAllFiles(void *);
-   bool                           CloseFile(void *,const char *);
-   bool                           FindFile(void *,const char *);
+   void                           InitializeFileRouter(Environment *);
+   FILE                          *FindFptr(Environment *,const char *);
+   bool                           OpenAFile(Environment *,const char *,const char *,const char *);
+   bool                           CloseAllFiles(Environment *);
+   bool                           CloseFile(Environment *,const char *);
+   bool                           FindFile(Environment *,const char *,void *);
+   bool                           FlushAllFiles(Environment *);
+   bool                           FlushFile(Environment *,const char *);
+   bool                           RewindFile(Environment *,const char *);
+   long long                      TellFile(Environment *,const char *);
+   bool                           SeekFile(Environment *,const char *,long,int);
 
 #endif /* _H_filertr */
 

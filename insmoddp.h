@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/18/16            */
    /*                                                     */
    /*           INSTANCE MODIFY AND DUPLICATE MODULE      */
    /*******************************************************/
@@ -32,6 +32,19 @@
 /*            The return value of DirectMessage indicates    */
 /*            whether an execution error has occurred.       */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
+/*            Removed DATA_OBJECT_ARRAY primitive type.      */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_insmoddp
@@ -49,26 +62,24 @@
 #include "evaluatn.h"
 #endif
 
-#if (! RUN_TIME)
-   void                           SetupInstanceModDupCommands(void *);
-#endif
+   void                           SetupInstanceModDupCommands(Environment *);
 
-   void                           ModifyInstance(UDFContext *,CLIPSValue *);
-   void                           MsgModifyInstance(UDFContext *,CLIPSValue *);
-   void                           DuplicateInstance(UDFContext *,CLIPSValue *);
-   void                           MsgDuplicateInstance(UDFContext *,CLIPSValue *);
+   void                           ModifyInstance(Environment *,UDFContext *,UDFValue *);
+   void                           MsgModifyInstance(Environment *,UDFContext *,UDFValue *);
+   void                           DuplicateInstance(Environment *,UDFContext *,UDFValue *);
+   void                           MsgDuplicateInstance(Environment *,UDFContext *,UDFValue *);
 
 #if DEFRULE_CONSTRUCT && OBJECT_SYSTEM
-   void                           InactiveModifyInstance(UDFContext *,CLIPSValue *);
-   void                           InactiveMsgModifyInstance(UDFContext *,CLIPSValue *);
-   void                           InactiveDuplicateInstance(UDFContext *,CLIPSValue *);
-   void                           InactiveMsgDuplicateInstance(UDFContext *,CLIPSValue *);
+   void                           InactiveModifyInstance(Environment *,UDFContext *,UDFValue *);
+   void                           InactiveMsgModifyInstance(Environment *,UDFContext *,UDFValue *);
+   void                           InactiveDuplicateInstance(Environment *,UDFContext *,UDFValue *);
+   void                           InactiveMsgDuplicateInstance(Environment *,UDFContext *,UDFValue *);
 #endif
 
-   void                           DirectModifyMsgHandler(UDFContext *,CLIPSValue *);
-   void                           MsgModifyMsgHandler(UDFContext *,CLIPSValue *);
-   void                           DirectDuplicateMsgHandler(UDFContext *,CLIPSValue *);
-   void                           MsgDuplicateMsgHandler(UDFContext *,CLIPSValue *);
+   void                           DirectModifyMsgHandler(Environment *,UDFContext *,UDFValue *);
+   void                           MsgModifyMsgHandler(Environment *,UDFContext *,UDFValue *);
+   void                           DirectDuplicateMsgHandler(Environment *,UDFContext *,UDFValue *);
+   void                           MsgDuplicateMsgHandler(Environment *,UDFContext *,UDFValue *);
 
 #endif /* _H_insmoddp */
 

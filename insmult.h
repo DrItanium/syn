@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  10/18/16            */
    /*                                                     */
    /*                                                     */
    /*******************************************************/
@@ -25,6 +25,19 @@
 /*                                                           */
 /*            Changed integer type/precision.                */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
+/*            Eval support for run time and bload only.      */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_insmult
@@ -35,16 +48,13 @@
 
 #include "evaluatn.h"
 
-#if (! RUN_TIME)
-   void                           SetupInstanceMultifieldCommands(void *);
-#endif
-
-   void                           MVSlotReplaceCommand(UDFContext *,CLIPSValue *);
-   void                           MVSlotInsertCommand(UDFContext *,CLIPSValue *);
-   void                           MVSlotDeleteCommand(UDFContext *,CLIPSValue *);
-   void                           DirectMVReplaceCommand(UDFContext *,CLIPSValue *);
-   void                           DirectMVInsertCommand(UDFContext *,CLIPSValue *);
-   void                           DirectMVDeleteCommand(UDFContext *,CLIPSValue *);
+   void                           SetupInstanceMultifieldCommands(Environment *);
+   void                           MVSlotReplaceCommand(Environment *,UDFContext *,UDFValue *);
+   void                           MVSlotInsertCommand(Environment *,UDFContext *,UDFValue *);
+   void                           MVSlotDeleteCommand(Environment *,UDFContext *,UDFValue *);
+   void                           DirectMVReplaceCommand(Environment *,UDFContext *,UDFValue *);
+   void                           DirectMVInsertCommand(Environment *,UDFContext *,UDFValue *);
+   void                           DirectMVDeleteCommand(Environment *,UDFContext *,UDFValue *);
 
 #endif /* _H_insmult */
 

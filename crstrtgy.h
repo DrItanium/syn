@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*             CLIPS Version 6.40  11/01/16            */
    /*                                                     */
    /*      CONFLICT RESOLUTION STRATEGY HEADER MODULE     */
    /*******************************************************/
@@ -39,6 +39,17 @@
 /*                                                           */
 /*            Converted API macros to function calls.        */
 /*                                                           */
+/*      6.40: Removed LOCALE definition.                     */
+/*                                                           */
+/*            Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
+/*            ALLOW_ENVIRONMENT_GLOBALS no longer supported. */
+/*                                                           */
+/*            UDF redesign.                                  */
+/*                                                           */
 /*************************************************************/
 
 #ifndef _H_crstrtgy
@@ -47,24 +58,27 @@
 
 #define _H_crstrtgy
 
-#include "agenda.h"
-#include "symbol.h"
+typedef enum
+  {
+   DEPTH_STRATEGY,
+   BREADTH_STRATEGY,
+   LEX_STRATEGY,
+   MEA_STRATEGY,
+   COMPLEXITY_STRATEGY,
+   SIMPLICITY_STRATEGY,
+   RANDOM_STRATEGY
+  } StrategyType;
 
-#define DEPTH_STRATEGY 0
-#define BREADTH_STRATEGY 1
-#define LEX_STRATEGY 2
-#define MEA_STRATEGY 3
-#define COMPLEXITY_STRATEGY 4
-#define SIMPLICITY_STRATEGY 5
-#define RANDOM_STRATEGY 6
+#include "agenda.h"
+#include "entities.h"
 
 #define DEFAULT_STRATEGY DEPTH_STRATEGY
 
-   void                           PlaceActivation(void *,ACTIVATION **,ACTIVATION *,struct salienceGroup *);
-   int                            EnvSetStrategy(void *,int);
-   int                            EnvGetStrategy(void *);
-   void                           SetStrategyCommand(UDFContext *,CLIPSValue *);
-   void                           GetStrategyCommand(UDFContext *,CLIPSValue *);
+   void                           PlaceActivation(Environment *,Activation **,Activation *,struct salienceGroup *);
+   StrategyType                   SetStrategy(Environment *,StrategyType);
+   StrategyType                   GetStrategy(Environment *);
+   void                           SetStrategyCommand(Environment *,UDFContext *,UDFValue *);
+   void                           GetStrategyCommand(Environment *,UDFContext *,UDFValue *);
 
 #endif /* _H_crstrtgy */
 

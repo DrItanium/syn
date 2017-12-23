@@ -1,7 +1,7 @@
    /*******************************************************/
    /*      "C" Language Integrated Production System      */
    /*                                                     */
-   /*            CLIPS Version 6.40  01/06/16             */
+   /*            CLIPS Version 6.40  07/30/16             */
    /*                                                     */
    /*          CONSTRAINT CONSTRUCTS-TO-C MODULE          */
    /*******************************************************/
@@ -28,6 +28,13 @@
 /*            Added const qualifiers to remove C++           */
 /*            deprecation warnings.                          */
 /*                                                           */
+/*      6.40: Pragma once and other inclusion changes.       */
+/*                                                           */
+/*            Added support for booleans with <stdbool.h>.   */
+/*                                                           */
+/*            Removed use of void pointers for specific      */
+/*            data structures.                               */
+/*                                                           */
 /*************************************************************/
 
 #include "setup.h"
@@ -39,6 +46,7 @@
 #include "conscomp.h"
 #include "envrnmnt.h"
 #include "memalloc.h"
+#include "prntutil.h"
 #include "router.h"
 #include "sysdep.h"
 
@@ -49,20 +57,20 @@
 /*   record code for a run-time module created */
 /*   using the constructs-to-c function.       */
 /***********************************************/
-int ConstraintsToCode(
-  void *theEnv,
+void ConstraintsToCode(
+  Environment *theEnv,
   const char *fileName,
   const char *pathName,
   char *fileNameBuffer,
-  int fileID,
+  unsigned fileID,
   FILE *headerFP,
-  int imageID,
-  int maxIndices)
+  unsigned imageID,
+  unsigned maxIndices)
   {
-   int i, j, count;
+   unsigned int i, j, count;
    bool newHeader = true;
    FILE *fp;
-   int version = 1;
+   unsigned int version = 1;
    int arrayVersion = 1;
    unsigned short numberOfConstraints = 0;
    CONSTRAINT_RECORD *tmpPtr;
@@ -85,15 +93,16 @@ int ConstraintsToCode(
    /* which could be saved, then issue a warning message. */
    /*=====================================================*/
 
-   if ((! EnvGetDynamicConstraintChecking(theEnv)) && (numberOfConstraints != 0))
+   if ((! GetDynamicConstraintChecking(theEnv)) && (numberOfConstraints != 0))
      {
       numberOfConstraints = 0;
       PrintWarningID(theEnv,"CSTRNCMP",1,false);
-      EnvPrintRouter(theEnv,WWARNING,"Constraints are not saved with a constructs-to-c image\n");
-      EnvPrintRouter(theEnv,WWARNING,"  when dynamic constraint checking is disabled.\n");
+      WriteString(theEnv,STDWRN,"Constraints are not saved with a constructs-to-c image\n");
+      WriteString(theEnv,STDWRN,"  when dynamic constraint checking is disabled.\n");
      }
 
-   if (numberOfConstraints == 0) return(-1);
+   if (numberOfConstraints == 0)
+     { return; }
 
    /*=================================================*/
    /* Print the extern definition in the header file. */
@@ -106,7 +115,7 @@ int ConstraintsToCode(
    /* Create the file. */
    /*==================*/
 
-   if ((fp = NewCFile(theEnv,fileName,pathName,fileNameBuffer,fileID,version,false)) == NULL) return(-1);
+   if ((fp = NewCFile(theEnv,fileName,pathName,fileNameBuffer,fileID,version,false)) == NULL) return;
 
    /*===================*/
    /* List the entries. */
@@ -127,7 +136,7 @@ int ConstraintsToCode(
             newHeader = false;
            }
 
-         fprintf(fp,"{%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
+         fprintf(fp,"{%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d",
                  tmpPtr->anyAllowed,
                  tmpPtr->symbolsAllowed,
                  tmpPtr->stringsAllowed,
@@ -146,7 +155,8 @@ int ConstraintsToCode(
                  tmpPtr->classRestriction,
                  tmpPtr->instanceNameRestriction,
                  tmpPtr->multifieldsAllowed,
-                 tmpPtr->singlefieldsAllowed);
+                 tmpPtr->singlefieldsAllowed,
+                 tmpPtr->installed);
 
          fprintf(fp,",0,"); /* bsaveIndex */
 
@@ -178,7 +188,7 @@ int ConstraintsToCode(
               { fprintf(fp,",&C%d_%d[%d],",imageID,arrayVersion,j + 1); }
            }
 
-         fprintf(fp,"%d,%d",tmpPtr->bucket,tmpPtr->count + 1);
+         fprintf(fp,"%u,%u",tmpPtr->bucket,tmpPtr->count + 1);
 
          count++;
          j++;
@@ -192,7 +202,8 @@ int ConstraintsToCode(
             arrayVersion++;
             if (count < numberOfConstraints)
               {
-               if ((fp = NewCFile(theEnv,fileName,pathName,fileNameBuffer,1,version,false)) == NULL) return(0);
+               if ((fp = NewCFile(theEnv,fileName,pathName,fileNameBuffer,1,version,false)) == NULL)
+                 { return; }
                newHeader = true;
               }
            }
@@ -200,8 +211,6 @@ int ConstraintsToCode(
            { fprintf(fp,"},\n"); }
         }
      }
-
-   return(version);
   }
 
 /**********************************************************/
@@ -209,17 +218,17 @@ int ConstraintsToCode(
 /*   of a constraint record data structure reference.     */
 /**********************************************************/
 void PrintConstraintReference(
-  void *theEnv,
+  Environment *theEnv,
   FILE *fp,
   CONSTRAINT_RECORD *cPtr,
-  int imageID,
-  int maxIndices)
+  unsigned int imageID,
+  unsigned int maxIndices)
   {
-   if ((cPtr == NULL) || (! EnvGetDynamicConstraintChecking(theEnv)))
+   if ((cPtr == NULL) || (! GetDynamicConstraintChecking(theEnv)))
      { fprintf(fp,"NULL"); }
-   else fprintf(fp,"&C%d_%d[%d]",imageID,
-                                 (int) (cPtr->bsaveIndex / maxIndices) + 1,
-                                 (int) cPtr->bsaveIndex % maxIndices);
+   else fprintf(fp,"&C%u_%u[%u]",imageID,
+                                 (cPtr->bsaveIndex / maxIndices) + 1,
+                                 cPtr->bsaveIndex % maxIndices);
   }
 
 #endif /* CONSTRUCT_COMPILER && (! RUN_TIME) */
