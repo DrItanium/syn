@@ -393,30 +393,7 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 	AddUDF(theEnv, "right-shift", "l", 2, 2, "l;l", ShiftRight, "ShiftRight", nullptr);
 	}
 
-    bool isExternalAddress(UDFValue* value) noexcept {
-		return value->header->type == EXTERNAL_ADDRESS_TYPE;
-    }
 	/*
-    int64_t extractInteger(Environment* env, DataObjectPtr value) noexcept {
-        return EnvDOPToLong(env, value);
-    }
-    int64_t extractInteger(Environment* env, DataObject& value) noexcept {
-        return EnvDOToLong(env, value);
-    }
-
-    const char* extractLexeme(Environment* env, DataObjectPtr value) noexcept {
-        return EnvDOPToString(env, value);
-    }
-    const char* extractLexeme(Environment* env, DataObject& value) noexcept {
-        return EnvDOToString(env, value);
-    }
-
-	CLIPSFloat extractFloat(Environment* env, DataObject& value) noexcept {
-		return EnvDOToDouble(env, value);
-	}
-	CLIPSFloat extractFloat(Environment* env, DataObjectPtr value) noexcept {
-		return EnvDOPToDouble(env, value);
-	}
 
     bool checkThenGetArgument(Environment* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept {
         return EnvArgTypeCheck(env, function.c_str(), position, static_cast<int>(type), saveTo);

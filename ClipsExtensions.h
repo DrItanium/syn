@@ -78,15 +78,7 @@ void installExtensions(Environment* theEnv);
 /**
  * A wrapper enum for interfacing with CLIPS' constants
  */
-//enum class MayaType {
-//    Integer = INTEGER,
-//    Float = FLOAT,
-//    ExternalAddress = EXTERNAL_ADDRESS,
-//    Symbol = SYMBOL,
-//    String = STRING,
-//    Lexeme = SYMBOL_OR_STRING,
-//    Multifield = MULTIFIELD,
-//};
+using MayaType = CLIPSType;
 
 /**
  * retrieves the argument count of the function call originating in CLIPS.
@@ -213,10 +205,26 @@ bool hasCorrectArgCount(void* env, ArgCountChecker<T> compare, ArgCountModifier<
  * @param value the dataObjectPtr to check
  * @return true if the given dataObjectPtr contains an external address
  */
-bool isExternalAddress(UDFValue* value) noexcept;
+inline bool isExternalAddress(UDFValue* value) noexcept { return value->header->type == EXTERNAL_ADDRESS_TYPE; }
+inline bool isExternalAddress(UDFValue& value) noexcept { return value.header->type == EXTERNAL_ADDRESS_TYPE; }
 
-const char* extractLexeme(UDFValue* value) noexcept;
-const char* extractLexeme(UDFValue& value) noexcept;
+inline const char* extractLexeme(UDFValue* value) noexcept { return value->lexemeValue->contents; }
+inline const char* extractLexeme(UDFValue& value) noexcept { return value.lexemeValue->contents; }
+inline int64_t extractInteger(UDFValue* value) noexcept { return value->integerValue->contents; }
+inline int64_t extractInteger(UDFValue& value) noexcept { return value.integerValue->contents; }
+inline double extractFloat(UDFValue* value) noexcept { return value->floatValue->contents; }
+inline double extractFloat(UDFValue& value) noexcept { return value.floatValue->contents; }
+inline bool extractBoolean(Environment* env, UDFValue* value) noexcept { return value->lexemeValue != FalseSymbol(env); }
+inline bool extractBoolean(Environment* env, UDFValue& value) noexcept { return value.lexemeValue != FalseSymbol(env); }
+
+inline void setInteger(Environment* env, UDFValue* ret, int64_t value) noexcept { ret->integerValue = CreateInteger(env, value); }
+inline void setFloat(Environment* env, UDFValue* ret, double value) noexcept { ret->floatValue = CreateFloat(env, value); }
+inline void setSymbol(Environment* env, UDFValue* ret, const char* value) noexcept { ret->lexemeValue = CreateSymbol(env, value); }
+inline void setSymbol(Environment* env, UDFValue* ret, const std::string& value) noexcept { setSymbol(env, ret, value.c_str()); }
+inline void setString(Environment* env, UDFValue* ret, const char* value) noexcept { ret->lexemeValue = CreateString(env, value); }
+inline void setString(Environment* env, UDFValue* ret, const std::string& value) noexcept { setString(env, ret, value.c_str()); }
+inline void setInstanceName(Environment* env, UDFValue* ret, const char* value) noexcept { ret->lexemeValue = CreateInstanceName(env, value); }
+inline void setInstanceName(Environment* env, UDFValue* ret, const std::string& value) noexcept { setInstanceName(env, ret, value.c_str()); }
 
 //bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
 //bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;

@@ -31,7 +31,6 @@
 #include "ClipsExtensions.h"
 #include "Base.h"
 #include "ExternalAddressWrapper.h"
-#include "MultifieldBuilder.h"
 #include "MemoryBlock.h"
 
 #include <cstdint>
