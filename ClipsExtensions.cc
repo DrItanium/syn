@@ -29,8 +29,8 @@
 
 #include "BaseTypes.h"
 #include "Base.h"
+#include "BaseArithmetic.h"
 #include "ClipsExtensions.h"
-#include "ExternalAddressWrapper.h"
 #include "functional.h"
 
 #include <cstdint>
@@ -161,33 +161,33 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 		CLIPS_errorMessageGeneric(env, context, ret, msg.c_str());
 	}
 	void CLIPS_errorOverflowedNumber(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
-		CLIPS_errorMessageGeneric(context, ret, "number is too large and overflowed");
+		CLIPS_errorMessageGeneric(env, context, ret, "number is too large and overflowed");
 	}
 	void CLIPS_translateBitmask(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 		UDFValue value;
-		if (!UDFFirstArgument(context, LEXEME_TYPES, &value)) {
+		if (!UDFFirstArgument(context, LEXEME_BITS, &value)) {
 			setClipsBoolean(env, ret, false);
 		} else {
-			std::string str(CVToString(&value));
+			std::string str(value.lexemeValue->contents);
 			if (boost::starts_with(str, "0m")) {
 				str.at(1) = '0';
 				auto tmp = strtoul(str.c_str(), NULL, 2);
 				if (tmp == ULONG_MAX && errno == ERANGE) {
-					CLIPS_errorOverflowedNumber(context, ret);
+					CLIPS_errorOverflowedNumber(env, context, ret);
 				} else {
 					if (tmp > 0xFF) {
-						CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 8-bits!");
+						CLIPS_errorMessageGeneric(env, context, ret, "provided number is larger than 8-bits!");
 					} else {
 						ret->integerValue = CreateInteger(env,  static_cast<int64_t>(static_cast<byte>(tmp)));
 					}
 				}
 			} else {
-				CLIPS_errorMessageGeneric(context, ret, "Bitmask must start with 0m");
+				CLIPS_errorMessageGeneric(env, context, ret, "Bitmask must start with 0m");
 			}
 		}
 	}
 	void CLIPS_errorNumberLargerThan64Bits(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
-		CLIPS_errorMessageGeneric(context, ret, "provided number is larger than 64-bits!");
+		CLIPS_errorMessageGeneric(env, context, ret, "provided number is larger than 64-bits!");
 	}
 
 
@@ -201,16 +201,16 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 		ret->integerValue = CreateInteger(env,  int64_t(expandBit(value != 0)));
 	}
 
-	void CLIPS_basePrintAddress(Environment* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
-		std::stringstream ss;
-		void* ptr = EnvValueToExternalAddress(env, theValue);
-		ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
-		auto str = ss.str();
-        clips::printRouter(env, logicalName, str);
-	}
-	void CLIPS_basePrintAddress_Pointer(Environment* env, const char* logicalName, void* theValue, const char* func) noexcept {
-		CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
-	}
+	//void CLIPS_basePrintAddress(Environment* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
+	//	std::stringstream ss;
+	//	void* ptr = EnvValueToExternalAddress(env, theValue);
+	//	ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
+	//	auto str = ss.str();
+    //    clips::printRouter(env, logicalName, str);
+	//}
+	//void CLIPS_basePrintAddress_Pointer(Environment* env, const char* logicalName, void* theValue, const char* func) noexcept {
+	//	CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
+	//}
 	void CLIPS_decodeBits(Environment* env, UDFContext* context, UDFValue* ret) {
 		UDFValue value, mask, shift;
 		if (!UDFFirstArgument(context, NUMBER_BITS, &value)) {
@@ -266,7 +266,7 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 			mb.append(performDecode<int64_t, int64_t, baseMask, 7>(integer));
         } else {
             for (int i = 0; i < integerWidth; ++i) {
-				mb.append(int64_t(syn::decodeBits<IType, OType>(integer, baseMask << (8 * i), (8 * i))));
+				mb.append(int64_t(syn::decodeBits<int64_t, int64_t>(integer, baseMask << (8 * i), (8 * i))));
             }
         }
 		ret->multifieldValue = mb.create();
