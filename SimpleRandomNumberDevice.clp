@@ -51,7 +51,7 @@
                (gensym*))
          (if (open ?path 
                    ?name
-                   "r") then
+                   "r+") then
             (assert (input-stream ?name))))
 
 (defrule MAIN::setup-output-stream
@@ -63,7 +63,7 @@
                (gensym*))
          (if (open ?path 
                    ?name
-                   "w") then
+                   "r+") then
             (assert (output-stream ?name))))
 (defrule MAIN::terminate-execution-on-missing-output-stream
          (declare (salience -1))
