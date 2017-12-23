@@ -29,577 +29,217 @@ extern "C" {
 #include <string>
 
 #if FUNCTIONAL_EXTENSIONS
-static void MapFunction(UDFContext* context, CLIPSValue* ret);
-static void FilterFunction(UDFContext* context, CLIPSValue* ret);
-static void ExistsFunction(UDFContext* context, CLIPSValue* ret);
-static void NotExistsFunction(UDFContext* context, CLIPSValue* ret);
+void MapFunction(Environment* env, UDFContext* context, UDFValue* ret);
+void FilterFunction(Environment* env, UDFContext* context, UDFValue* ret);
+void ExistsFunction(Environment* env, UDFContext* context, UDFValue* ret);
+void NotExistsFunction(Environment* env, UDFContext* context, UDFValue* ret);
+void FunctionError(Environment*, int, FunctionCallBuilderError, const std::string&) noexcept;
 #endif
 
 
-extern "C" void InstallFunctionalExtensions(void* theEnv) {
+
+extern "C" void InstallFunctionalExtensions(Environment* theEnv) {
 #if FUNCTIONAL_EXTENSIONS
-	EnvAddUDF((Environment*)theEnv, "map", "m", MapFunction, "MapFunction", 1, UNBOUNDED, "*;y;*", NULL);
-	EnvAddUDF((Environment*)theEnv, "filter", "m", FilterFunction, "FilterFunction", 1, UNBOUNDED, "*;y;*", NULL);
-	EnvAddUDF((Environment*)theEnv, "exists", "m", ExistsFunction, "ExistsFunction", 1, UNBOUNDED, "*;y;*", NULL);
-	EnvAddUDF((Environment*)theEnv, "not-exists", "m", NotExistsFunction, "NotExistsFunction", 1, UNBOUNDED, "*;y;*", NULL);
+	AddUDF(theEnv, "map$", "m", 1, UNBOUNDED, "*;y;*", MapFunction, "MapFunction", nullptr);
+	AddUDF(theEnv, "filter$", "m", 1, UNBOUNDED, "*;y;*", FilterFunction, "FilterFunction", nullptr);
+	AddUDF(theEnv, "exists$", "b", 1, UNBOUNDED, "*;y;*", ExistsFunction, "ExistsFunction", nullptr);
+	AddUDF(theEnv, "not-exists$", "b", 1, UNBOUNDED, "*;y;*", NotExistsFunction, "NotExistsFunction", nullptr);
 #endif
 }
 
 #if FUNCTIONAL_EXTENSIONS
 void
-MapFunction(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue func;
-	if (!UDFFirstArgument(context, LEXEME_TYPES, &func)) {
-		CVSetBoolean(ret, false);
+FunctionError(Environment* theEnv, int code, FunctionCallBuilderError err, const std::string& func) noexcept {
+	PrintErrorID(theEnv, "FUNCTIONAL", code, false);
+	switch(err) {
+		case FunctionCallBuilderError::FCBE_PROCESSING_ERROR:
+			WriteString(theEnv, STDERR, "Error during evaluation of arguments!\n");
+			break;
+		case FunctionCallBuilderError::FCBE_ARGUMENT_TYPE_ERROR:
+			WriteString(theEnv, STDERR, "Argument type check failed!\n");
+			break;
+		case FunctionCallBuilderError::FCBE_ARGUMENT_COUNT_ERROR:
+			WriteString(theEnv, STDERR, "Argument count check failed!\n");
+			break;
+		case FunctionCallBuilderError::FCBE_FUNCTION_NOT_FOUND_ERROR:
+			WriteString(theEnv, STDERR, "Function '");
+			WriteString(theEnv, STDERR, func.c_str());
+			WriteString(theEnv, STDERR, "' does not exist!\n");
+			break;
+		case FunctionCallBuilderError::FCBE_INVALID_FUNCTION_ERROR:
+			WriteString(theEnv, STDERR, "Function '");
+			WriteString(theEnv, STDERR, func.c_str());
+			WriteString(theEnv, STDERR, "' has a custom parser and cannot be used with map$!\n");
+			break;
+		case FunctionCallBuilderError::FCBE_NULL_POINTER_ERROR:
+			WriteString(theEnv, STDERR, "Provided function name is null!\n");
+			break;
+		case FunctionCallBuilderError::FCBE_NO_ERROR:
+			WriteString(theEnv, STDERR, "NO_ERROR SHOULD NEVER EVER BE FIRED!!!\n");
+			break;
+		default:
+			WriteString(theEnv, STDERR, "Unknown function builder error occurred!\n");
+			break;
+	}
+
+}
+void
+MapFunction(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue func, curr;
+	if (!UDFFirstArgument(context, LEXEME_BITS, &func)) {
+		ret->lexemeValue = FalseSymbol(env);
 		return;
 	} else {
-		auto body = [](UDFContext* context, CLIPSValue* ret, CLIPSValue* theArg, const std::string& name, FUNCTION_REFERENCE* fref, struct FunctionDefinition *theFunction) -> bool {
-			struct multifield *theMultifield = nullptr;
-			struct expr *lastAdd = nullptr,
-						*nextAdd = nullptr,
-						*multiAdd = nullptr;
-			Environment* theEnv = UDFContextEnvironment(context);
-			ExpressionInstall(theEnv,fref);
-
-			switch(GetpType(theArg)) {
-				case MULTIFIELD:
-					nextAdd = GenConstant(theEnv,FCALL,(void *) FindFunction(theEnv,"create$"));
-
-					if (lastAdd == NULL) {
-						fref->argList = nextAdd;
-					} else {
-						lastAdd->nextArg = nextAdd;
-					}
-					lastAdd = nextAdd;
-
-					multiAdd = NULL;
-					theMultifield = (struct multifield *) GetpValue(theArg);
-					for (int j = GetpDOBegin(theArg); j <= GetpDOEnd(theArg); j++) {
-						nextAdd = GenConstant(theEnv,GetMFType(theMultifield,j),GetMFValue(theMultifield,j));
-						if (multiAdd == NULL) {
-							lastAdd->argList = nextAdd;
-						} else {
-							multiAdd->nextArg = nextAdd;
-						}
-						multiAdd = nextAdd;
-					}
-
-					ExpressionInstall(theEnv,lastAdd);
-					break;
-
-				default:
-					nextAdd = GenConstant(theEnv,GetpType(theArg),GetpValue(theArg));
-					if (lastAdd == NULL) {
-						fref->argList = nextAdd;
-					} else {
-						lastAdd->nextArg = nextAdd;
-					}
-					lastAdd = nextAdd;
-					ExpressionInstall(theEnv,lastAdd);
-					break;
-			}
-
-			/*===========================================================*/
-			/* Verify a deffunction has the correct number of arguments. */
-			/*===========================================================*/
-
-#if DEFFUNCTION_CONSTRUCT
-			if (fref->type == PCALL) {
-				if (!CheckDeffunctionCall(theEnv,fref->value,CountArguments(fref->argList))) {
-					PrintErrorID(theEnv,"MISCFUN",4,false);
-					EnvPrintRouter(theEnv,WERROR,"Function map called with the wrong number of arguments for deffunction ");
-					EnvPrintRouter(theEnv,WERROR,EnvGetDeffunctionName(theEnv,fref->value));
-					EnvPrintRouter(theEnv,WERROR,"\n");
-					ExpressionDeinstall(theEnv,fref);
-					ReturnExpression(theEnv,fref->argList);
-					return false;
-				}
-			}
-#endif
-
-			/*=========================================*/
-			/* Verify the correct number of arguments. */
-			/*=========================================*/
-
-			if (fref->type == FCALL) {
-				if (CheckExpressionAgainstRestrictions(theEnv,fref,theFunction,name.c_str())) {
-					ExpressionDeinstall(theEnv,fref);
-					ReturnExpression(theEnv,fref->argList);
-					return false;
-				}
-			}
-
-			/*======================*/
-			/* Call the expression. */
-			/*======================*/
-
-			EvaluateExpression(theEnv,fref,ret);
-
-			/*========================================*/
-			/* Return the expression data structures. */
-			/*========================================*/
-
-			ExpressionDeinstall(theEnv,fref);
-			ReturnExpression(theEnv,fref->argList);
-			fref->argList = nullptr;
-
-			return true;
-		};
-		std::string name(CVToString(&func));
-		Environment* env = UDFContextEnvironment(context);
-		struct expr *tmp2 = nullptr;
-		struct FunctionDefinition *theFunction = nullptr;
-		CLIPSValue curr, tmp;
-		FUNCTION_REFERENCE fref;
-
-		if (!GetFunctionReference(env, name.c_str(), &fref)) {
-			ExpectedTypeError1(env,"map",1,"function, deffunction, or generic function name");
-			return;
-		}
-
-		if (fref.type == FCALL) {
-			theFunction = FindFunction(env, name.c_str());
-			if (theFunction->parser != NULL) {
-				ExpectedTypeError1(env,"map",1,"function without specialized parser");
-				return;
-			}
-		}
-
+		maya::MultifieldBuilder mb(env);
 		while (UDFHasNextArgument(context)) {
-			if (! UDFNextArgument(context,ANY_TYPE,&curr)) {
-				CVSetBoolean(ret, false);
+			if (! UDFNextArgument(context,ANY_TYPE_BITS,&curr)) {
+				ret->lexemeValue = FalseSymbol(env);
 				return;
 			} else {
-				if (body(context, &tmp, &curr, name, &fref, theFunction)) {
-					if (!tmp2) {
-						tmp2 = ConvertValueToExpression(env, &tmp);
-					} else {
-						tmp2 = AppendExpressions(tmp2, ConvertValueToExpression(env, &tmp));
-					}
-				} else {
-					return;
+				CLIPSValue tmp;
+				maya::FunctionCallBuilder fcb(env, 0);
+				fcb.append(&curr);
+				auto result = fcb.call(func.lexemeValue->contents, &tmp);
+				if (result != FunctionCallBuilderError::FCBE_NO_ERROR) {
+					FunctionError(env, 1, result, func.lexemeValue->contents);
+					break;
 				}
+				mb.append(&tmp);
 			}
 		}
-		StoreInMultifield(env, ret, tmp2, true);
+		ret->multifieldValue = mb.create();
 	}
 }
 
 void
-FilterFunction(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue func;
-	if (!UDFFirstArgument(context, LEXEME_TYPES, &func)) {
-		CVSetBoolean(ret, false);
+FilterFunction(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue func, curr;
+	if (!UDFFirstArgument(context, LEXEME_BITS, &func)) {
+		ret->lexemeValue = FalseSymbol(env);
 		return;
 	} else {
-		auto body = [](UDFContext* context, CLIPSValue* ret, CLIPSValue* theArg, const std::string& name, FUNCTION_REFERENCE* fref, struct FunctionDefinition *theFunction) -> bool {
-			struct multifield *theMultifield = nullptr;
-			struct expr *lastAdd = nullptr,
-						*nextAdd = nullptr,
-						*multiAdd = nullptr;
-			Environment* theEnv = UDFContextEnvironment(context);
-			ExpressionInstall(theEnv,fref);
-
-			switch(GetpType(theArg)) {
-				case MULTIFIELD:
-					nextAdd = GenConstant(theEnv,FCALL,(void *) FindFunction(theEnv,"create$"));
-
-					if (lastAdd == NULL) {
-						fref->argList = nextAdd;
-					} else {
-						lastAdd->nextArg = nextAdd;
-					}
-					lastAdd = nextAdd;
-
-					multiAdd = NULL;
-					theMultifield = (struct multifield *) GetpValue(theArg);
-					for (int j = GetpDOBegin(theArg); j <= GetpDOEnd(theArg); j++) {
-						nextAdd = GenConstant(theEnv,GetMFType(theMultifield,j),GetMFValue(theMultifield,j));
-						if (multiAdd == NULL) {
-							lastAdd->argList = nextAdd;
-						} else {
-							multiAdd->nextArg = nextAdd;
-						}
-						multiAdd = nextAdd;
-					}
-
-					ExpressionInstall(theEnv,lastAdd);
-					break;
-
-				default:
-					nextAdd = GenConstant(theEnv,GetpType(theArg),GetpValue(theArg));
-					if (lastAdd == NULL) {
-						fref->argList = nextAdd;
-					} else {
-						lastAdd->nextArg = nextAdd;
-					}
-					lastAdd = nextAdd;
-					ExpressionInstall(theEnv,lastAdd);
-					break;
-			}
-
-			/*===========================================================*/
-			/* Verify a deffunction has the correct number of arguments. */
-			/*===========================================================*/
-
-#if DEFFUNCTION_CONSTRUCT
-			if (fref->type == PCALL) {
-				if (!CheckDeffunctionCall(theEnv,fref->value,CountArguments(fref->argList))) {
-					PrintErrorID(theEnv,"MISCFUN",4,false);
-					EnvPrintRouter(theEnv,WERROR,"Function filter called with the wrong number of arguments for deffunction ");
-					EnvPrintRouter(theEnv,WERROR,EnvGetDeffunctionName(theEnv,fref->value));
-					EnvPrintRouter(theEnv,WERROR,"\n");
-					ExpressionDeinstall(theEnv,fref);
-					ReturnExpression(theEnv,fref->argList);
-					return false;
-				}
-			}
-#endif
-
-			/*=========================================*/
-			/* Verify the correct number of arguments. */
-			/*=========================================*/
-
-			if (fref->type == FCALL) {
-				if (CheckExpressionAgainstRestrictions(theEnv,fref,theFunction,name.c_str())) {
-					ExpressionDeinstall(theEnv,fref);
-					ReturnExpression(theEnv,fref->argList);
-					return false;
-				}
-			}
-
-			/*======================*/
-			/* Call the expression. */
-			/*======================*/
-
-			EvaluateExpression(theEnv,fref,ret);
-
-			/*========================================*/
-			/* Return the expression data structures. */
-			/*========================================*/
-
-			ExpressionDeinstall(theEnv,fref);
-			ReturnExpression(theEnv,fref->argList);
-			fref->argList = nullptr;
-
-			return true;
-		};
-		std::string name(CVToString(&func));
-		Environment* env = UDFContextEnvironment(context);
-		struct expr *tmp2 = nullptr;
-		struct FunctionDefinition *theFunction = nullptr;
-		CLIPSValue curr, tmp;
-		FUNCTION_REFERENCE fref;
-
-		if (!GetFunctionReference(env, name.c_str(), &fref)) {
-			ExpectedTypeError1(env,"filter",1,"function, deffunction, or generic function name");
-			return;
-		}
-
-		if (fref.type == FCALL) {
-			theFunction = FindFunction(env, name.c_str());
-			if (theFunction->parser != NULL) {
-				ExpectedTypeError1(env,"filter",1,"function without specialized parser");
-				return;
-			}
-		}
-
+		maya::MultifieldBuilder mb(env);
 		while (UDFHasNextArgument(context)) {
-			if (! UDFNextArgument(context,ANY_TYPE,&curr)) {
-				CVSetBoolean(ret, false);
+			if (! UDFNextArgument(context,ANY_TYPE_BITS,&curr)) {
+				ret->lexemeValue = FalseSymbol(env);
 				return;
 			} else {
-				if (body(context, &tmp, &curr, name, &fref, theFunction)) {
-					if (!mCVIsFalseSymbol(&tmp)) {
-						if (!tmp2) {
-							tmp2 = ConvertValueToExpression(env, &curr);
-						} else {
-							tmp2 = AppendExpressions(tmp2, ConvertValueToExpression(env, &curr));
-						}
-					}
-				} else {
-					return;
+				CLIPSValue tmp;
+				maya::FunctionCallBuilder fcb(env, 0);
+				fcb.append(&curr);
+				auto result = fcb.call(func.lexemeValue->contents, &tmp);
+				if (result != FunctionCallBuilderError::FCBE_NO_ERROR) {
+					FunctionError(env, 1, result, func.lexemeValue->contents);
+					break;
+				}
+				if (tmp.lexemeValue != FalseSymbol(env)) {
+					mb.append(&curr);
 				}
 			}
 		}
-		StoreInMultifield(env, ret, tmp2, true);
+		ret->multifieldValue = mb.create();
 	}
 }
 
 void
-ExistsFunction(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue func;
-	if (!UDFFirstArgument(context, LEXEME_TYPES, &func)) {
-		CVSetBoolean(ret, false);
+ExistsFunction(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue func, curr;
+	if (!UDFFirstArgument(context, LEXEME_BITS, &func)) {
+		ret->lexemeValue = FalseSymbol(env);
 		return;
 	} else {
-		auto body = [](UDFContext* context, CLIPSValue* ret, CLIPSValue* theArg, const std::string& name, FUNCTION_REFERENCE* fref, struct FunctionDefinition *theFunction) -> bool {
-			struct multifield *theMultifield = nullptr;
-			struct expr *lastAdd = nullptr,
-						*nextAdd = nullptr,
-						*multiAdd = nullptr;
-			Environment* theEnv = UDFContextEnvironment(context);
-			ExpressionInstall(theEnv,fref);
-
-			switch(GetpType(theArg)) {
-				case MULTIFIELD:
-					nextAdd = GenConstant(theEnv,FCALL,(void *) FindFunction(theEnv,"create$"));
-
-					if (lastAdd == NULL) {
-						fref->argList = nextAdd;
-					} else {
-						lastAdd->nextArg = nextAdd;
-					}
-					lastAdd = nextAdd;
-
-					multiAdd = NULL;
-					theMultifield = (struct multifield *) GetpValue(theArg);
-					for (int j = GetpDOBegin(theArg); j <= GetpDOEnd(theArg); j++) {
-						nextAdd = GenConstant(theEnv,GetMFType(theMultifield,j),GetMFValue(theMultifield,j));
-						if (multiAdd == NULL) {
-							lastAdd->argList = nextAdd;
-						} else {
-							multiAdd->nextArg = nextAdd;
-						}
-						multiAdd = nextAdd;
-					}
-
-					ExpressionInstall(theEnv,lastAdd);
-					break;
-
-				default:
-					nextAdd = GenConstant(theEnv,GetpType(theArg),GetpValue(theArg));
-					if (lastAdd == NULL) {
-						fref->argList = nextAdd;
-					} else {
-						lastAdd->nextArg = nextAdd;
-					}
-					lastAdd = nextAdd;
-					ExpressionInstall(theEnv,lastAdd);
-					break;
-			}
-
-			/*===========================================================*/
-			/* Verify a deffunction has the correct number of arguments. */
-			/*===========================================================*/
-
-#if DEFFUNCTION_CONSTRUCT
-			if (fref->type == PCALL) {
-				if (!CheckDeffunctionCall(theEnv,fref->value,CountArguments(fref->argList))) {
-					PrintErrorID(theEnv,"MISCFUN",4,false);
-					EnvPrintRouter(theEnv,WERROR,"Function exists called with the wrong number of arguments for deffunction ");
-					EnvPrintRouter(theEnv,WERROR,EnvGetDeffunctionName(theEnv,fref->value));
-					EnvPrintRouter(theEnv,WERROR,"\n");
-					ExpressionDeinstall(theEnv,fref);
-					ReturnExpression(theEnv,fref->argList);
-					return false;
-				}
-			}
-#endif
-
-			/*=========================================*/
-			/* Verify the correct number of arguments. */
-			/*=========================================*/
-
-			if (fref->type == FCALL) {
-				if (CheckExpressionAgainstRestrictions(theEnv,fref,theFunction,name.c_str())) {
-					ExpressionDeinstall(theEnv,fref);
-					ReturnExpression(theEnv,fref->argList);
-					return false;
-				}
-			}
-
-			/*======================*/
-			/* Call the expression. */
-			/*======================*/
-
-			EvaluateExpression(theEnv,fref,ret);
-
-			/*========================================*/
-			/* Return the expression data structures. */
-			/*========================================*/
-
-			ExpressionDeinstall(theEnv,fref);
-			ReturnExpression(theEnv,fref->argList);
-			fref->argList = nullptr;
-
-			return true;
-		};
-		std::string name(CVToString(&func));
-		Environment* env = UDFContextEnvironment(context);
-		struct expr *tmp2 = nullptr;
-		struct FunctionDefinition *theFunction = nullptr;
-		CLIPSValue curr, tmp;
-		FUNCTION_REFERENCE fref;
-
-		if (!GetFunctionReference(env, name.c_str(), &fref)) {
-			ExpectedTypeError1(env,"exists",1,"function, deffunction, or generic function name");
-			return;
-		}
-
-		if (fref.type == FCALL) {
-			theFunction = FindFunction(env, name.c_str());
-			if (theFunction->parser != NULL) {
-				ExpectedTypeError1(env,"exists",1,"function without specialized parser");
-				return;
-			}
-		}
-
+		ret->lexemeValue = FalseSymbol(env);
 		while (UDFHasNextArgument(context)) {
-			if (! UDFNextArgument(context,ANY_TYPE,&curr)) {
-				CVSetBoolean(ret, false);
+			if (! UDFNextArgument(context,ANY_TYPE_BITS,&curr)) {
+				ret->lexemeValue = FalseSymbol(env);
 				return;
 			} else {
-				if (body(context, &tmp, &curr, name, &fref, theFunction)) {
-					if (!mCVIsFalseSymbol(&tmp)) {
-						CVSetBoolean(ret, true);
-						return;
-					}
-				} else {
+				CLIPSValue tmp;
+				maya::FunctionCallBuilder fcb(env, 0);
+				fcb.append(&curr);
+				auto result = fcb.call(func.lexemeValue->contents, &tmp);
+				if (result != FunctionCallBuilderError::FCBE_NO_ERROR) {
+					FunctionError(env, 1, result, func.lexemeValue->contents);
+					break;
+				}
+				if (tmp.lexemeValue != FalseSymbol(env)) {
+					ret->lexemeValue = TrueSymbol(env);
 					return;
 				}
 			}
 		}
-		CVSetBoolean(ret, false);
 	}
 }
 
 void
-NotExistsFunction(UDFContext* context, CLIPSValue* ret) {
-	CLIPSValue func;
-	if (!UDFFirstArgument(context, LEXEME_TYPES, &func)) {
-		CVSetBoolean(ret, false);
+NotExistsFunction(Environment* env, UDFContext* context, UDFValue* ret) {
+	UDFValue func, curr;
+	if (!UDFFirstArgument(context, LEXEME_BITS, &func)) {
+		ret->lexemeValue = FalseSymbol(env);
 		return;
 	} else {
-		auto body = [](UDFContext* context, CLIPSValue* ret, CLIPSValue* theArg, const std::string& name, FUNCTION_REFERENCE* fref, struct FunctionDefinition *theFunction) -> bool {
-			struct multifield *theMultifield = nullptr;
-			struct expr *lastAdd = nullptr,
-						*nextAdd = nullptr,
-						*multiAdd = nullptr;
-			Environment* theEnv = UDFContextEnvironment(context);
-			ExpressionInstall(theEnv,fref);
-
-			switch(GetpType(theArg)) {
-				case MULTIFIELD:
-					nextAdd = GenConstant(theEnv,FCALL,(void *) FindFunction(theEnv,"create$"));
-
-					if (lastAdd == NULL) {
-						fref->argList = nextAdd;
-					} else {
-						lastAdd->nextArg = nextAdd;
-					}
-					lastAdd = nextAdd;
-
-					multiAdd = NULL;
-					theMultifield = (struct multifield *) GetpValue(theArg);
-					for (int j = GetpDOBegin(theArg); j <= GetpDOEnd(theArg); j++) {
-						nextAdd = GenConstant(theEnv,GetMFType(theMultifield,j),GetMFValue(theMultifield,j));
-						if (multiAdd == NULL) {
-							lastAdd->argList = nextAdd;
-						} else {
-							multiAdd->nextArg = nextAdd;
-						}
-						multiAdd = nextAdd;
-					}
-
-					ExpressionInstall(theEnv,lastAdd);
-					break;
-
-				default:
-					nextAdd = GenConstant(theEnv,GetpType(theArg),GetpValue(theArg));
-					if (lastAdd == NULL) {
-						fref->argList = nextAdd;
-					} else {
-						lastAdd->nextArg = nextAdd;
-					}
-					lastAdd = nextAdd;
-					ExpressionInstall(theEnv,lastAdd);
-					break;
-			}
-
-			/*===========================================================*/
-			/* Verify a deffunction has the correct number of arguments. */
-			/*===========================================================*/
-
-#if DEFFUNCTION_CONSTRUCT
-			if (fref->type == PCALL) {
-				if (!CheckDeffunctionCall(theEnv,fref->value,CountArguments(fref->argList))) {
-					PrintErrorID(theEnv,"MISCFUN",4,false);
-					EnvPrintRouter(theEnv,WERROR,"Function not-exists called with the wrong number of arguments for deffunction ");
-					EnvPrintRouter(theEnv,WERROR,EnvGetDeffunctionName(theEnv,fref->value));
-					EnvPrintRouter(theEnv,WERROR,"\n");
-					ExpressionDeinstall(theEnv,fref);
-					ReturnExpression(theEnv,fref->argList);
-					return false;
-				}
-			}
-#endif
-
-			/*=========================================*/
-			/* Verify the correct number of arguments. */
-			/*=========================================*/
-
-			if (fref->type == FCALL) {
-				if (CheckExpressionAgainstRestrictions(theEnv,fref,theFunction,name.c_str())) {
-					ExpressionDeinstall(theEnv,fref);
-					ReturnExpression(theEnv,fref->argList);
-					return false;
-				}
-			}
-
-			/*======================*/
-			/* Call the expression. */
-			/*======================*/
-
-			EvaluateExpression(theEnv,fref,ret);
-
-			/*========================================*/
-			/* Return the expression data structures. */
-			/*========================================*/
-
-			ExpressionDeinstall(theEnv,fref);
-			ReturnExpression(theEnv,fref->argList);
-			fref->argList = nullptr;
-
-			return true;
-		};
-		std::string name(CVToString(&func));
-		Environment* env = UDFContextEnvironment(context);
-		struct FunctionDefinition *theFunction = nullptr;
-		CLIPSValue curr, tmp;
-		FUNCTION_REFERENCE fref;
-
-		if (!GetFunctionReference(env, name.c_str(), &fref)) {
-			ExpectedTypeError1(env,"not-exists",1,"function, deffunction, or generic function name");
-			return;
-		}
-
-		if (fref.type == FCALL) {
-			theFunction = FindFunction(env, name.c_str());
-			if (theFunction->parser != NULL) {
-				ExpectedTypeError1(env,"not-exists",1,"function without specialized parser");
-				return;
-			}
-		}
-
+		ret->lexemeValue = TrueSymbol(env);
 		while (UDFHasNextArgument(context)) {
-			if (! UDFNextArgument(context,ANY_TYPE,&curr)) {
-				CVSetBoolean(ret, false);
+			if (! UDFNextArgument(context,ANY_TYPE_BITS,&curr)) {
+				ret->lexemeValue = FalseSymbol(env);
 				return;
 			} else {
-				if (body(context, &tmp, &curr, name, &fref, theFunction)) {
-					if (!mCVIsFalseSymbol(&tmp)) {
-						CVSetBoolean(ret, false);
-						return;
-					}
-				} else {
+				CLIPSValue tmp;
+				maya::FunctionCallBuilder fcb(env, 0);
+				fcb.append(&curr);
+				auto result = fcb.call(func.lexemeValue->contents, &tmp);
+				if (result != FunctionCallBuilderError::FCBE_NO_ERROR) {
+					FunctionError(env, 1, result, func.lexemeValue->contents);
+					break;
+				}
+				if (tmp.lexemeValue != FalseSymbol(env)) {
+					ret->lexemeValue = FalseSymbol(env);
 					return;
 				}
 			}
 		}
-		CVSetBoolean(ret, true);
 	}
 }
 
+namespace maya {
+	FunctionCallBuilder::FunctionCallBuilder(Environment* theEnv, size_t size) : _builder(CreateFunctionCallBuilder(theEnv, size)) { }
+	FunctionCallBuilder::~FunctionCallBuilder() {
+		FCBDispose(_builder);
+		_builder = nullptr;
+	}
+	FunctionCallBuilder::ErrorKind FunctionCallBuilder::call(const std::string& functionName, CLIPSValue* ret) noexcept {
+		return FCBCall(_builder, functionName.c_str(), ret);
+	}
+	void FunctionCallBuilder::append(UDFValue* value) noexcept { FCBAppendUDFValue(_builder, value); }
+	void FunctionCallBuilder::append(CLIPSValue* value) noexcept { FCBAppend(_builder, value); }
+	void FunctionCallBuilder::append(CLIPSInteger* value) noexcept { FCBAppendCLIPSInteger(_builder, value); }
+	void FunctionCallBuilder::append(int64_t value) noexcept { FCBAppendInteger(_builder, value); }
+	void FunctionCallBuilder::append(CLIPSFloat* value) noexcept { FCBAppendCLIPSFloat(_builder, value); }
+	void FunctionCallBuilder::append(double value) noexcept { FCBAppendFloat(_builder, value); }
+	void FunctionCallBuilder::append(CLIPSLexeme* value) noexcept { FCBAppendCLIPSLexeme(_builder, value); }
+	void FunctionCallBuilder::append(CLIPSExternalAddress* value) noexcept { FCBAppendCLIPSExternalAddress(_builder, value); }
+	void FunctionCallBuilder::append(Fact* value) noexcept { FCBAppendFact(_builder, value); }
+	void FunctionCallBuilder::append(Instance* value) noexcept { FCBAppendInstance(_builder, value); }
+	void FunctionCallBuilder::append(Multifield* value) noexcept { FCBAppendMultifield(_builder, value); }
+	void FunctionCallBuilder::appendSymbol(const std::string& sym) noexcept { FCBAppendSymbol(_builder, sym.c_str()); }
+	void FunctionCallBuilder::appendString(const std::string& sym) noexcept { FCBAppendString(_builder, sym.c_str()); }
+	void FunctionCallBuilder::appendInstanceName(const std::string& sym) noexcept { FCBAppendInstanceName(_builder, sym.c_str()); }
+	MultifieldBuilder::MultifieldBuilder(Environment* theEnv, size_t size) : _builder(CreateMultifieldBuilder(theEnv, size)) { }
+	MultifieldBuilder::~MultifieldBuilder() { MBDispose(_builder); }
+	void MultifieldBuilder::append(UDFValue* value) noexcept { MBAppendUDFValue(_builder, value); }
+	void MultifieldBuilder::append(CLIPSValue* value) noexcept { MBAppend(_builder, value); }
+	void MultifieldBuilder::append(CLIPSInteger* value) noexcept { MBAppendCLIPSInteger(_builder, value); }
+	void MultifieldBuilder::append(CLIPSFloat* value) noexcept { MBAppendCLIPSFloat(_builder, value); }
+	void MultifieldBuilder::append(CLIPSLexeme* value) noexcept { MBAppendCLIPSLexeme(_builder, value); }
+	void MultifieldBuilder::append(CLIPSExternalAddress* value) noexcept { MBAppendCLIPSExternalAddress(_builder, value); }
+	void MultifieldBuilder::append(Fact* value) noexcept { MBAppendFact(_builder, value); }
+	void MultifieldBuilder::append(Instance* value) noexcept { MBAppendInstance(_builder, value); }
+	void MultifieldBuilder::append(Multifield* value) noexcept { MBAppendMultifield(_builder, value); }
+	void MultifieldBuilder::append(int64_t value) noexcept { MBAppendInteger(_builder, value); }
+	void MultifieldBuilder::append(double value) noexcept { MBAppendFloat(_builder, value); }
+	void MultifieldBuilder::appendSymbol(const std::string& value) noexcept { MBAppendSymbol(_builder, value.c_str()); }
+	void MultifieldBuilder::appendString(const std::string& value) noexcept { MBAppendString(_builder, value.c_str()); }
+	void MultifieldBuilder::appendInstanceName(const std::string& value) noexcept { MBAppendInstanceName(_builder, value.c_str()); }
+} // end namespace maya
 #endif
 
