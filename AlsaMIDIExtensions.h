@@ -29,9 +29,11 @@
 
 #ifndef SYN_ALSA_EXTENSIONS_H__
 #define SYN_ALSA_EXTENSIONS_H__
-
+extern "C" {
+#include "clips.h"
+}
 namespace syn {
-	void installAlsaMIDIExtensions(void* env);
+	void installAlsaMIDIExtensions(Environment* env);
 }
 
 #endif // end SYN_ALSA_EXTENSIONS_H__

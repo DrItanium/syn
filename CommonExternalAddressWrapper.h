@@ -52,20 +52,26 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 			Type,
 			Count,
 		};
-        static bool callFunction(void* env, DataObjectPtr value, DataObjectPtr ret) {
+        static bool callFunction(UDFContext* context, UDFValue* value, UDFValue* ret) {
             using CastTo = typename ExternalAddressWrapperType<T>::TheType;
 			static_assert(ExternalAddressWrapperType<T>::customImpl, "Must provide a custom external address wrapper type defintion, the default one will segfault the program on use!");
             static_assert(std::is_base_of<Self, CastTo>::value, "To use the common functionality hierarchy, you must inherit from CommonExternalAddressWrapper");
 			static std::map<std::string, BuiltinStandardFunctions> lookup = {
 				{ "type", BuiltinStandardFunctions::Type },
 			};
-            __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
-            CLIPSValue operation;
-            __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
-            std::string str(extractLexeme(env, operation));
+			if (value->header->type != EXTERNAL_ADDRESS_TYPE) {
+				setBoolean(context, ret, false);
+				return false;
+			}
+            UDFValue operation;
+			if (!extractFunctionName(context, operation)) {
+				setBoolean(context, ret, false);
+				return false;
+			}
+			std::string str(getLexeme(operation));
 			// most likely we can safely do this so go for it if we
 			// have a custom implementation
-			auto* ptr = static_cast<CastTo*>(EnvDOPToExternalAddress(value));
+			auto* ptr = static_cast<CastTo*>(getExternalAddress(value));
 			auto result = lookup.find(str);
 			if (result != lookup.end()) {
 				switch(result->second) {
@@ -79,21 +85,21 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 				return ptr->handleCallOperation(env, value, ret, str);
             }
         }
-        static inline bool callErrorCode2(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+        static inline bool callErrorCode2(Environment* env, CLIPSValue* ret, const std::string& msg) noexcept {
             return Parent::badCallArgument(env, ret, 2, msg);
         }
 
-        static inline bool callErrorCode3(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+        static inline bool callErrorCode3(Environment* env, CLIPSValue* ret, const std::string& msg) noexcept {
             return Parent::badCallArgument(env, ret, 3, msg);
         }
 
-        static inline bool callErrorCode4(void* env, CLIPSValue* ret, const std::string& msg) noexcept {
+        static inline bool callErrorCode4(Environment* env, CLIPSValue* ret, const std::string& msg) noexcept {
             return Parent::badCallArgument(env, ret, 4, msg);
         }
-        static void registerWithEnvironment(void* env) noexcept {
+        static void registerWithEnvironment(Environment* env) noexcept {
             registerWithEnvironment(env, Parent::getType().c_str());
         }
-		static void registerWithEnvironment(void* env, const char* title) {
+		static void registerWithEnvironment(Environment* env, const char* title) {
             Parent::registerWithEnvironment(env, title, callFunction);
 		}
     public:
@@ -112,7 +118,7 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 		 * @return a boolean value signifying if an error occurred or not, this
 		 * is not the same as what is actually returned to CLIPS.
 		 */
-        virtual bool handleCallOperation(void* env, DataObjectPtr value, DataObjectPtr ret, const std::string& operation) = 0;
+        virtual bool handleCallOperation(Environment* env, UDFValue* value, UDFValue* ret, const std::string& operation) = 0;
 };
 } // end namespace syn
 #endif

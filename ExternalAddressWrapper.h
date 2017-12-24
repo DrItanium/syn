@@ -396,6 +396,13 @@ class ExternalAddressWrapper {
 		std::unique_ptr<T> _value;
 };
 
+/**
+ * Extract the function name (symbol) for a call operation.
+ */
+inline bool extractFunctionName(UDFContext* context, UDFValue& storage) noexcept {
+	return UDFNextArgument(context, MayaType::SYMBOL_BIT, &storage);
+}
+
 
 }
 #endif
