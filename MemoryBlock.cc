@@ -68,6 +68,7 @@ namespace syn {
 	template<typename Word>
 	class ManagedMemoryBlock : public ExternalAddressWrapper<Block<Word>> {
 		public:
+			static_assert(std::is_integral<Word>::value, "Expected an integral type to be for type Word");
 			using Address = int64_t;
 			using WordBlock = Block<Word>;
 			using Parent = ExternalAddressWrapper<WordBlock>;
@@ -157,13 +158,13 @@ namespace syn {
 						CVSetInteger(ret, ptr->size());
 						break;
 					case MemoryBlockOp::Get:
-						return commonSingleIntegerBody([ret](auto ptr, auto addr) { CVSetInteger(ret, ptr->getMemoryCellValue(addr)); });
+						return ptr->load(env, context, ret);
 					case MemoryBlockOp::Populate:
 						//return populate();
 					case MemoryBlockOp::Increment:
-						return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->incrementMemoryCell(addr); });
+						return ptr->increment(env, context, ret);
 					case MemoryBlockOp::Decrement:
-						return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->decrementMemoryCell(addr); });
+						return ptr->decrement(env, context, ret);
 					case MemoryBlockOp::Swap:
 					case MemoryBlockOp::Move:
 						return swapOrMove(op);
@@ -187,10 +188,9 @@ namespace syn {
 			inline bool legalAddress(Address idx) const noexcept                    { return addressInRange<Address>(_capacity, idx); }
 			inline Word getMemoryCellValue(Address addr) noexcept                   { return this->_value.get()[addr]; }
 			inline void setMemoryCell(Address addr0, Word value) noexcept           { this->_value.get()[addr0] = value; }
-			inline void swapMemoryCells(Address addr0, Address addr1) noexcept      { swap<Word>(this->_value.get()[addr0], this->_value.get()[addr1]); }
+			inline void swapMemoryCells(Address addr0, Address addr1) noexcept      { syn::swap<Word>(this->_value.get()[addr0], this->_value.get()[addr1]); }
 			inline void decrementMemoryCell(Address address) noexcept               { --this->_value.get()[address]; }
 			inline void incrementMemoryCell(Address address) noexcept               { ++this->_value.get()[address]; }
-
 			inline void copyMemoryCell(Address from, Address to) noexcept {
 				auto ptr = this->_value.get();
 				ptr[to] = ptr[from];
@@ -201,6 +201,79 @@ namespace syn {
 					ptr[i] = value;
 				}
 			}
+		private:
+			bool extractAddress(UDFContext* context, UDFValue& storage) noexcept {
+				if (!UDFNextArgument(context, MayaType::INTEGER_BIT, &storage)) {
+					// TODO: put error message here
+					return false;
+				}
+				return true;
+			}
+			bool defaultSingleOperationBody(Environment* env, UDFContext* context, UDFValue* ret, std::function<bool(Environment*, UDFContext*, UDFValue*, Address)> body) noexcept {
+				UDFValue address;
+				if (!extractAddress(context, address)) {
+					setBoolean(env, ret, false);
+					return false;
+				}
+				auto value = static_cast<Address>(getInteger(address));
+				if (!legalAddress(value)) {
+					// TODO: insert error message here about illegal address
+					setBoolean(env, ret, false);
+					return false;
+				}
+				return body(env, context, ret, value);
+			}
+			bool defaultTwoOperationBody(Environment* env, UDFContext* context, UDFValue* ret, std::function<bool(Environment*, UDFContext*, UDFValue*, Address, Address)> body) noexcept {
+				UDFValue address, address2;
+				if (!extractAddress(context, address)) {
+					setBoolean(env, ret, false);
+					return false;
+				}
+				if (!extractAddress(context, address2)) {
+					setBoolean(env, ret, false);
+					return false;
+				}
+				auto addr0 = static_cast<Address>(getInteger(address));
+				auto addr1 = static_cast<Address>(getInteger(address2));
+				if (!legalAddress(addr0) || !legalAddress(addr1)) {
+					setBoolean(env, ret, false);
+					return false;
+				}
+				return body(env, context, ret, addr0, addr1);
+			}
+		public:
+			bool load(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+				return defaultSingleOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto address) noexcept {
+							setInteger(env, ret, getMemoryCellValue(address));
+							return true;
+						});
+			}
+			bool increment(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+				return defaultSingleOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto address) noexcept {
+							setInteger(env, ret, getMemoryCellValue(address));
+							incrementMemoryCell(address);
+							setBoolean(env, ret, true);
+							return true;
+						});
+			}
+
+			bool decrement(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+				return defaultSingleOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto address) noexcept {
+							setInteger(env, ret, getMemoryCellValue(address));
+							decrementMemoryCell(address);
+							setBoolean(env, ret, true);
+							return true;
+						});
+			}
+
+			bool swap(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+				return defaultTwoOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto addr0, auto addr1) noexcept {
+							swapMemoryCells(addr0, addr1);
+							setBoolean(env, ret, true);
+							return true;
+						});
+			}
+
 		private:
 			Address _capacity;
 	};
