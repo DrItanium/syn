@@ -239,7 +239,7 @@ namespace WrappedNewCallBuilder {
                 errorMessage(env, "NEW", 2, funcErrorPrefix, " no arguments should be provided for function new!");
             }
         } catch (const syn::Problem& p) {
-            CVSetBoolean(ret, false);
+			setBoolean(env, ret, false);
             std::stringstream s;
             s << "an exception was thrown: " << p.what();
             auto str = s.str();
@@ -317,7 +317,7 @@ const std::string& getFunctionPrefixNew() noexcept {
  */
 template<typename T>
 bool badCallArgument(Environment* env, UDFValue* ret, int code, const std::string& msg) noexcept {
-	setClipsBoolean(env, ret, false);
+	setBoolean(env, ret, false);
     return syn::errorMessage(env, "CALL", code, getFunctionErrorPrefixCall<T>(), msg);
 }
 
@@ -366,7 +366,7 @@ class ExternalAddressWrapper {
                 auto s = new CorrespondingType(ptr);
 				ret->externalAddressValue = CreateExternalAddress(env, s, Self::getAssociatedEnvironmentId(env));
             } else {
-				setClipsBoolean(env, ret, false);
+				setBoolean(env, ret, false);
             }
         }
 		static void registerWithEnvironment(Environment* env, const char* title, CallFunction _call, NewFunction _new = newFunction, DeleteFunction _delete = deleteWrapper, PrintFunction _print = printAddress) {

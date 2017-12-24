@@ -68,12 +68,12 @@ namespace syn {
 	template<typename Word>
 	class ManagedMemoryBlock : public ExternalAddressWrapper<Block<Word>> {
 		public:
-			using Address = CLIPSInteger;
+			using Address = int64_t;
 			using WordBlock = Block<Word>;
 			using Parent = ExternalAddressWrapper<WordBlock>;
 			using Self = ManagedMemoryBlock;
 			using Self_Ptr = Self*;
-			static ManagedMemoryBlock* make(CLIPSInteger capacity) noexcept {
+			static ManagedMemoryBlock* make(int64_t capacity) noexcept {
 				return new ManagedMemoryBlock(capacity);
 			}
 			using ManagedMemoryBlock_Ptr = ManagedMemoryBlock*;
@@ -225,7 +225,7 @@ namespace syn {
 #endif // end ENABLE_EXTENDED_MEMORY_BLOCKS
 
 	void installMemoryBlockTypes(void* theEnv) {
-		StandardManagedMemoryBlock::registerWithEnvironment(theEnv);
+		//StandardManagedMemoryBlock::registerWithEnvironment(theEnv);
 #if ENABLE_EXTENDED_MEMORY_BLOCKS
         ManagedMemoryBlock_uint8::registerWithEnvironment(theEnv);
 		ManagedMemoryBlock_uint16::registerWithEnvironment(theEnv);
