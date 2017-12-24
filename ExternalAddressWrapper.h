@@ -66,7 +66,7 @@ struct ExternalAddressRegistrar {
          * provided environment.
          * @return the index of the target type in the given environment
          */
-		static unsigned int getExternalAddressId(Environment* env) {
+		static unsigned short getExternalAddressId(Environment* env) {
 			auto found = _cache.find(env);
             if (found == _cache.end()) {
                 throw syn::Problem("unregistered external address type!");
@@ -90,7 +90,7 @@ struct ExternalAddressRegistrar {
          * address type.
          */
 		static bool isOfType(Environment* env, UDFValue* ptr) {
-			return static_cast<struct externalAddressHashNode*>(ptr->value)->type == getExternalAddressId(env);
+			return ptr->externalAddressValue->type == getExternalAddressId(env);
 		}
 	private:
         /**
@@ -99,15 +99,15 @@ struct ExternalAddressRegistrar {
          * @param env the environment to register with
          * @param value the index to keep track of
          */
-		static void registerExternalAddressId(Environment* env, unsigned int value) noexcept {
+		static void registerExternalAddressId(Environment* env, unsigned short value) noexcept {
 			_cache.emplace(env, value);
 		}
-		static std::map<void*, unsigned int> _cache;
+		static std::map<void*, unsigned short> _cache;
 };
 
 
 template<typename T>
-std::map<void*, unsigned int> ExternalAddressRegistrar<T>::_cache;
+std::map<void*, unsigned short> ExternalAddressRegistrar<T>::_cache;
 
 
 /**
@@ -163,6 +163,7 @@ void CLIPS_basePrintAddress(Environment* env, const char* logicalName, void* the
 
 template<typename T>
 class ExternalAddressWrapper;
+
 template<typename T>
 struct ExternalAddressWrapperType {
     ExternalAddressWrapperType() = delete;
@@ -198,16 +199,19 @@ using PrintFunction = void (*)(Environment*, const char*, void*);
 using DeleteFunction = bool(*)(Environment*, void*);
 /**
  * When the call function is invoked within CLIPS, a function with this
- * signature is invoked by CLIPS if registered.
+ * signature is invoked by CLIPS if registered. The first argument is the
+ * context, the second is the external address itself, the third value is the
+ * return result from the execution.
  */
-using CallFunction = bool(*)(UDFContext *, UDFValue*);
+using CallFunction = bool(*)(UDFContext*, UDFValue*, UDFValue*);
+
 /**
  * When the new function is invoked within CLIPS, the function corresponding to
  * the given type with this signature is invoked. It is responsible for setting
  * up the external address type (if necessary) and such. Think of it as a
  * constructor as the memory has already been allocated.
  */
-using NewFunction = void(*)(UDFContext*, UDFValue*, UDFValue*);
+using NewFunction = void(*)(UDFContext *, UDFValue*);
 
 /**
  * Makes building new functions much easier!
@@ -329,34 +333,14 @@ class ExternalAddressWrapper {
 		using InternalType = T;
 		using BaseClass = ExternalAddressWrapper<T>;
         using Self = BaseClass;
-		static void setString(UDFValue* val, const std::string& str) noexcept {
-			CVSetString(val, str.c_str());
-		}
 		static const std::string& getType() noexcept {
             return TypeToName::getSymbolicName<InternalType>();
         }
-        static void setType(UDFValue* ret) noexcept {
-            CVSetString(ret, getType().c_str());
+        static void setType(Environment* env, UDFValue* ret) noexcept {
+			setString(env, ret, getType());
         }
-        static bool checkArgumentCount(Environment* env, UDFValue* ret, const std::string& operation, int inputArgCount) {
-            auto aCount = baseArgumentIndex + inputArgCount;
-            if (!syn::hasCorrectArgCount(env, aCount)) {
-                return callErrorMessageCode3(env, ret, operation, " too many arguments provided!");
-            }
-            return true;
-        }
-		static int getCorrectArgCount(Environment* env) noexcept {
-			return syn::getArgCount(env) - baseArgumentIndex;
-		}
-		template<typename I = int>
-		static bool checkArgumentCount(Environment* env, UDFValue* ret, const std::string& operation, syn::ArgCountChecker<I> fn) {
-			if (!syn::hasCorrectArgCount<I>(env, fn, [](auto count) { return count - baseArgumentIndex; })) {
-				return callErrorMessageCode3(env, ret, operation, " too many or too few arguments provided!");
-			}
-			return true;
-		}
 
-		static unsigned int getAssociatedEnvironmentId(Environment* env) {
+		static int getAssociatedEnvironmentId(Environment* env) {
             return ExternalAddressRegistrar<InternalType>::getExternalAddressId(env);
         }
 		static void registerWithEnvironment(Environment* env, externalAddressType* description) noexcept {
@@ -372,14 +356,17 @@ class ExternalAddressWrapper {
 			}
 			return true;
 		}
-        static void newFunction(Environment* env, UDFValue* ret) {
+        static void newFunction(UDFContext* context, UDFValue* ret) {
+			newFunctionWithEnvironment(context->environment, context, ret);
+		}
+		static void newFunctionWithEnvironment(Environment* env, UDFContext* context, UDFValue* ret) {
             InternalType* ptr = WrappedNewCallBuilder::invokeNewFunction<InternalType>(env, ret, getFunctionErrorPrefixNew<InternalType>(), getFunctionPrefixNew<InternalType>());
             if (ptr) {
                 using CorrespondingType = typename ExternalAddressWrapperType<T>::TheType;
                 auto s = new CorrespondingType(ptr);
-                CVSetExternalAddress(ret, s, Self::getAssociatedEnvironmentId(env));
+				ret->externalAddressValue = CreateExternalAddress(env, s, Self::getAssociatedEnvironmentId(env));
             } else {
-                CVSetBoolean(ret, false);
+				setClipsBoolean(env, ret, false);
             }
         }
 		static void registerWithEnvironment(Environment* env, const char* title, CallFunction _call, NewFunction _new = newFunction, DeleteFunction _delete = deleteWrapper, PrintFunction _print = printAddress) {
@@ -396,82 +383,7 @@ class ExternalAddressWrapper {
 		static bool isOfType(Environment* env, UDFValue* ptr) noexcept {
 			return ExternalAddressRegistrar<InternalType>::isOfType(env, ptr);
 		}
-        static inline bool badCallArgument(Environment* env, UDFValue* ret, int code, const std::string& msg) noexcept {
-            return syn::badCallArgument<T>(env, ret, code, msg);
-        }
 
-
-        static bool callErrorMessage(Environment* env, UDFValue* ret, int code, const std::string& subOp, const std::string& rest) {
-            std::stringstream stm;
-            stm << " " << subOp << ": " << rest << std::endl;
-            auto msg = stm.str();
-            return badCallArgument(env, ret, code, msg);
-        }
-
-        static inline bool callErrorMessageCode3(Environment* env, UDFValue* ret, const std::string& subOp, const std::string& rest) noexcept {
-            return callErrorMessage(env, ret, 3, subOp, rest);
-        }
-        static inline bool callErrorMessageCode3(Environment* env, UDFValue* ret, const std::string& subOp, const char* rest) noexcept {
-            return callErrorMessageCode3(env, ret, subOp, std::string(rest));
-        }
-        template<typename E>
-        static inline bool callErrorMessageCode3(Environment* env, UDFValue* ret, const std::string& subOp, const E& problem) noexcept {
-            return callErrorMessageCode3(env, ret, subOp, problem.what());
-        }
-
-        static bool tryGetArgument(Environment* env, UDFValue* ret, int pos, MayaType type) noexcept {
-            return checkThenGetArgument(env, getFunctionPrefixCall<T>(), pos, type, ret);
-        }
-        static constexpr int baseArgumentIndex = 2;
-        template<int index>
-        static constexpr int getArgumentIndex() noexcept {
-            static_assert(index >= 0, "No negative argument index");
-            return baseArgumentIndex + index;
-        }
-
-        static bool tryExtractArgument(Environment* env, UDFValue* ret, UDFValue* storage, MayaType type, int pos, int errorCode, const std::string& msg) noexcept {
-            if (!tryGetArgument(env, storage, pos, type)) {
-                return badCallArgument(env, ret, errorCode, msg);
-            }
-            return true;
-        }
-        template<int index>
-        static inline bool tryExtractArgument(Environment* env, UDFValue* ret, UDFValue* storage, MayaType type, int errorCode, const std::string& errorMsg) noexcept {
-            return tryExtractArgument(env, ret, storage, type, getArgumentIndex<index>(), errorCode, errorMsg);
-        }
-
-        static bool tryExtractFunctionName(Environment* env, UDFValue* ret, UDFValue* storage) noexcept {
-            return tryExtractArgument<0>(env, ret, storage, MayaType::Symbol, 2, "expected a function name to call!");
-        }
-
-        static inline bool tryExtractArgument1(Environment* env, UDFValue* ret, UDFValue* storage, MayaType type, const std::string& errorMsg) noexcept {
-            return tryExtractArgument<1>(env, ret, storage, type, 3, errorMsg);
-        }
-
-        static inline bool tryExtractArgument2(Environment* env, UDFValue* ret, UDFValue* storage, MayaType type, const std::string& errorMsg) noexcept {
-            return tryExtractArgument<2>(env, ret, storage, type, 3, errorMsg);
-        }
-
-        static inline bool tryExtractArgument3(Environment* env, UDFValue* ret, UDFValue* storage, MayaType type, const std::string& errorMsg) noexcept {
-            return tryExtractArgument<3>(env, ret, storage, type, 3, errorMsg);
-        }
-
-        static inline bool tryExtractArgument4(Environment* env, UDFValue* ret, UDFValue* storage, MayaType type, const std::string& errorMsg) noexcept {
-            return tryExtractArgument<4>(env, ret, storage, type, 3, errorMsg);
-        }
-        template<typename Thing, typename Against>
-        static bool isLegalOperation(Environment* env, UDFValue* ret, const std::string& op, Thing thing, Against against) {
-            if (thing == against) {
-                return callErrorMessageCode3(env, ret, op, " <- unknown operation requested!");
-            }
-            return true;
-        }
-        static bool isExternalAddress(Environment* env, UDFValue* ret, UDFValue* value) noexcept {
-            if (!syn::isExternalAddress(value)) {
-                return badCallArgument(env, ret, 1, "Function call expected an external address as the first argument!");
-            }
-            return true;
-        }
 	public:
 		ExternalAddressWrapper(std::unique_ptr<T>&& value) : _value(std::move(value)) { }
         ExternalAddressWrapper(T* ptr) : _value(std::move(std::unique_ptr<T>(ptr))) { }
