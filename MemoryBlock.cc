@@ -57,7 +57,7 @@ namespace syn {
     //    return tryGetArgumentAsSymbol(env, funcStr, 2, storage);
     //}
     void handleProblem(Environment* env, UDFValue* ret, const syn::Problem& p, const std::string funcErrorPrefix) noexcept {
-        CVSetBoolean(ret, false);
+		setClipsBoolean(env, ret, false);
 
         std::stringstream s;
         s << "an exception was thrown: " << p.what();
@@ -77,23 +77,17 @@ namespace syn {
 				return new ManagedMemoryBlock(capacity);
 			}
 			using ManagedMemoryBlock_Ptr = ManagedMemoryBlock*;
-			static void newFunction(Environment* env, DataObject* ret) {
+			static void newFunction(UDFContext* context, UDFValue* ret) {
+				auto* env = context->environment;
 				try {
-                    // TODO: fix this checkArgumentCount to not reference
-                    // the call version of this function
-					if (syn::getArgCount(env) == 2) {
-						UDFValue capacity;
-                        if (!Arg2IsInteger(env, &capacity, getFunctionPrefixNew<WordBlock>())) {
-							CVSetBoolean(ret, false);
-							errorMessage(env, "NEW", 1, getFunctionErrorPrefixNew<WordBlock>(), " expected an integer for capacity!");
-						} else {
-                            auto size = extractCLIPSInteger(env, capacity);
-							auto idIndex = Self::getAssociatedEnvironmentId(env);
-                            CVSetExternalAddress(ret, Self::make(size), idIndex);
-						}
-					} else {
-						Parent::callErrorMessageCode3(env, ret, getFunctionPrefixNew<WordBlock>(), " either too many or too few arguments provided!");
+					UDFValue capacity;
+					if (!UDFNextArgument(context, MayaType::INTEGER_BIT, &capacity)) {
+						setBoolean(env, ret, false);
+						errorMessage(env, "NEW", 1, getFunctionErrorPrefixNew<WordBlock>(), " expected an integer for capacity!");
 					}
+					auto cap = getInteger(capacity);
+					auto idIndex = Self::getAssociatedEnvironmentId(env);
+					setExternalAddress(env, ret, Self::make(cap), idIndex);
 				} catch(const syn::Problem& p) {
                     handleProblem(env, ret, p, getFunctionErrorPrefixNew<WordBlock>());
 				}

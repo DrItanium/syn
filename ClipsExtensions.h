@@ -208,14 +208,17 @@ bool hasCorrectArgCount(void* env, ArgCountChecker<T> compare, ArgCountModifier<
 inline bool isExternalAddress(UDFValue* value) noexcept { return value->header->type == EXTERNAL_ADDRESS_TYPE; }
 inline bool isExternalAddress(UDFValue& value) noexcept { return value.header->type == EXTERNAL_ADDRESS_TYPE; }
 
-inline const char* extractLexeme(UDFValue* value) noexcept { return value->lexemeValue->contents; }
-inline const char* extractLexeme(UDFValue& value) noexcept { return value.lexemeValue->contents; }
-inline int64_t extractInteger(UDFValue* value) noexcept { return value->integerValue->contents; }
-inline int64_t extractInteger(UDFValue& value) noexcept { return value.integerValue->contents; }
-inline double extractFloat(UDFValue* value) noexcept { return value->floatValue->contents; }
-inline double extractFloat(UDFValue& value) noexcept { return value.floatValue->contents; }
-inline bool extractBoolean(Environment* env, UDFValue* value) noexcept { return value->lexemeValue != FalseSymbol(env); }
-inline bool extractBoolean(Environment* env, UDFValue& value) noexcept { return value.lexemeValue != FalseSymbol(env); }
+inline const char* getLexeme(UDFValue* value) noexcept { return value->lexemeValue->contents; }
+inline const char* getLexeme(UDFValue& value) noexcept { return value.lexemeValue->contents; }
+inline int64_t getInteger(UDFValue* value) noexcept { return value->integerValue->contents; }
+inline int64_t getInteger(UDFValue& value) noexcept { return value.integerValue->contents; }
+inline double getFloat(UDFValue* value) noexcept { return value->floatValue->contents; }
+inline double getFloat(UDFValue& value) noexcept { return value.floatValue->contents; }
+inline bool getBoolean(Environment* env, UDFValue* value) noexcept { return value->lexemeValue != FalseSymbol(env); }
+inline bool getBoolean(Environment* env, UDFValue& value) noexcept { return value.lexemeValue != FalseSymbol(env); }
+inline void* getExternalAddressID(UDFValue* value) noexcept { return value->externalAddressValue->contents; }
+inline void* getExternalAddressID(UDFValue& value) noexcept { return value.externalAddressValue->contents; }
+
 
 inline void setInteger(Environment* env, UDFValue* ret, int64_t value) noexcept { ret->integerValue = CreateInteger(env, value); }
 inline void setFloat(Environment* env, UDFValue* ret, double value) noexcept { ret->floatValue = CreateFloat(env, value); }
@@ -225,6 +228,7 @@ inline void setString(Environment* env, UDFValue* ret, const char* value) noexce
 inline void setString(Environment* env, UDFValue* ret, const std::string& value) noexcept { setString(env, ret, value.c_str()); }
 inline void setInstanceName(Environment* env, UDFValue* ret, const char* value) noexcept { ret->lexemeValue = CreateInstanceName(env, value); }
 inline void setInstanceName(Environment* env, UDFValue* ret, const std::string& value) noexcept { setInstanceName(env, ret, value.c_str()); }
+inline void setExternalAddress(Environment* env, UDFValue* ret, void* value, unsigned short index) noexcept { ret->externalAddressValue = CreateExternalAddress(env, value, index); }
 
 //bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
 //bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;
@@ -239,7 +243,7 @@ inline void setInstanceName(Environment* env, UDFValue* ret, const std::string& 
  * @param value the boolean value itself (defaults to true)
  * @return the input argument 'value'
  */
-inline bool setClipsBoolean(Environment* theEnv, CLIPSValue* ret, bool value = true) noexcept {
+inline bool setBoolean(Environment* theEnv, CLIPSValue* ret, bool value = true) noexcept {
 	ret->lexemeValue = value ? TrueSymbol(theEnv) : FalseSymbol(theEnv);
     return value;
 }
@@ -252,7 +256,7 @@ inline bool setClipsBoolean(Environment* theEnv, CLIPSValue* ret, bool value = t
  * @param value the boolean value itself (defaults to true)
  * @return the input argument 'value'
  */
-inline bool setClipsBoolean(Environment* theEnv, UDFValue* ret, bool value = true) noexcept {
+inline bool setBoolean(Environment* theEnv, UDFValue* ret, bool value = true) noexcept {
 	ret->lexemeValue = value ? TrueSymbol(theEnv) : FalseSymbol(theEnv);
     return value;
 }

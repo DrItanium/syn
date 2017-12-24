@@ -52,7 +52,7 @@ void
 BinaryNot(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue val;
 	if (!UDFFirstArgument(context, INTEGER_TYPE, &val)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	}
 	ret->integerValue = CreateInteger(env, ~(CVCoerceToInteger(&val)));
@@ -62,10 +62,10 @@ void
 BinaryOr(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue a, b;
 	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} 
 
@@ -76,10 +76,10 @@ void
 BinaryAnd(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue a, b;
 	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} 
 	ret->integerValue = CreateInteger(env, CVCoerceToInteger(&a) & CVCoerceToInteger(&b));
@@ -89,10 +89,10 @@ void
 BinaryXor(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue a, b;
 	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} 
 	ret->integerValue = CreateInteger(env, CVCoerceToInteger(&a) ^ CVCoerceToInteger(&b));
@@ -102,10 +102,10 @@ void
 BinaryNor(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue a, b;
 	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} 
 
@@ -116,10 +116,10 @@ void
 BinaryNand(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue a, b;
 	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} 
 
@@ -130,10 +130,10 @@ void
 ShiftLeft(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue value, by;
 	if (!UDFFirstArgument(context, INTEGER_TYPE, &value)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} else if (!UDFNextArgument(context, INTEGER_TYPE, &by)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} 
 
@@ -144,10 +144,10 @@ void
 ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue value, by;
 	if (!UDFFirstArgument(context, INTEGER_TYPE, &value)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} else if (!UDFNextArgument(context, INTEGER_TYPE, &by)) {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 		return;
 	} 
 
@@ -155,7 +155,7 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 }
 	void CLIPS_errorMessageGeneric(Environment* env, UDFContext* context, UDFValue* ret, const char* msg) noexcept {
 		UDFInvalidArgumentMessage(context, msg);
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 	}
 	void CLIPS_errorMessageGeneric(Environment* env, UDFContext* context, UDFValue* ret, const std::string& msg) noexcept {
 		CLIPS_errorMessageGeneric(env, context, ret, msg.c_str());
@@ -166,7 +166,7 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 	void CLIPS_translateBitmask(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 		UDFValue value;
 		if (!UDFFirstArgument(context, LEXEME_BITS, &value)) {
-			setClipsBoolean(env, ret, false);
+			setBoolean(env, ret, false);
 		} else {
 			std::string str(value.lexemeValue->contents);
 			if (boost::starts_with(str, "0m")) {
@@ -194,7 +194,7 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 	void CLIPS_expandBit(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 		UDFValue number;
 		if (!UDFFirstArgument(context, NUMBER_BITS, &number)) {
-			setClipsBoolean(env, ret, false);
+			setBoolean(env, ret, false);
 			return;
 		}
 		auto value = CVCoerceToInteger(&number);
@@ -214,11 +214,11 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 	void CLIPS_decodeBits(Environment* env, UDFContext* context, UDFValue* ret) {
 		UDFValue value, mask, shift;
 		if (!UDFFirstArgument(context, NUMBER_BITS, &value)) {
-			setClipsBoolean(env, ret, false);
+			setBoolean(env, ret, false);
 		} else if (!UDFNextArgument(context, NUMBER_BITS, &mask)) {
-			setClipsBoolean(env, ret, false);
+			setBoolean(env, ret, false);
 		} else if (!UDFNextArgument(context, NUMBER_BITS, &shift)) {
-			setClipsBoolean(env, ret, false);
+			setBoolean(env, ret, false);
 		} else {
 			ret->integerValue = CreateInteger(env,  decodeBits<int64_t, int64_t>(CVCoerceToInteger(&value), CVCoerceToInteger(&mask), CVCoerceToInteger(&shift)));
 		}
@@ -226,13 +226,13 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 	void CLIPS_encodeBits(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 		UDFValue input, value, mask, shift;
 		if (!UDFFirstArgument(context, NUMBER_BITS, &input)) {
-			setClipsBoolean(env, ret, false);
+			setBoolean(env, ret, false);
 		} else if (!UDFNextArgument(context, NUMBER_BITS, &value)) {
-			setClipsBoolean(env, ret, false);
+			setBoolean(env, ret, false);
 		} else if (!UDFNextArgument(context, NUMBER_BITS, &mask)) {
-			setClipsBoolean(env, ret, false);
+			setBoolean(env, ret, false);
 		} else if (!UDFNextArgument(context, NUMBER_BITS, &shift)) {
-			setClipsBoolean(env, ret, false);
+			setBoolean(env, ret, false);
 		} else {
 			auto i = CVCoerceToInteger(&input);
 			auto v = CVCoerceToInteger(&value);
@@ -248,7 +248,7 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 	void CLIPS_breakApartNumber(Environment* env, UDFContext* context, UDFValue* ret) {
 		UDFValue number;
 		if (!UDFFirstArgument(context, NUMBER_BITS, &number)) {
-			setClipsBoolean(env, ret, false);
+			setBoolean(env, ret, false);
             return;
 		}
         auto integer = CVCoerceToInteger(&number);
@@ -287,9 +287,9 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
     void CLIPS_circularShiftBase(Environment* env, UDFContext* context, UDFValue* ret) {
         UDFValue a, b;
         if (!UDFFirstArgument(context, INTEGER_BIT, &a)) {
-            setClipsBoolean(env, ret, false);
+            setBoolean(env, ret, false);
         } else if (!UDFNextArgument(context, INTEGER_BIT, &b)) {
-            setClipsBoolean(env, ret, false);
+            setBoolean(env, ret, false);
         } else {
             auto firstValue = CVCoerceToInteger(&a);
             auto secondValue = CVCoerceToInteger(&b);
@@ -308,7 +308,7 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
     void CLIPS_onesComplement(Environment* env, UDFContext* context, UDFValue* ret) {
         UDFValue val;
         if (!UDFFirstArgument(context, INTEGER_BIT, &val)) {
-            setClipsBoolean(env, ret, false);
+            setBoolean(env, ret, false);
         } else {
             ret->integerValue = CreateInteger(env,  onesComplement(CVCoerceToInteger(&val)));
         }
@@ -316,7 +316,7 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
     void CLIPS_twosComplement(Environment* env, UDFContext* context, UDFValue* ret) {
         UDFValue val;
         if (!UDFFirstArgument(context, INTEGER_BIT, &val)) {
-            setClipsBoolean(env, ret, false);
+            setBoolean(env, ret, false);
         } else {
             ret->integerValue = CreateInteger(env,  twosComplement(CVCoerceToInteger(&val)));
         }
@@ -324,11 +324,11 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
     void CLIPS_multiplyAdd(Environment* env, UDFContext* context, UDFValue* ret) {
         UDFValue a, b, c;
         if (!UDFFirstArgument(context, INTEGER_BIT, &a)) {
-            setClipsBoolean(env, ret, false);
+            setBoolean(env, ret, false);
         } else if (!UDFNextArgument(context, INTEGER_BIT, &b)) {
-            setClipsBoolean(env, ret, false);
+            setBoolean(env, ret, false);
         } else if (!UDFNextArgument(context, INTEGER_BIT, &c)) {
-            setClipsBoolean(env, ret, false);
+            setBoolean(env, ret, false);
         } else {
             ret->integerValue = CreateInteger(env,  multiplyAdd(CVCoerceToInteger(&a), CVCoerceToInteger(&b), CVCoerceToInteger(&c)));
         }
@@ -354,7 +354,7 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
     void upperLowerHalfManip(Environment* env, UDFContext* context, UDFValue* ret) {
         UDFValue num;
         if (!UDFFirstArgument(context, INTEGER_BIT, &num)) {
-            setClipsBoolean(env, ret, false);
+            setBoolean(env, ret, false);
         } else {
             int64_t n = num.integerValue->contents;
             if (upperHalf) {
