@@ -214,21 +214,33 @@ inline int64_t getInteger(UDFValue* value) noexcept { return value->integerValue
 inline int64_t getInteger(UDFValue& value) noexcept { return value.integerValue->contents; }
 inline double getFloat(UDFValue* value) noexcept { return value->floatValue->contents; }
 inline double getFloat(UDFValue& value) noexcept { return value.floatValue->contents; }
-inline bool getBoolean(Environment* env, UDFValue* value) noexcept { return value->lexemeValue != FalseSymbol(env); }
-inline bool getBoolean(Environment* env, UDFValue& value) noexcept { return value.lexemeValue != FalseSymbol(env); }
 inline void* getExternalAddress(UDFValue* value) noexcept { return value->externalAddressValue->contents; }
 inline void* getExternalAddress(UDFValue& value) noexcept { return value.externalAddressValue->contents; }
 
+inline bool getBoolean(Environment* env, UDFValue* value) noexcept { return value->lexemeValue != FalseSymbol(env); }
+inline bool getBoolean(Environment* env, UDFValue& value) noexcept { return value.lexemeValue != FalseSymbol(env); }
+inline bool getBoolean(UDFContext* context, UDFValue* value) noexcept { return getBoolean(context->environment, value); }
+inline bool getBoolean(UDFContext* context, UDFValue& value) noexcept { return getBoolean(context->environment, value); }
+
 
 inline void setInteger(Environment* env, UDFValue* ret, int64_t value) noexcept { ret->integerValue = CreateInteger(env, value); }
+inline void setInteger(UDFContext* context, UDFValue* ret, int64_t value) noexcept { setInteger(context->environment, ret, value); }
 inline void setFloat(Environment* env, UDFValue* ret, double value) noexcept { ret->floatValue = CreateFloat(env, value); }
+inline void setFloat(UDFContext* context, UDFValue* ret, double value) noexcept { setFloat(context->environment, ret, value); }
 inline void setSymbol(Environment* env, UDFValue* ret, const char* value) noexcept { ret->lexemeValue = CreateSymbol(env, value); }
 inline void setSymbol(Environment* env, UDFValue* ret, const std::string& value) noexcept { setSymbol(env, ret, value.c_str()); }
+inline void setSymbol(UDFContext* context, UDFValue* ret, const char* value) noexcept { setSymbol(context->environment, ret, value); }
+inline void setSymbol(UDFContext* context, UDFValue* ret, const std::string& value) noexcept { setSymbol(context->environment, ret, value.c_str()); }
 inline void setString(Environment* env, UDFValue* ret, const char* value) noexcept { ret->lexemeValue = CreateString(env, value); }
 inline void setString(Environment* env, UDFValue* ret, const std::string& value) noexcept { setString(env, ret, value.c_str()); }
+inline void setString(UDFContext* context, UDFValue* ret, const char* value) noexcept { setString(context->environment, ret, value); }
+inline void setString(UDFContext* context, UDFValue* ret, const std::string& value) noexcept { setString(context->environment, ret, value.c_str()); }
 inline void setInstanceName(Environment* env, UDFValue* ret, const char* value) noexcept { ret->lexemeValue = CreateInstanceName(env, value); }
 inline void setInstanceName(Environment* env, UDFValue* ret, const std::string& value) noexcept { setInstanceName(env, ret, value.c_str()); }
+inline void setInstanceName(UDFContext* context, UDFValue* ret, const char* value) noexcept { setInstanceName(context->environment, ret, value); }
+inline void setInstanceName(UDFContext* context, UDFValue* ret, const std::string& value) noexcept { setInstanceName(context->environment, ret, value.c_str()); }
 inline void setExternalAddress(Environment* env, UDFValue* ret, void* value, unsigned short index) noexcept { ret->externalAddressValue = CreateExternalAddress(env, value, index); }
+inline void setExternalAddress(UDFContext* context, UDFValue* ret, void* value, unsigned short index) noexcept { setExternalAddress(context->environment, ret, value, index); }
 
 //bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
 //bool tryGetArgumentAsInteger(void* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept;

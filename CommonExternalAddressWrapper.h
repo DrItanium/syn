@@ -76,13 +76,14 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 			if (result != lookup.end()) {
 				switch(result->second) {
 					case BuiltinStandardFunctions::Type:
-						CVSetSymbol(ret, Parent::getType().c_str());
+						setSymbol(context, ret, Parent::getType());
 						return true;
 					default:
-            			return Parent::callErrorMessageCode3(env, ret, str, "<- unknown but registered operation!!!!");
+						setBoolean(context, ret, false);
+						return false;
 				}
             } else {
-				return ptr->handleCallOperation(env, value, ret, str);
+				return ptr->handleCallOperation(context, value, ret, str);
             }
         }
         static inline bool callErrorCode2(Environment* env, CLIPSValue* ret, const std::string& msg) noexcept {
@@ -118,7 +119,7 @@ class CommonExternalAddressWrapper : public ExternalAddressWrapper<T> {
 		 * @return a boolean value signifying if an error occurred or not, this
 		 * is not the same as what is actually returned to CLIPS.
 		 */
-        virtual bool handleCallOperation(Environment* env, UDFValue* value, UDFValue* ret, const std::string& operation) = 0;
+        virtual bool handleCallOperation(UDFContext* context, UDFValue* value, UDFValue* ret, const std::string& operation) = 0;
 };
 } // end namespace syn
 #endif
