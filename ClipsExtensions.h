@@ -216,8 +216,8 @@ inline double getFloat(UDFValue* value) noexcept { return value->floatValue->con
 inline double getFloat(UDFValue& value) noexcept { return value.floatValue->contents; }
 inline bool getBoolean(Environment* env, UDFValue* value) noexcept { return value->lexemeValue != FalseSymbol(env); }
 inline bool getBoolean(Environment* env, UDFValue& value) noexcept { return value.lexemeValue != FalseSymbol(env); }
-inline void* getExternalAddressID(UDFValue* value) noexcept { return value->externalAddressValue->contents; }
-inline void* getExternalAddressID(UDFValue& value) noexcept { return value.externalAddressValue->contents; }
+inline void* getExternalAddress(UDFValue* value) noexcept { return value->externalAddressValue->contents; }
+inline void* getExternalAddress(UDFValue& value) noexcept { return value.externalAddressValue->contents; }
 
 
 inline void setInteger(Environment* env, UDFValue* ret, int64_t value) noexcept { ret->integerValue = CreateInteger(env, value); }

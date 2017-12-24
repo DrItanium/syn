@@ -57,7 +57,7 @@ namespace syn {
     //    return tryGetArgumentAsSymbol(env, funcStr, 2, storage);
     //}
     void handleProblem(Environment* env, UDFValue* ret, const syn::Problem& p, const std::string funcErrorPrefix) noexcept {
-		setClipsBoolean(env, ret, false);
+		setBoolean(env, ret, false);
 
         std::stringstream s;
         s << "an exception was thrown: " << p.what();
@@ -131,89 +131,24 @@ namespace syn {
 				}
 			}
 
-			static bool callFunction(Environment* env, DataObject* value, DataObject* ret) {
-                __RETURN_FALSE_ON_FALSE__(Parent::isExternalAddress(env, ret, value));
-                UDFValue operation;
-                __RETURN_FALSE_ON_FALSE__(Parent::tryExtractFunctionName(env, ret, &operation));
-                std::string str(extractLexeme(env, operation));
+			static bool callFunction(UDFContext* context, UDFValue* theValue, UDFValue* ret) {
+				UDFValue operation;
+				if (!UDFNextArgument(context, MayaType::SYMBOL_BIT, &operation)) {
+					//TODO: put error messages in here
+					return false;
+				}
+				std::string str(getLexeme(&operation));
                 // translate the op to an enumeration
+				auto* env = context->environment;
 				auto result = getParameters(str);
 				if (syn::isErrorState(std::get<0>(result))) {
                 	return Parent::callErrorMessageCode3(env, ret, str, " <- unknown operation requested!");
 				}
                 MemoryBlockOp op;
                 int aCount;
-                std::tie(op, aCount) = result;
-                __RETURN_FALSE_ON_FALSE__(Parent::checkArgumentCount(env, ret, str, aCount));
-                CVSetBoolean(ret, true);
-                auto ptr = static_cast<Self_Ptr>(DOPToExternalAddress(value));
-                auto errOutOfRange = [env, ret](const std::string& subOp, CLIPSInteger capacity, Address address) noexcept {
-                    std::stringstream ss;
-                    ss << "Provided address " << std::hex << address << " is either less than zero or greater than " << std::hex << capacity << std::endl;
-                    return Parent::callErrorMessageCode3(env, ret, subOp, ss.str());
-                };
-                auto rangeViolation = [errOutOfRange, ptr, &str](Address addr) { errOutOfRange(str, ptr->size(), addr); };
-                // now check and see if we are looking at a legal
-                // instruction count
-                auto checkAddr = [ptr, rangeViolation](auto addr) {
-                    auto result = ptr->legalAddress(addr);
-                    if (!result) {
-                        rangeViolation(addr);
-                    }
-                    return result;
-                };
-                auto commonSingleIntegerBody = [checkAddr, env, ret, ptr](auto fn) {
-					UDFValue arg0;
-                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument be be an address");
-                    if (check) {
-                        auto addr = extractCLIPSInteger(env, arg0);
-                        if (!checkAddr(addr)) {
-                            return false;
-                        }
-                        fn(ptr, addr);
-                    }
-                    return check;
-                };
-				auto populate = [env, ret, ptr]() {
-					UDFValue arg0;
-					auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an integer value to populate all of the memory cells with!");
-					if (check) {
-						ptr->setMemoryToSingleValue(extractCLIPSInteger(env, arg0));
-					}
-					return check;
-				};
-				auto swapOrMove = [env, ret, checkAddr, ptr](auto op) {
-					UDFValue arg0, arg1;
-                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
-                                 Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
-                    if (check) {
-                        auto addr0 = extractCLIPSInteger(env, arg0);
-                        auto addr1 = extractCLIPSInteger(env, arg1);
-                        if (!checkAddr(addr0) || !checkAddr(addr1)) {
-                            return false;
-                        }
-                        if (op == MemoryBlockOp::Swap) {
-                            ptr->swapMemoryCells(addr0, addr1);
-                        } else {
-                            ptr->copyMemoryCell(addr0, addr1);
-                        }
-                    }
-                    return check;
-				};
-				auto setAction = [env, ret, checkAddr, ptr]() {
-					UDFValue arg0, arg1;
-                    auto check = Parent::tryExtractArgument1(env, ret, &arg0, MayaType::Integer, "First argument must be an address") &&
-                                 Parent::tryExtractArgument2(env, ret, &arg1, MayaType::Integer, "Second argument must be an address");
-                    if (check) {
-                        auto addr0 = extractCLIPSInteger(env, arg0);
-                        if (!checkAddr(addr0)) {
-                            return false;
-                        }
-                        auto addr1 = extractCLIPSInteger(env, arg1);
-                        ptr->setMemoryCell(addr0, addr1);
-                    }
-                    return check;
-				};
+				setBoolean(env, ret, true);
+                auto ptr = static_cast<Self_Ptr>(getExternalAddress(theValue));
+				std::tie(op, aCount) = result;
 				switch(op) {
 					case MemoryBlockOp::Type:
 						Self::setType(ret);
@@ -224,7 +159,7 @@ namespace syn {
 					case MemoryBlockOp::Get:
 						return commonSingleIntegerBody([ret](auto ptr, auto addr) { CVSetInteger(ret, ptr->getMemoryCellValue(addr)); });
 					case MemoryBlockOp::Populate:
-						return populate();
+						//return populate();
 					case MemoryBlockOp::Increment:
 						return commonSingleIntegerBody([](auto ptr, auto addr) { ptr->incrementMemoryCell(addr); });
 					case MemoryBlockOp::Decrement:
@@ -233,7 +168,7 @@ namespace syn {
 					case MemoryBlockOp::Move:
 						return swapOrMove(op);
 					case MemoryBlockOp::Set:
-						return setAction();
+						//return setAction();
 					default:
                     	return Parent::callErrorMessageCode3(env, ret, str, "<- legal but unimplemented operation!");
 				}
@@ -270,8 +205,8 @@ namespace syn {
 			Address _capacity;
 	};
 
-	DefWrapperSymbolicName(Block<CLIPSInteger>, "memory-block");
-	using StandardManagedMemoryBlock = ManagedMemoryBlock<CLIPSInteger>;
+	DefWrapperSymbolicName(Block<int64_t>, "memory-block");
+	using StandardManagedMemoryBlock = ManagedMemoryBlock<int64_t>;
 #ifndef ENABLE_EXTENDED_MEMORY_BLOCKS
 #define ENABLE_EXTENDED_MEMORY_BLOCKS 0
 #endif // end ENABLE_EXTENDED_MEMORY_BLOCKS
