@@ -248,6 +248,7 @@ inline bool setBoolean(Environment* theEnv, CLIPSValue* ret, bool value = true) 
     return value;
 }
 
+
 /**
  * Wrapper method for setting a clips value to a boolean value. The boolean
  * value is also returned as a way to set the ret pointer and return a boolean
@@ -260,18 +261,8 @@ inline bool setBoolean(Environment* theEnv, UDFValue* ret, bool value = true) no
 	ret->lexemeValue = value ? TrueSymbol(theEnv) : FalseSymbol(theEnv);
     return value;
 }
-/**
- * Check and see if the given CLIPS argument is of a given type and extract it
- * if it is.
- * @param env the environment to perform the check on
- * @param function the user defined function where this check is taking place
- * @param position the one-indexed position of the argument
- * @param type the type that is desired
- * @param saveTo the data object to where the argument will be stored to on
- * successful find
- * @return true if the given argument is of the correct type.
- */
-//bool checkThenGetArgument(void* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept;
+
+inline bool setBoolean(UDFContext* context, UDFValue* ret, bool value = true) noexcept { return setBoolean(context->environment, ret, value); }
 
 /**
  * Output an error message through clips

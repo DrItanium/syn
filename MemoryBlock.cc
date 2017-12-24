@@ -160,16 +160,17 @@ namespace syn {
 					case MemoryBlockOp::Get:
 						return ptr->load(env, context, ret);
 					case MemoryBlockOp::Populate:
-						//return populate();
+						return ptr->populate(env, context, ret);
 					case MemoryBlockOp::Increment:
 						return ptr->increment(env, context, ret);
 					case MemoryBlockOp::Decrement:
 						return ptr->decrement(env, context, ret);
 					case MemoryBlockOp::Swap:
+						return ptr->swap(env, context, ret);
 					case MemoryBlockOp::Move:
-						return swapOrMove(op);
+						return ptr->move(env, context, ret);
 					case MemoryBlockOp::Set:
-						//return setAction();
+						return ptr->store(env, context, ret);
 					default:
                     	return Parent::callErrorMessageCode3(env, ret, str, "<- legal but unimplemented operation!");
 				}
@@ -202,7 +203,7 @@ namespace syn {
 				}
 			}
 		private:
-			bool extractAddress(UDFContext* context, UDFValue& storage) noexcept {
+			bool extractInteger(UDFContext* context, UDFValue& storage) noexcept {
 				if (!UDFNextArgument(context, MayaType::INTEGER_BIT, &storage)) {
 					// TODO: put error message here
 					return false;
@@ -211,7 +212,7 @@ namespace syn {
 			}
 			bool defaultSingleOperationBody(Environment* env, UDFContext* context, UDFValue* ret, std::function<bool(Environment*, UDFContext*, UDFValue*, Address)> body) noexcept {
 				UDFValue address;
-				if (!extractAddress(context, address)) {
+				if (!extractInteger(context, address)) {
 					setBoolean(env, ret, false);
 					return false;
 				}
@@ -225,11 +226,11 @@ namespace syn {
 			}
 			bool defaultTwoOperationBody(Environment* env, UDFContext* context, UDFValue* ret, std::function<bool(Environment*, UDFContext*, UDFValue*, Address, Address)> body) noexcept {
 				UDFValue address, address2;
-				if (!extractAddress(context, address)) {
+				if (!extractInteger(context, address)) {
 					setBoolean(env, ret, false);
 					return false;
 				}
-				if (!extractAddress(context, address2)) {
+				if (!extractInteger(context, address2)) {
 					setBoolean(env, ret, false);
 					return false;
 				}
@@ -242,6 +243,17 @@ namespace syn {
 				return body(env, context, ret, addr0, addr1);
 			}
 		public:
+			bool populate(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+				UDFValue value;
+				if (!extractInteger(context, value)) {
+					setBoolean(env, ret, false);
+					return false;
+				}
+				auto population = static_cast<Word>(getInteger(value));
+				setMemoryToSingleValue(population);
+				setBoolean(env, ret, true);
+				return true;
+			}
 			bool load(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 				return defaultSingleOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto address) noexcept {
 							setInteger(env, ret, getMemoryCellValue(address));
@@ -272,6 +284,39 @@ namespace syn {
 							setBoolean(env, ret, true);
 							return true;
 						});
+			}
+
+			bool move(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+				return defaultTwoOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto from, auto to) noexcept {
+							copyMemoryCell(from, to);
+							setBoolean(env, ret, true);
+							return true;
+						});
+			}
+			bool store(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+				UDFValue address, value;
+				if (!extractInteger(context, address)) {
+					setBoolean(env, ret, false);
+					return false;
+				}
+
+				if (!extractInteger(context, value)) {
+					setBoolean(env, ret, false);
+					return false;
+				}
+
+				auto addr = static_cast<Address>(getInteger(address));
+				if (!legalAddress(addr)) {
+					setBoolean(env, ret, false);
+					return false;
+				}
+
+				auto data = static_cast<Word>(getInteger(address));
+				setMemoryCell(addr, data);
+				setBoolean(env, ret, true);
+				return true;
+
+				
 			}
 
 		private:
