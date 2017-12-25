@@ -161,7 +161,8 @@ namespace syn {
         template<>
         MidiConnection* invokeNewFunction(Environment* env, UDFContext* context, UDFValue* ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
             try {
-                if (getArgCount(env) != 2) {
+				if (!UDFHasNextArgument(context)) {
+					setBoolean(context, ret, false);
                     errorMessage(env, "NEW", 2, funcErrorPrefix, " need the hardware id of the midi device!");
                     return nullptr;
                 }

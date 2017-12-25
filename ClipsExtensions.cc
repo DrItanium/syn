@@ -32,6 +32,7 @@
 #include "BaseArithmetic.h"
 #include "ClipsExtensions.h"
 #include "functional.h"
+#include "ExternalAddressWrapper.h"
 
 #include <cstdint>
 #include <climits>
@@ -201,13 +202,13 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 		ret->integerValue = CreateInteger(env,  int64_t(expandBit(value != 0)));
 	}
 
-	//void CLIPS_basePrintAddress(Environment* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
-	//	std::stringstream ss;
-	//	void* ptr = EnvValueToExternalAddress(env, theValue);
-	//	ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr : theValue) << ">";
-	//	auto str = ss.str();
-    //    clips::printRouter(env, logicalName, str);
-	//}
+	void CLIPS_basePrintAddress(Environment* env, const char* logicalName, void* theValue, const char* func, const char* majorType) {
+		std::stringstream ss;
+		auto* ptr = static_cast<CLIPSExternalAddress*>(theValue);
+		ss << "<" << majorType << "-" << func << "-" << std::hex << ((ptr) ? ptr->contents : theValue) << ">";
+		auto str = ss.str();
+        clips::printRouter(env, logicalName, str);
+	}
 	//void CLIPS_basePrintAddress_Pointer(Environment* env, const char* logicalName, void* theValue, const char* func) noexcept {
 	//	CLIPS_basePrintAddress(env, logicalName, theValue, func, "Pointer");
 	//}
@@ -280,9 +281,6 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 		SetEvaluationError(env, true);
 		return false;
 	}
-	bool errorMessage(Environment* env, UDFContext* context, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept {
-        return errorMessage(env, idClass, idIndex, msgPrefix, msg);
-    }
     template<bool shiftLeft>
     void CLIPS_circularShiftBase(Environment* env, UDFContext* context, UDFValue* ret) {
         UDFValue a, b;
@@ -416,14 +414,14 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
     int getArgCount(Environment* env) noexcept {
         return EnvRtnArgCount(env);
     }
+	*/
 
+    void buildFunctionString(std::ostream& stream, const std::string& action, const std::string& name) noexcept {
+        stream << "Function " << action << " (" << name << ")";
+    }
     void buildFunctionErrorString(std::ostream& stream, const std::string& action, const std::string& name) noexcept {
         stream << "Function ";
         buildFunctionString(stream, action, name);
     }
-    void buildFunctionString(std::ostream& stream, const std::string& action, const std::string& name) noexcept {
-        stream << "Function " << action << " (" << name << ")";
-    }
-	*/
 
 }

@@ -369,7 +369,7 @@ class ExternalAddressWrapper {
 				setBoolean(env, ret, false);
             }
         }
-		static void registerWithEnvironment(Environment* env, const char* title, CallFunction _call, NewFunction _new = newFunction, DeleteFunction _delete = deleteWrapper, PrintFunction _print = printAddress) {
+		static void registerWithEnvironment(Environment* env, const char* title, CallFunction _call, NewFunction _new = newFunction, DeleteFunction _delete = deleteWrapper, PrintFunction _print = nullptr) {
 			externalAddressType tmp = {
 				title,
 				_print,

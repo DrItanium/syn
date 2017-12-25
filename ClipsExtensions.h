@@ -304,18 +304,18 @@ inline bool setBoolean(UDFContext* context, UDFValue* ret, bool value = true) no
  * @param msg the message to display
  * @return bool signifying if successful error output occurred
  */
-bool errorMessage(void* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
+bool errorMessage(Environment* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
 
 /**
  * Output an error message through clips
- * @param env the environment where the error happened
+ * @param env the current function context to extract the environment from
  * @param idClass the error class
  * @param idIndex the error index
  * @param msgPrefix the prefix to add
  * @param msg the message to display
  * @return bool signifying if successful error output occurred
  */
-bool errorMessage(UDFContext* env, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept;
+inline bool errorMessage(UDFContext* context, const std::string& idClass, int idIndex, const std::string& msgPrefix, const std::string& msg) noexcept { return errorMessage(context->environment, idClass, idIndex, msgPrefix, msg); }
 
 /**
  * Common implementation for printing out an external address from within
@@ -327,7 +327,7 @@ bool errorMessage(UDFContext* env, const std::string& idClass, int idIndex, cons
  * @param func The type of the given externalAddressType
  * @param majorType Used for appending Wrapper, etc to the output name
  */
-void CLIPS_basePrintAddress(void* env, const char* logicalName, void* theValue, const char* func, const char* majorType);
+void CLIPS_basePrintAddress(Environment* env, const char* logicalName, void* theValue, const char* func, const char* majorType);
 
 
 }
