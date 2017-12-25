@@ -52,7 +52,7 @@ namespace syn {
 void 
 BinaryNot(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue val;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &val)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT, &val)) {
 		setBoolean(env, ret, false);
 		return;
 	}
@@ -62,10 +62,10 @@ BinaryNot(Environment* env, UDFContext* context, UDFValue* ret) {
 void
 BinaryOr(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue a, b;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT, &a)) {
 		setBoolean(env, ret, false);
 		return;
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &b)) {
 		setBoolean(env, ret, false);
 		return;
 	} 
@@ -76,10 +76,10 @@ BinaryOr(Environment* env, UDFContext* context, UDFValue* ret) {
 void
 BinaryAnd(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue a, b;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT, &a)) {
 		setBoolean(env, ret, false);
 		return;
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &b)) {
 		setBoolean(env, ret, false);
 		return;
 	} 
@@ -89,10 +89,10 @@ BinaryAnd(Environment* env, UDFContext* context, UDFValue* ret) {
 void
 BinaryXor(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue a, b;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT, &a)) {
 		setBoolean(env, ret, false);
 		return;
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &b)) {
 		setBoolean(env, ret, false);
 		return;
 	} 
@@ -102,10 +102,10 @@ BinaryXor(Environment* env, UDFContext* context, UDFValue* ret) {
 void
 BinaryNor(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue a, b;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT, &a)) {
 		setBoolean(env, ret, false);
 		return;
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &b)) {
 		setBoolean(env, ret, false);
 		return;
 	} 
@@ -116,10 +116,10 @@ BinaryNor(Environment* env, UDFContext* context, UDFValue* ret) {
 void
 BinaryNand(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue a, b;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &a)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT, &a)) {
 		setBoolean(env, ret, false);
 		return;
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &b)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &b)) {
 		setBoolean(env, ret, false);
 		return;
 	} 
@@ -130,10 +130,10 @@ BinaryNand(Environment* env, UDFContext* context, UDFValue* ret) {
 void
 ShiftLeft(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue value, by;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &value)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT, &value)) {
 		setBoolean(env, ret, false);
 		return;
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &by)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &by)) {
 		setBoolean(env, ret, false);
 		return;
 	} 
@@ -144,10 +144,10 @@ ShiftLeft(Environment* env, UDFContext* context, UDFValue* ret) {
 void
 ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue value, by;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &value)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT, &value)) {
 		setBoolean(env, ret, false);
 		return;
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &by)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &by)) {
 		setBoolean(env, ret, false);
 		return;
 	} 
@@ -366,6 +366,10 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
     void CLIPS_getUpperHalf(Environment* env, UDFContext* c, UDFValue* ret) { upperLowerHalfManip<true>(env, c, ret); }
     void CLIPS_getLowerHalf(Environment* env, UDFContext* c, UDFValue* ret) { upperLowerHalfManip<false>(env, c, ret); }
 
+	void CLIPS_translateBinary(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
+	void CLIPS_translateHex(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
+	void CLIPS_translateOctal(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
+
 	void installExtensions(Environment* theEnv) {
 
 		AddUDF(theEnv, "bitmask->int", "l", 1, 1, "sy", CLIPS_translateBitmask, "CLIPS_translateBitmask", nullptr);
@@ -381,40 +385,18 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
         AddUDF(theEnv, "get-endian", "sy",      0, 0, nullptr, CLIPS_getEndianness, "CLIPS_getEndianness",  nullptr);
         AddUDF(theEnv, "upper-half", "l",  1, 1, "l", CLIPS_getUpperHalf, "CLIPS_getUpperHalf",nullptr);
         AddUDF(theEnv, "lower-half", "l",  1, 1, "l", CLIPS_getLowerHalf, "CLIPS_getLowerHalf",nullptr);
-	AddUDF(theEnv, "binary-not", "l",  1, 1, "l",   BinaryNot, "BinaryNot",   nullptr);
-	AddUDF(theEnv, "binary-and", "l",  2, 2, "l;l", BinaryAnd, "BinaryAnd",   nullptr);
-	AddUDF(theEnv, "binary-or", "l",   2, 2, "l;l", BinaryOr, "BinaryOr",     nullptr);
-	AddUDF(theEnv, "binary-xor", "l",  2, 2, "l;l", BinaryXor, "BinaryXor",   nullptr);
-	AddUDF(theEnv, "binary-nand", "l", 2, 2, "l;l", BinaryNand, "BinaryNand", nullptr);
-	AddUDF(theEnv, "binary-nor", "l",  2, 2, "l;l", BinaryNor, "BinaryNor",   nullptr);
-	AddUDF(theEnv, "left-shift", "l",   2, 2, "l;l",ShiftLeft, "ShiftLeft",    nullptr);
-	AddUDF(theEnv, "right-shift", "l", 2, 2, "l;l", ShiftRight, "ShiftRight", nullptr);
+		AddUDF(theEnv, "binary-not", "l",  1, 1, "l",   BinaryNot, "BinaryNot",   nullptr);
+		AddUDF(theEnv, "binary-and", "l",  2, 2, "l;l", BinaryAnd, "BinaryAnd",   nullptr);
+		AddUDF(theEnv, "binary-or", "l",   2, 2, "l;l", BinaryOr, "BinaryOr",     nullptr);
+		AddUDF(theEnv, "binary-xor", "l",  2, 2, "l;l", BinaryXor, "BinaryXor",   nullptr);
+		AddUDF(theEnv, "binary-nand", "l", 2, 2, "l;l", BinaryNand, "BinaryNand", nullptr);
+		AddUDF(theEnv, "binary-nor", "l",  2, 2, "l;l", BinaryNor, "BinaryNor",   nullptr);
+		AddUDF(theEnv, "left-shift", "l",   2, 2, "l;l",ShiftLeft, "ShiftLeft",    nullptr);
+		AddUDF(theEnv, "right-shift", "l", 2, 2, "l;l", ShiftRight, "ShiftRight", nullptr);
+		AddUDF(theEnv, "binary->int", "l", 1, 1, "sy", CLIPS_translateBinary, "CLIPS_translateBinary", nullptr);
+		AddUDF(theEnv, "hex->int", "l", 1, 1, "sy", CLIPS_translateHex, "CLIPS_translateHex", nullptr);
+		AddUDF(theEnv, "oct->int", "l", 1, 1, "sy", CLIPS_translateOctal, "CLIPS_translateOctal", nullptr);
 	}
-
-	/*
-
-    bool checkThenGetArgument(Environment* env, const std::string& function, int position, MayaType type, DataObjectPtr saveTo) noexcept {
-        return EnvArgTypeCheck(env, function.c_str(), position, static_cast<int>(type), saveTo);
-    }
-
-    bool tryGetArgumentAsInteger(Environment* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
-        return checkThenGetArgument(env, function, position, MayaType::Integer, saveTo);
-    }
-
-    bool tryGetArgumentAsSymbol(Environment* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
-        return checkThenGetArgument(env, function, position, MayaType::Symbol, saveTo);
-    }
-    bool tryGetArgumentAsString(Environment* env, const std::string& function, int position, DataObjectPtr saveTo) noexcept {
-        return checkThenGetArgument(env, function, position, MayaType::String, saveTo);
-    }
-    bool hasCorrectArgCount(Environment* env, int compare) noexcept {
-        return compare == getArgCount(env);
-    }
-
-    int getArgCount(Environment* env) noexcept {
-        return EnvRtnArgCount(env);
-    }
-	*/
 
     void buildFunctionString(std::ostream& stream, const std::string& action, const std::string& name) noexcept {
         stream << "Function " << action << " (" << name << ")";
@@ -422,6 +404,43 @@ ShiftRight(Environment* env, UDFContext* context, UDFValue* ret) {
     void buildFunctionErrorString(std::ostream& stream, const std::string& action, const std::string& name) noexcept {
         stream << "Function ";
         buildFunctionString(stream, action, name);
-    }
+	}
+
+void CLIPS_translateNumberBase(Environment* env, UDFContext* context, UDFValue* ret, const std::string& prefix, int base, const std::string& badPrefix, bool zeroPositionOne = false) noexcept {
+	constexpr uint64_t maximumIntegerValue = 0xFFFFFFFFFFFFFFFF;
+	UDFValue value;
+	if (!UDFFirstArgument(context, LEXEME_BITS, &value)) {
+		setBoolean(context, ret, false);
+	} 
+	std::string str(getLexeme(value));
+	if (boost::starts_with(str, prefix)) {
+		if (zeroPositionOne) {
+			str.at(1) = '0';
+		}
+		auto tmp = strtoull(str.c_str(), nullptr, base);
+		if (tmp == ULLONG_MAX && errno == ERANGE) {
+			CLIPS_errorOverflowedNumber(env, context, ret);
+		} else {
+			if (tmp > maximumIntegerValue) {
+				CLIPS_errorNumberLargerThan64Bits(env, context, ret);
+			} else {
+				setInteger(env, ret, tmp);
+			}
+		}
+	} else {
+		CLIPS_errorMessageGeneric(env, context, ret, badPrefix);
+	}
+}
+void CLIPS_translateBinary(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+	CLIPS_translateNumberBase(env, context, ret, "0b", 2, "Binary must start with 0b", true);
+}
+
+void CLIPS_translateHex(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+	CLIPS_translateNumberBase(env, context, ret, "0x", 16, "Hex must start with 0x");
+}
+
+void CLIPS_translateOctal(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+	CLIPS_translateNumberBase(env, context, ret, "0q", 8, "Octal must start with 0q", true);
+}
 
 }

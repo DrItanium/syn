@@ -74,11 +74,11 @@ extern "C" void InstallBoostExtensions(Environment* theEnv) {
 #if BOOST_EXTENSIONS
 void ClampValue(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue v, lo, hi;
-	if (!UDFFirstArgument(context, INTEGER_TYPE,  &v)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT,  &v)) {
 		ret->lexemeValue = FalseSymbol(env);
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &lo)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &lo)) {
 		ret->lexemeValue = FalseSymbol(env);
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &hi)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &hi)) {
 		ret->lexemeValue = FalseSymbol(env);
 	} else {
 		ret->integerValue = CreateInteger(env, boost::algorithm::clamp(CVCoerceToInteger(&v), CVCoerceToInteger(&lo), CVCoerceToInteger(&hi)));
@@ -117,9 +117,9 @@ void IsRegularFile(Environment* env, UDFContext* context, UDFValue* ret) {
 
 void gcdFunction(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue first, second;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &first)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT, &first)) {
 		ret->lexemeValue = FalseSymbol(env);
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &second)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &second)) {
 		ret->lexemeValue = FalseSymbol(env);
 	} else {
 		ret->integerValue = CreateInteger(env, boost::math::gcd(CVCoerceToInteger(&first), CVCoerceToInteger(&second)));
@@ -127,9 +127,9 @@ void gcdFunction(Environment* env, UDFContext* context, UDFValue* ret) {
 }
 void lcmFunction(Environment* env, UDFContext* context, UDFValue* ret) {
 	UDFValue first, second;
-	if (!UDFFirstArgument(context, INTEGER_TYPE, &first)) {
+	if (!UDFFirstArgument(context, INTEGER_BIT, &first)) {
 		ret->lexemeValue = FalseSymbol(env);
-	} else if (!UDFNextArgument(context, INTEGER_TYPE, &second)) {
+	} else if (!UDFNextArgument(context, INTEGER_BIT, &second)) {
 		ret->lexemeValue = FalseSymbol(env);
 	} else {
 		ret->integerValue = CreateInteger(env, boost::math::lcm(CVCoerceToInteger(&first), CVCoerceToInteger(&second)));
