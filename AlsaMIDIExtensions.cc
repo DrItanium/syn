@@ -478,7 +478,6 @@ namespace syn {
 		}
 		auto name = alsa::rawmidi::getName(info);
 		auto subName = alsa::rawmidi::getSubdeviceName(info);
-		std::cout << "name: " << name << ", subName: " << subName << std::endl;
 		if (subName[0] == '\0') {
 			std::stringstream str;
 			str << (in ? "I" : " ");
