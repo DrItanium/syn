@@ -160,7 +160,7 @@
 
 (deffunction cortex::number-list->bytes
              (?number-list)
-             (map break-apart-number
+             (map$ break-apart-number
                   (expand$ ?number-list)))
 
 

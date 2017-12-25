@@ -100,35 +100,35 @@
                     (description "filter using a deffunction"))
           (testcase-assertion (parent filter-function:deffunction)
                               (expected 5 6 7 9)
-                              (actual-value (filter greater-than-four
+                              (actual-value (filter$ greater-than-four
                                                     1 2 3 4 5 6 7 9)))
           (testcase (id filter-function:native-function-checks)
                     (description "use a native function like lexemep instead of a deffunction"))
           (testcase-assertion (parent filter-function:native-function-checks)
                               (expected a b c d)
-                              (actual-value (filter lexemep
+                              (actual-value (filter$ lexemep
                                                     1 a 2 b 3 c 4 d)))
           (testcase-assertion (parent filter-function:native-function-checks)
                               (expected 1 2 3 4)
-                              (actual-value (filter numberp
+                              (actual-value (filter$ numberp
                                                     1 a 2 b 3 c 4 d)))
           (testcase (id map-function:defmethod:increment)
                     (description "map using a defmethod increment"))
           (testcase-assertion (parent map-function:defmethod:increment)
                               (expected 2 3 4 5)
-                              (actual-value (map increment
+                              (actual-value (map$ increment
                                                  1 2 3 4)))
           (testcase (id map-function:defmethod:decrement)
                     (description "map using a defmethod decrement"))
           (testcase-assertion (parent map-function:defmethod:decrement)
                               (expected 0 1 2 3)
-                              (actual-value (map decrement
+                              (actual-value (map$ decrement
                                                  1 2 3 4)))
           (testcase (id map-function:defmethod:int->hex)
                     (description "map using a defmethod int->hex"))
           (testcase-assertion (parent map-function:defmethod:int->hex)
                               (expected 0x1 0x2 0x3 0x4)
-                              (actual-value (map int->hex
+                              (actual-value (map$ int->hex
                                                  1 2 3 4)))
           (testcase (id map-function:native:numberp)
                     (description "check each number to see if it is a number"))
@@ -137,7 +137,7 @@
                                         TRUE
                                         TRUE
                                         TRUE)
-                              (actual-value (map numberp
+                              (actual-value (map$ numberp
                                                  1
                                                  2
                                                  3
@@ -149,7 +149,7 @@
                                         FALSE
                                         FALSE
                                         FALSE)
-                              (actual-value (map lexemep
+                              (actual-value (map$ lexemep
                                                  1
                                                  2
                                                  3
@@ -158,7 +158,7 @@
                     (description "see if there is a number in the given set"))
           (testcase-assertion (parent exists-function:native:numberp)
                               (expected TRUE)
-                              (actual-value (exists numberp
+                              (actual-value (exists$ numberp
                                                     1
                                                     2
                                                     3
@@ -167,7 +167,7 @@
                     (description "See if there is a lexeme in the given set"))
           (testcase-assertion (parent exists-function:native:lexemep)
                               (expected FALSE)
-                              (actual-value (exists lexemep
+                              (actual-value (exists$ lexemep
                                                     1
                                                     2
                                                     3
@@ -176,7 +176,7 @@
                     (description "see if there are no numbers in the input set"))
           (testcase-assertion (parent not-exists-function:native:numberp)
                               (expected FALSE)
-                              (actual-value (not-exists numberp
+                              (actual-value (not-exists$ numberp
                                                         1
                                                         2
                                                         3
@@ -185,7 +185,7 @@
                     (description "See if there is no lexeme in the input set"))
           (testcase-assertion (parent not-exists-function:native:lexemep)
                               (expected TRUE)
-                              (actual-value (not-exists lexemep
+                              (actual-value (not-exists$ lexemep
                                                         1
                                                         2
                                                         3

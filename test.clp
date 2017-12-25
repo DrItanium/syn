@@ -103,7 +103,6 @@
          (delayed-do-for-all-facts ((?ta testcase-assertion))
                                    (eq ?ta:parent
                                        ?id)
-                                   (retract ?ta)
                                    (if (not ?ta:outcome) then
                                      (bind ?failed
                                            TRUE)
@@ -111,7 +110,8 @@
                                            ?sentences
                                            tab tab "CHECK FAILED: " crlf
                                            tab tab tab "expected: " ?ta:expected crlf
-                                           tab tab tab "actual value: " ?ta:actual-value crlf)))
+                                           tab tab tab "actual value: " ?ta:actual-value crlf))
+                                   (retract ?ta))
          (bind ?sentences
                ?sentences
                tab "Result: "
