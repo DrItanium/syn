@@ -143,7 +143,9 @@ namespace syn {
 				auto* env = context->environment;
 				auto result = getParameters(str);
 				if (syn::isErrorState(std::get<0>(result))) {
-                	return Parent::callErrorMessageCode3(env, ret, str, " <- unknown operation requested!");
+					setBoolean(context, ret, false);
+					return false;
+                	//return Parent::callErrorMessageCode3(env, ret, str, " <- unknown operation requested!");
 				}
                 MemoryBlockOp op;
                 int aCount;
@@ -152,10 +154,10 @@ namespace syn {
 				std::tie(op, aCount) = result;
 				switch(op) {
 					case MemoryBlockOp::Type:
-						Self::setType(ret);
+						Self::setType(context, ret);
 						break;
 					case MemoryBlockOp::Size:
-						CVSetInteger(ret, ptr->size());
+						setInteger(context, ret, ptr->size());
 						break;
 					case MemoryBlockOp::Get:
 						return ptr->load(env, context, ret);
@@ -172,7 +174,10 @@ namespace syn {
 					case MemoryBlockOp::Set:
 						return ptr->store(env, context, ret);
 					default:
-                    	return Parent::callErrorMessageCode3(env, ret, str, "<- legal but unimplemented operation!");
+						setBoolean(context, ret, false);
+                    	//return Parent::callErrorMessageCode3(env, ret, str, "<- legal but unimplemented operation!");
+						//TODO: add error message
+						return false;
 				}
                 return true;
 			}
@@ -256,14 +261,13 @@ namespace syn {
 			}
 			bool load(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 				return defaultSingleOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto address) noexcept {
-							setInteger(env, ret, getMemoryCellValue(address));
+							setInteger(env, ret, this->getMemoryCellValue(address));
 							return true;
 						});
 			}
 			bool increment(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 				return defaultSingleOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto address) noexcept {
-							setInteger(env, ret, getMemoryCellValue(address));
-							incrementMemoryCell(address);
+							this->incrementMemoryCell(address);
 							setBoolean(env, ret, true);
 							return true;
 						});
@@ -271,8 +275,7 @@ namespace syn {
 
 			bool decrement(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 				return defaultSingleOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto address) noexcept {
-							setInteger(env, ret, getMemoryCellValue(address));
-							decrementMemoryCell(address);
+							this->decrementMemoryCell(address);
 							setBoolean(env, ret, true);
 							return true;
 						});
@@ -280,7 +283,7 @@ namespace syn {
 
 			bool swap(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 				return defaultTwoOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto addr0, auto addr1) noexcept {
-							swapMemoryCells(addr0, addr1);
+							this->swapMemoryCells(addr0, addr1);
 							setBoolean(env, ret, true);
 							return true;
 						});
@@ -288,7 +291,7 @@ namespace syn {
 
 			bool move(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 				return defaultTwoOperationBody(env, context, ret, [this](auto* env, auto* context, auto* ret, auto from, auto to) noexcept {
-							copyMemoryCell(from, to);
+							this->copyMemoryCell(from, to);
 							setBoolean(env, ret, true);
 							return true;
 						});
@@ -342,8 +345,8 @@ namespace syn {
 #undef DefMemoryBlock
 #endif // end ENABLE_EXTENDED_MEMORY_BLOCKS
 
-	void installMemoryBlockTypes(void* theEnv) {
-		//StandardManagedMemoryBlock::registerWithEnvironment(theEnv);
+	void installMemoryBlockTypes(Environment* theEnv) {
+		StandardManagedMemoryBlock::registerWithEnvironment(theEnv);
 #if ENABLE_EXTENDED_MEMORY_BLOCKS
         ManagedMemoryBlock_uint8::registerWithEnvironment(theEnv);
 		ManagedMemoryBlock_uint16::registerWithEnvironment(theEnv);

@@ -339,6 +339,9 @@ class ExternalAddressWrapper {
         static void setType(Environment* env, UDFValue* ret) noexcept {
 			setString(env, ret, getType());
         }
+		static inline void setType(UDFContext* context, UDFValue* ret) noexcept {
+			setType(context->environment, ret);
+		}
 
 		static int getAssociatedEnvironmentId(Environment* env) {
             return ExternalAddressRegistrar<InternalType>::getExternalAddressId(env);

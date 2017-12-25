@@ -31,11 +31,15 @@
 #ifndef MEMORY_BLOCK_H__
 #define MEMORY_BLOCK_H__
 
+extern "C" {
+#include "clips.h"
+}
+
 namespace syn {
 	/**
 	 * Install memory block external addresses into the target environment
 	 */
-	void installMemoryBlockTypes(void* env);
+	void installMemoryBlockTypes(Environment* env);
 }
 
 #endif // end MEMORY_BLOCK_H__
