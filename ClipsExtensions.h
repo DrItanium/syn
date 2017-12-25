@@ -43,28 +43,45 @@ namespace clips {
 inline void printRouter(Environment* theEnv, const std::string& logicalName, const std::string& msg) noexcept {
 	WriteString(theEnv, logicalName.c_str(), msg.c_str());
 }
-inline void printRouter(Environment* theEnv, const char* logicalName, const std::string& msg) noexcept {
-    WriteString(theEnv, logicalName, msg.c_str());
-}
-inline void printLine(Environment* theEnv, const char* logicalName) noexcept {
-	Writeln(theEnv, logicalName);
+inline void printRouter(UDFContext* context, const std::string& logicalName, const std::string& msg) noexcept {
+	printRouter(context->environment, logicalName, msg);
 }
 inline void printLine(Environment* theEnv, const std::string& logicalName) noexcept {
-	printLine(theEnv, logicalName.c_str());
+	Writeln(theEnv, logicalName.c_str());
+}
+inline void printLine(UDFContext* context, const std::string& logicalName) noexcept {
+	printLine(context->environment, logicalName);
 }
 inline void printRouter(Environment* theEnv, const std::string& logicalName, int64_t value) noexcept {
 	WriteInteger(theEnv, logicalName.c_str(), value); 
 }
 
+inline void printRouter(UDFContext* context, const std::string& logicalName, int64_t value) noexcept {
+	printRouter(context->environment, logicalName, value); 
+}
+
 inline void printRouter(Environment* theEnv, const std::string& logicalName, double value) noexcept {
 	WriteFloat(theEnv, logicalName.c_str(), value); 
+}
+inline void printRouter(UDFContext* context, const std::string& logicalName, double value) noexcept {
+	printRouter(context->environment, logicalName, value); 
 }
 inline void printRouter(Environment* theEnv, const std::string& logicalName, UDFValue* value) noexcept {
 	WriteUDFValue(theEnv, logicalName.c_str(), value);
 }
+
+inline void printRouter(UDFContext* context, const std::string& logicalName, UDFValue* value) noexcept {
+	printRouter(context->environment, logicalName, value);
+}
+
 inline void printRouter(Environment* theEnv, const std::string& logicalName, CLIPSValue* value) noexcept {
 	WriteCLIPSValue(theEnv, logicalName.c_str(), value);
 }
+
+inline void printRouter(UDFContext* context, const std::string& logicalName, CLIPSValue* value) noexcept {
+	printRouter(context->environment, logicalName, value);
+}
+
 } // end namespace clips
 
 namespace syn {
@@ -212,6 +229,8 @@ inline const char* getLexeme(UDFValue* value) noexcept { return value->lexemeVal
 inline const char* getLexeme(UDFValue& value) noexcept { return value.lexemeValue->contents; }
 inline int64_t getInteger(UDFValue* value) noexcept { return value->integerValue->contents; }
 inline int64_t getInteger(UDFValue& value) noexcept { return value.integerValue->contents; }
+inline int64_t getInteger(CLIPSValue& value) noexcept { return value.integerValue->contents; }
+inline int64_t getInteger(CLIPSValue* value) noexcept { return value->integerValue->contents; }
 inline double getFloat(UDFValue* value) noexcept { return value->floatValue->contents; }
 inline double getFloat(UDFValue& value) noexcept { return value.floatValue->contents; }
 inline void* getExternalAddress(UDFValue* value) noexcept { return value->externalAddressValue->contents; }

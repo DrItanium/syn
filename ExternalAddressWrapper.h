@@ -229,15 +229,15 @@ namespace WrappedNewCallBuilder {
      * @return a newly allocated thing of type T
      */
     template<typename T>
-    T* invokeNewFunction(Environment* env, UDFValue* ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
+    T* invokeNewFunction(Environment* env, UDFContext* context, UDFValue* ret, const std::string& funcErrorPrefix, const std::string& function) noexcept {
         using InternalType = T;
         static_assert(std::is_constructible<InternalType>::value, "Must be constructable with no args");
         try {
-            if (getArgCount(env) == 1) {
-                return new InternalType();
-            } else {
-                errorMessage(env, "NEW", 2, funcErrorPrefix, " no arguments should be provided for function new!");
-            }
+			if (!UDFHasNextArgument(context)) {
+				return new InternalType();
+			} else {
+				// TODO: put an error message here
+			}
         } catch (const syn::Problem& p) {
 			setBoolean(env, ret, false);
             std::stringstream s;
@@ -360,7 +360,7 @@ class ExternalAddressWrapper {
 			newFunctionWithEnvironment(context->environment, context, ret);
 		}
 		static void newFunctionWithEnvironment(Environment* env, UDFContext* context, UDFValue* ret) {
-            InternalType* ptr = WrappedNewCallBuilder::invokeNewFunction<InternalType>(env, ret, getFunctionErrorPrefixNew<InternalType>(), getFunctionPrefixNew<InternalType>());
+            InternalType* ptr = WrappedNewCallBuilder::invokeNewFunction<InternalType>(env, context, ret, getFunctionErrorPrefixNew<InternalType>(), getFunctionPrefixNew<InternalType>());
             if (ptr) {
                 using CorrespondingType = typename ExternalAddressWrapperType<T>::TheType;
                 auto s = new CorrespondingType(ptr);
