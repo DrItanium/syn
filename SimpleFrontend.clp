@@ -112,3 +112,63 @@
                              ; skip two random numbers
                              (random)
                              (random)))
+
+(deffunction fake-dma-test2
+             "seed memory with random numbers from local"
+             (?seed ?size ?device ?fdev)
+             ; first seed the rng
+             (seed ?seed)
+             ; skip the first three
+             (random)
+             (random)
+             (random)
+             ; start at address zero
+             (loop-for-count (?i 0 ?size) do
+                             (write-command ?device
+                                   (format nil
+                                           "write %d %d callback %s"
+                                           ?i
+                                           (integer (random))
+                                           ?fdev))
+                             ; ditch the result
+                             (read-command)
+                             ; skip two random numbers
+                             (random)
+                             (random)))
+
+(deffunction fake-dma-test3
+             "seed memory with random numbers from local writing multiple entries at a time"
+             (?seed ?size ?device ?fdev)
+             ; first seed the rng
+             (seed ?seed)
+             ; skip the first three
+             (random)
+             (random)
+             (random)
+             ; start at address zero
+             (bind ?i 
+                   0)
+             (while (< ?i ?size) do
+                    (write-command ?device
+                                   (format nil
+                                           "write %d %d callback %s"
+                                           ?i
+                                           (integer (random))
+                                           ?fdev))
+                    ; ditch the result
+                    ; skip two random numbers
+                    (random)
+                    (random)
+                    (write-command ?device
+                                   (format nil
+                                           "write %d %d callback %s"
+                                           (+ ?i 1)
+                                           (integer (random))
+                                           ?fdev))
+                    (random)
+                    (random)
+                    (bind ?i
+                          (+ ?i 2))
+                    (read-command)
+                    (read-command)))
+
