@@ -62,7 +62,7 @@ void setupServerFunctions(Environment* env) noexcept {
 	AddUDF(env, "get-socket-name", "sy", 0, 0, nullptr, getServerSocket, "getServerSocket", nullptr);
 	AddUDF(env, "setup-connection", "b", 0, 0, nullptr, setupConnection, "setupConnection", nullptr);
 	AddUDF(env, "read-command", "syb", 0, 0, nullptr, readCommand, "readCommand", nullptr);
-	AddUDF(env, "write-command", "syb", 1, 2, "sy;sy;sy", readCommand, "readCommand", nullptr);
+	AddUDF(env, "write-command", "syb", 1, 2, "sy;sy;sy", writeCommand, "writeCommand", nullptr);
 	AddUDF(env, "shutdown-connection", "b", 0, 0, nullptr, shutdownConnection, "shutdownConnection", nullptr);
 	//TODO: add shutdown connection
 }
@@ -201,7 +201,7 @@ void writeCommand(Environment* env, UDFContext* context, UDFValue* ret) noexcept
 	}
 	sockaddr_un outboundServer;
 	outboundServer.sun_family = AF_UNIX;
-	strcpy(server.sun_path, dest.c_str());
+	strcpy(outboundServer.sun_path, dest.c_str());
 	if (connect(sock, (sockaddr*)&outboundServer, sizeof(sockaddr_un)) < 0) {
 		close(sock);
 		clips::printRouter(env, STDERR, "Could not connect to stream socket!\n");
