@@ -22,82 +22,15 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; SimpleMemoryBlock.clp - a separate device process meant to respond on
-; named pipes to requests
+; SimpleServer.clp - A series of rules, facts and other concepts to handle the setup
+; and maintenance of a CLIPS server
 ;------------------------------------------------------------------------------
-(batch* cortex.clp)
-(batch* MainModuleDeclaration.clp)
-(batch* ExternalAddressWrapper.clp)
-(batch* Device.clp)
-(batch* MemoryBlock.clp)
-(batch* Paragraph.clp)
-(batch* order.clp)
-(batch* SimpleServer.clp)
-
-(defgeneric MAIN::make-section)
-(defgeneric MAIN::make-paragraph)
-(defgeneric MAIN::make-page)
-(defmethod MAIN::make-paragraph
-  ((?count INTEGER
-           (>= 8 
-               ?current-argument
-               1)))
-  (bind ?result
-        (create$))
-  (loop-for-count (?i 1 ?count) do
-                  (bind ?result
-                        ?result
-                        (make-instance of encyclopedia-sentence)))
-  (make-instance of encyclopedia-paragraph
-                 (children ?result)))
-
-(defmethod MAIN::make-paragraph
-  ()
-  (make-paragraph 8))
-
-(defmethod MAIN::make-page
-  ()
-  (make-page 256))
-
-(defmethod MAIN::make-page
-  ((?count INTEGER
-           (>= 256
-               ?current-argument
-               1)))
-
-  (bind ?result
-        (create$))
-  (loop-for-count (?i 1 ?count) do
-                  (bind ?result
-                        ?result
-                        (make-paragraph)))
-  (make-instance of encyclopedia-page
-                 (children ?result)))
-
-(defmethod MAIN::make-section
-  ()
-  (make-section 256))
-(defmethod MAIN::make-section
-  ((?num-pages INTEGER
-               (>= 256 ?current-argument
-                   1)))
-  (bind ?result
-        (create$))
-  (loop-for-count (?i 1 ?num-pages) do
-                  (bind ?result
-                        ?result
-                        (make-page)))
-  (make-instance of encyclopedia-section
-                 (children ?result)))
-(definstances MAIN::main-memory
-              (main-memory of iris64-encyclopedia 
-                           (children)))
-
-(deffacts MAIN::sections
-          (make-section for [main-memory] (gensym*))
-          (make-section for [main-memory] (gensym*))
-          (make-section for [main-memory] (gensym*)))
-
+(deftemplate MAIN::command-writer
+             (slot target
+                   (type LEXEME)
+                   (default ?NONE))
+             (multislot command
+                        (default ?NONE)))
 (deffacts MAIN::stage-order
           (stage (current system-init)
                  (rest read
@@ -141,15 +74,18 @@
          (retract ?f)
          (printout stderr
                    "Connection not defined! Terminating Execution!" crlf))
-
-
-(defrule MAIN::read-input
+(defrule MAIN::read-raw-input
          (stage (current read))
-         (object (is-a iris64-encyclopedia)
-                 (name ?target))
-         (not (action $? from ?target))
          =>
-         (assert (action (explode$ (read-command)) from ?target)))
+         (assert (action (explode$ (read-command)))
+                 (inspect action)))
+
+(defrule MAIN::retract-inspect-action
+         (declare (salience -9999))
+         (stage (current read))
+         ?f <- (inspect action)
+         =>
+         (retract ?f))
 
 (defrule MAIN::ignore-command
          (declare (salience -1))
@@ -160,53 +96,27 @@
                    "NOTE: Ignoring " ?command crlf)
          (retract ?f))
 
-; TODO: add support for restarting execution
-;----------------------------------------------------------------
-; Commands are - read, write, shutdown
 (defrule MAIN::terminate-execution
          ?z <- (stage (current dispatch))
-         ?k <- (action EOF|shutdown from ?)
+         ?k <- (action EOF|shutdown $?)
          =>
          (retract ?k
                   ?z)
          (shutdown-connection))
 
-(defrule MAIN::read-memory
-         (stage (current dispatch))
-         ?k <- (action read ?address callback ?callback from ?target)
-         (object (is-a iris64-encyclopedia)
-                 (name ?target))
-         =>
-         (retract ?k)
-         (assert (write callback ?callback 
-                        command: (send ?target
-                                       read
-                                       ?address))))
-
-(defrule MAIN::write-memory
-         (stage (current dispatch))
-         ?k <- (action write ?address ?value callback ?callback from ?target)
-         (object (is-a iris64-encyclopedia)
-                 (name ?target))
-         =>
-         (retract ?k)
-         (assert (write callback ?callback 
-                        command: (send ?target
-                                       write
-                                       ?address
-                                       ?value))))
-
-
-
 (defrule MAIN::perform-write
          (stage (current dispatch))
-         ?f <- (write callback ?callback
-                      command: $?command)
+         ?f <- (command-writer (target ?callback)
+                               (command $?command))
          =>
          (retract ?f)
          (write-command ?callback
                         (implode$ ?command)))
 
-
-(deffacts MAIN::connection-info
-          (setup connection /tmp/syn/memory))
+(defrule MAIN::restart-process
+         ?f <- (stage (current restart))
+         =>
+         (modify ?f
+                 (current read)
+                 (rest dispatch
+                       restart)))

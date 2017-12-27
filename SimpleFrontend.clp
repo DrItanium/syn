@@ -1,4 +1,3 @@
-
 ;------------------------------------------------------------------------------
 ; syn
 ; Copyright (c) 2013-2017, Joshua Scoggins and Contributors
@@ -23,52 +22,57 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; SimpleRandomNumberDevice.clp - a separate device process meant to respond on
-; named pipes to requests
+; SimpleFrontend.clp - A program to control various other devices
 ;------------------------------------------------------------------------------
 (batch* cortex.clp)
 (batch* MainModuleDeclaration.clp)
+(batch* ExternalAddressWrapper.clp)
+(batch* Device.clp)
+(batch* MemoryBlock.clp)
+(batch* Paragraph.clp)
 (batch* order.clp)
 (batch* SimpleServer.clp)
 
-(defglobal MAIN
-           ?*current-seed* = (hex->int 0xFDED))
 
-(defrule MAIN::startup-and-seed
-         (stage (current system-init))
+(defrule MAIN::add-memory-location-to-command
+         (stage (current read))
+         ?f <- (inspect action)
+         ?k <- (action $?body)
+         (object (is-a iris64-encyclopedia)
+                 (name ?target))
          =>
-         (seed ?*current-seed*))
+         (retract ?f ?k)
+         (assert (action ?body from ?target)))
 
+; TODO: add support for restarting execution
+;----------------------------------------------------------------
+; Commands are - read, write, shutdown
 
-(defrule MAIN::seed-device
+(defrule MAIN::read-memory
          (stage (current dispatch))
-         ?k <- (action seed ?seed)
-         (test (integerp ?seed))
+         ?k <- (action read ?address callback ?callback from ?target)
+         (object (is-a iris64-encyclopedia)
+                 (name ?target))
          =>
          (retract ?k)
-         (seed (bind ?*current-seed*
-                     ?seed)))
-(defrule MAIN::seed-device:ignore
-         (stage (current dispatch))
-         ?k <- (action seed ?seed)
-         (test (not (integerp ?seed)))
-         =>
-         (retract ?k))
+         (assert (write callback ?callback 
+                        command: (send ?target
+                                       read
+                                       ?address))))
 
-(defrule MAIN::generate-random-value
+(defrule MAIN::write-memory
          (stage (current dispatch))
-         ?f <- (action read to ?address)
+         ?k <- (action write ?address ?value callback ?callback from ?target)
+         (object (is-a iris64-encyclopedia)
+                 (name ?target))
          =>
-         (retract ?f)
-         (write-command ?address
-                        (str-cat (random))))
+         (retract ?k)
+         (assert (write callback ?callback 
+                        command: (send ?target
+                                       write
+                                       ?address
+                                       ?value))))
 
-(defrule MAIN::skip-random-value
-         (stage (current dispatch))
-         ?f <- (action skip)
-         =>
-         (retract ?f)
-         (random))
 
 (deffacts MAIN::connection-info
-          (setup connection /tmp/syn/rng0))
+          (setup connection /tmp/syn/memory))
