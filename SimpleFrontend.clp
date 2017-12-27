@@ -225,7 +225,15 @@
                     (read-command)
                     (read-command)
                     (read-command)))
-
+(deffunction MAIN::set-write
+             (?callback $?values)
+             (format nil
+                     "write set: %s callback %s"
+                     (implode$ ?values)
+                     ?callback))
+(deffunction MAIN::irandom
+             ()
+             (integer (random)))
 (deffunction fake-dma-test5
              "seed memory with random numbers from local writing multiple entries at a time compacted into one message"
              (?seed ?size ?device ?fdev)
@@ -240,12 +248,11 @@
                    0)
              (while (< ?i ?size) do
                     (write-command ?device
-                                   (str-cat "write set: "
-                                            ?i " " (integer (random)) " "
-                                            (+ ?i 1) " " (integer (random)) " "
-                                            (+ ?i 2) " " (integer (random)) " "
-                                            (+ ?i 3) " " (integer (random)) " "
-                                            " callback " ?fdev))
+                                   (set-write ?fdev
+                                              ?i (irandom)
+                                              (+ ?i 1) (irandom)
+                                              (+ ?i 2) (irandom)
+                                              (+ ?i 3) (irandom)))
 
                     ; skip multiple random numbers
                     (random)
