@@ -55,14 +55,12 @@
 
 (defmessage-handler MAIN::memory-block read primary
                     (?addr)
-                    (send ?self
-                          call
+                    (call (dynamic-get backing-store)
                           read
                           ?addr))
 (defmessage-handler MAIN::memory-block write primary
                     (?addr ?value)
-                    (send ?self
-                          call
+                    (call (dynamic-get backing-store)
                           write
                           ?addr
                           ?value))
@@ -75,31 +73,28 @@
 
 (defmessage-handler MAIN::memory-block move primary
                     (?from ?to)
-                    (send ?self
-                          call
+                    (call (dynamic-get backing-store)
                           move
                           ?from
                           ?to))
 (defmessage-handler MAIN::memory-block swap primary
                     (?addr0 ?addr1)
-                    (send ?self
-                          call
+                    (call (dynamic-get backing-store)
                           swap
                           ?addr0
                           ?addr1))
 
 (defmessage-handler MAIN::memory-block decrement primary
                     (?addr)
-                    (send ?self
-                          call
+                    (call (dynamic-get backing-store)
                           decrement
                           ?addr))
 (defmessage-handler MAIN::memory-block increment primary
                     (?addr)
-                    (send ?self
-                          call
+                    (call (dynamic-get backing-store)
                           increment
                           ?addr))
+
 (defmessage-handler MAIN::memory-block size primary
                     ()
                     (send ?self

@@ -62,7 +62,7 @@
              ; start at address zero
              (bind ?read-rng
                    (str-cat "read to " ?fdev))
-                
+
              (loop-for-count (?i 0 ?size) do
                              (write-command ?rng
                                             ?read-rng)
@@ -125,11 +125,11 @@
              ; start at address zero
              (loop-for-count (?i 0 ?size) do
                              (write-command ?device
-                                   (format nil
-                                           "write %d %d callback %s"
-                                           ?i
-                                           (integer (random))
-                                           ?fdev))
+                                            (format nil
+                                                    "write %d %d callback %s"
+                                                    ?i
+                                                    (integer (random))
+                                                    ?fdev))
                              ; ditch the result
                              (read-command)
                              ; skip two random numbers
@@ -172,3 +172,93 @@
                     (read-command)
                     (read-command)))
 
+(deffunction fake-dma-test4
+             "seed memory with random numbers from local writing multiple entries at a time (4)"
+             (?seed ?size ?device ?fdev)
+             ; first seed the rng
+             (seed ?seed)
+             ; skip the first three
+             (random)
+             (random)
+             (random)
+             ; start at address zero
+             (bind ?i 
+                   0)
+             (while (< ?i ?size) do
+                    (write-command ?device
+                                   (format nil
+                                           "write %d %d callback %s"
+                                           ?i
+                                           (integer (random))
+                                           ?fdev))
+                    ; ditch the result
+                    ; skip two random numbers
+                    (random)
+                    (random)
+                    (write-command ?device
+                                   (format nil
+                                           "write %d %d callback %s"
+                                           (+ ?i 1)
+                                           (integer (random))
+                                           ?fdev))
+                    (random)
+                    (random)
+                    (write-command ?device
+                                   (format nil
+                                           "write %d %d callback %s"
+                                           (+ ?i 2)
+                                           (integer (random))
+                                           ?fdev))
+                    (random)
+                    (random)
+                    (write-command ?device
+                                   (format nil
+                                           "write %d %d callback %s"
+                                           (+ ?i 3)
+                                           (integer (random))
+                                           ?fdev))
+                    (random)
+                    (random)
+                    (bind ?i
+                          (+ ?i 4))
+                    (read-command)
+                    (read-command)
+                    (read-command)
+                    (read-command)))
+
+(deffunction fake-dma-test5
+             "seed memory with random numbers from local writing multiple entries at a time compacted into one message"
+             (?seed ?size ?device ?fdev)
+             ; first seed the rng
+             (seed ?seed)
+             ; skip the first three
+             (random)
+             (random)
+             (random)
+             ; start at address zero
+             (bind ?i 
+                   0)
+             (while (< ?i ?size) do
+                    (write-command ?device
+                                   (str-cat "write set: "
+                                            ?i " " (integer (random)) " "
+                                            (+ ?i 1) " " (integer (random)) " "
+                                            (+ ?i 2) " " (integer (random)) " "
+                                            (+ ?i 3) " " (integer (random)) " "
+                                            " callback " ?fdev))
+
+                    ; skip multiple random numbers
+                    (random)
+                    (random)
+                    (random)
+                    (random)
+                    (random)
+                    (random)
+                    (random)
+                    (random)
+                    (bind ?i
+                          (+ ?i 4))
+                    (read-command)
+                    (read-command)
+                    (read-command)
+                    (read-command)))

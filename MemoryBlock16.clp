@@ -126,6 +126,7 @@
                                                 ?address)))))
 
 (defrule MAIN::write-memory
+         (declare (salience 1))
          (stage (current dispatch))
          ?k <- (action write ?address ?value callback ?callback from ?target)
          =>
@@ -135,3 +136,17 @@
                                                 write
                                                 ?address
                                                 ?value)))))
+(defrule MAIN::write-memory-set
+         "VLIW style decoupling to maintain write ordering"
+         (stage (current dispatch))
+         ?k <- (action write set: ?address ?value $?cmds callback ?callback from ?target)
+         =>
+         (retract ?k)
+         (assert (action write set: $?cmds callback ?callback from ?target)
+                 (action write ?address ?value callback ?callback from ?target)))
+
+(defrule MAIN::write-memory-set:retract
+         (stage (current dispatch))
+         ?k <- (action write set: callback ? from ?)
+         =>
+         (retract ?k))
