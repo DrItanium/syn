@@ -49,8 +49,10 @@ int socketId;
 void setServerSocket(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
 void getServerSocket(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
 void setupConnection(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
+void shutdownConnection(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
 void readCommand(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
 void writeCommand(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
+
 void setupServerFunctions(Environment* env) noexcept {
 	socketNameSet = false;
 	socketName = "undefined";
@@ -60,7 +62,8 @@ void setupServerFunctions(Environment* env) noexcept {
 	AddUDF(env, "get-socket-name", "sy", 0, 0, nullptr, getServerSocket, "getServerSocket", nullptr);
 	AddUDF(env, "setup-connection", "b", 0, 0, nullptr, setupConnection, "setupConnection", nullptr);
 	AddUDF(env, "read-command", "syb", 0, 0, nullptr, readCommand, "readCommand", nullptr);
-	//AddUDF(env, "write-command", "syb", 1, UNBOUNDED, "sy;sy;*", readCommand, "readCommand", nullptr);
+	AddUDF(env, "write-command", "syb", 1, 2, "sy;sy;sy", readCommand, "readCommand", nullptr);
+	AddUDF(env, "shutdown-connection", "b", 0, 0, nullptr, shutdownConnection, "shutdownConnection", nullptr);
 	//TODO: add shutdown connection
 }
 int main(int argc, char* argv[]) {
@@ -126,6 +129,19 @@ void setupConnection(Environment* env, UDFContext* context, UDFValue* ret) noexc
 	}
 }
 
+void shutdownConnection(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+	if (serverSetup) {
+		close(socketId);
+		unlink(socketName.c_str());
+		serverSetup = false;
+		socketNameSet = false;
+		socketId = -1;
+		syn::setBoolean(env, ret, true);
+	} else {
+		syn::setBoolean(env, ret, false);
+	}
+}
+
 void readCommand(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
 	if (!serverSetup) {
 		syn::setBoolean(env, ret, false);
@@ -163,4 +179,41 @@ void readCommand(Environment* env, UDFContext* context, UDFValue* ret) noexcept 
 		auto str = collector.str();
 		syn::setString(env, ret, str);
 	}
+}
+
+void writeCommand(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+	UDFValue destination, command;
+	if (!UDFFirstArgument(context, LEXEME_BITS, &destination)) {
+		syn::setBoolean(env, ret, false);
+		return;
+	} else if (!UDFNextArgument(context, LEXEME_BITS, &command)) {
+		syn::setBoolean(env, ret, false);
+		return;
+	}
+	std::string dest(syn::getLexeme(destination));
+	std::string cmd(syn::getLexeme(command));
+
+	auto sock = socket(AF_UNIX, SOCK_STREAM, 0);
+	if (sock < 0) {
+		clips::printRouter(env, STDERR, "Could not open stream socket\n");
+		syn::setBoolean(env, ret, false);
+		return;
+	}
+	sockaddr_un outboundServer;
+	outboundServer.sun_family = AF_UNIX;
+	strcpy(server.sun_path, dest.c_str());
+	if (connect(sock, (sockaddr*)&outboundServer, sizeof(sockaddr_un)) < 0) {
+		close(sock);
+		clips::printRouter(env, STDERR, "Could not connect to stream socket!\n");
+		syn::setBoolean(env, ret, false);
+		return;
+	}
+
+	if (write(sock, cmd.c_str(), cmd.length()) < 0) {
+		clips::printRouter(env, STDERR, "Could not write on stream socket!\n");
+		syn::setBoolean(env, ret, false);
+	} else {
+		syn::setBoolean(env, ret, true);
+	}
+	close(sock);
 }
