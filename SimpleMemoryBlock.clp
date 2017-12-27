@@ -124,6 +124,8 @@
          =>
          (retract ?f)
          (if (set-socket-name ?path) then
+           (printout t "Socket name is now " 
+                     (get-socket-name ) crlf)
            (system (format nil 
                            "rm -f %s"
                            ?path))
@@ -162,7 +164,7 @@
 ; Commands are - read, write, shutdown
 (defrule MAIN::terminate-execution
          ?z <- (stage (current dispatch))
-         ?k <- (action EOF|shutdown)
+         ?k <- (action EOF|shutdown from ?)
          =>
          (retract ?k
                   ?z)
@@ -187,11 +189,16 @@
                  (name ?target))
          =>
          (retract ?k)
+         (printout t 
+                   "Writing " ?value " to " ?address crlf)
          (assert (write callback ?callback 
-                  command: (send ?target
-                                                    write
-                                                    ?address
-                                                    ?value))))
+                        command: (send ?target
+                                       write
+                                       ?address
+                                       ?value)))
+         (printout t
+                   "Write successful: " (= (send ?target read ?address)
+                                           ?value) crlf))
 
 
 

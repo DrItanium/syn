@@ -314,8 +314,8 @@ namespace syn {
 					return false;
 				}
 
-				auto data = static_cast<Word>(getInteger(address));
-				setMemoryCell(addr, data);
+				auto data = static_cast<Word>(getInteger(value));
+				this->setMemoryCell(addr, data);
 				setBoolean(env, ret, true);
 				return true;
 
