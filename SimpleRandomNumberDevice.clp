@@ -42,60 +42,41 @@
          (stage (current system-init))
          =>
          (seed ?*current-seed*))
-(defrule MAIN::setup-input-stream
+(defrule MAIN::setup-device-connection
          (stage (current system-init))
-         ?f <- (setup input-stream ?path)
+         ?f <- (setup connection ?path)
+         (not (connection established to ?))
          =>
          (retract ?f)
-         (bind ?name
-               (gensym*))
-         (if (open ?path 
-                   ?name
-                   "w+") then
-            (assert (input-stream ?name))))
+         (if (set-socket-name ?path) then
+           (system (format nil 
+                           "rm -f %s"
+                           ?path))
+           (setup-connection)
+           (assert (connection established to ?path))))
 
-(defrule MAIN::setup-output-stream
-         (stage (current system-init))
-         ?f <- (setup output-stream ?path)
-         =>
-         (retract ?f)
-         (bind ?name
-               (gensym*))
-         (if (open ?path 
-                   ?name
-                   "r+") then
-            (assert (output-stream ?name))))
-
-(defrule MAIN::terminate-execution-on-missing-output-stream
+(defrule MAIN::terminate-execution-on-missing-connection
          (declare (salience -1))
          ?f <- (stage (current system-init))
-         (not (output-stream ?))
+         (not (connection established to ?))
          =>
          (retract ?f)
-         (printout werror
-                   "No output stream provided! Terminating Execution!" crlf))
+         (printout stderr
+                   "Connection not defined! Terminating Execution!" crlf))
 
-(defrule MAIN::terminate-execution-on-missing-input-stream
-         (declare (salience -1))
-         ?f <- (stage (current system-init))
-         (not (input-stream ?))
-         =>
-         (retract ?f)
-         (printout werror
-                   "No input stream provided! Terminating Execution!" crlf))
 
 (defrule MAIN::read-input
          (stage (current read))
-         (input-stream ?input)
          =>
-         (assert (action (explode$ (readline ?input)))))
+         (assert (action (explode$ (read-command)))))
 
 (defrule MAIN::terminate-execution
          ?z <- (stage (current dispatch))
-         ?k <- (action EOF)
+         ?k <- (action EOF|shutdown)
          =>
          (retract ?k
-                  ?z))
+                  ?z)
+         (shutdown-connection))
 
 (defrule MAIN::seed-device
          (stage (current dispatch))
@@ -116,18 +97,20 @@
 (defrule MAIN::ignore-command
          (declare (salience -1))
          (stage (current dispatch))
-         ?f <- (action $?)
+         ?f <- (action $?command)
          =>
+         (printout t 
+                   "NOTE: Ignoring " ?command crlf)
          (retract ?f))
 
 (defrule MAIN::generate-random-value
          (stage (current dispatch))
-         ?f <- (action read)
-         (output-stream ?output)
+         ?f <- (action read to ?address)
          =>
          (retract ?f)
-         (printout ?output 
-                   (random) crlf))
+         (write-command ?address
+                        (str-cat (random))))
+
 (defrule MAIN::skip-random-value
          (stage (current dispatch))
          ?f <- (action skip)
