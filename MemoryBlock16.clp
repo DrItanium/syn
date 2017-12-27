@@ -22,7 +22,7 @@
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;------------------------------------------------------------------------------
-; SimpleMemoryBlock.clp - a separate device process meant to respond on
+; MemoryBlock16.clp - a separate device process meant to respond on
 ; named pipes to requests
 ;------------------------------------------------------------------------------
 (batch* cortex.clp)
@@ -30,100 +30,86 @@
 (batch* ExternalAddressWrapper.clp)
 (batch* Device.clp)
 (batch* MemoryBlock.clp)
-(batch* Paragraph.clp)
 (batch* order.clp)
+(batch* Paragraph.clp)
 (batch* SimpleServer.clp)
+(defglobal MAIN
+           ?*memory-block16-mask* = (hex->int 0xFFFFFF)
+           ?*memory-block16-capacity* = (+ ?*memory-block16-mask*
+                                           1)
+           ?*memory-manager-space* = (hex->int 0xFFFFFFF)
+           ?*memory-manager-mask* = (hex->int 0xF000000)
+           ?*memory-manager-shift* = 24)
+(defclass MAIN::memory-block16
+  (is-a memory-block)
+  (slot capacity
+        (source composite)
+        (default ?*memory-block16-capacity*))
+  (message-handler write primary)
+  (message-handler read primary))
+(defmessage-handler MAIN::memory-block16 read primary
+                    (?address)
+                    (override-next-handler (binary-and ?*memory-block16-mask*
+                                                       ?address)))
+(defmessage-handler MAIN::memory-block16 write primary
+                    (?address ?value)
+                    (override-next-handler (binary-and ?*memory-block16-mask*
+                                                       ?address)
+                                           ?value))
 
-(defgeneric MAIN::make-section)
-(defgeneric MAIN::make-paragraph)
-(defgeneric MAIN::make-page)
-(defmethod MAIN::make-paragraph
-  ((?count INTEGER
-           (>= 8 
-               ?current-argument
-               1)))
-  (bind ?result
-        (create$))
-  (loop-for-count (?i 1 ?count) do
-                  (bind ?result
-                        ?result
-                        (make-instance of encyclopedia-sentence)))
-  (make-instance of encyclopedia-paragraph
-                 (children ?result)))
+(defclass MAIN::memory-manager
+  (is-a encyclopedia-container)
+  (role concrete)
+  (pattern-match reactive)
+  (message-handler compute-child-address primary))
 
-(defmethod MAIN::make-paragraph
-  ()
-  (make-paragraph 8))
+(defmessage-handler MAIN::memory-manager compute-child-address primary
+                    (?address)
+                    (decode-bits ?address
+                                 ?*memory-manager-mask*
+                                 ?*memory-manager-shift*))
 
-(defmethod MAIN::make-page
-  ()
-  (make-page 256))
+(deffacts MAIN::setup-watcher
+          (make memory-manager)
+          (make memory-block16 count: 4))
 
-(defmethod MAIN::make-page
-  ((?count INTEGER
-           (>= 256
-               ?current-argument
-               1)))
-
-  (bind ?result
-        (create$))
-  (loop-for-count (?i 1 ?count) do
-                  (bind ?result
-                        ?result
-                        (make-paragraph)))
-  (make-instance of encyclopedia-page
-                 (children ?result)))
-
-(defmethod MAIN::make-section
-  ()
-  (make-section 256))
-(defmethod MAIN::make-section
-  ((?num-pages INTEGER
-               (>= 256 ?current-argument
-                   1)))
-  (bind ?result
-        (create$))
-  (loop-for-count (?i 1 ?num-pages) do
-                  (bind ?result
-                        ?result
-                        (make-page)))
-  (make-instance of encyclopedia-section
-                 (children ?result)))
-(definstances MAIN::main-memory
-              (main-memory of iris64-encyclopedia 
-                           (children)))
-
-(deffacts MAIN::sections
-          (make-section for [main-memory] (gensym*))
-          (make-section for [main-memory] (gensym*))
-          (make-section for [main-memory] (gensym*)))
-
-(defrule MAIN::construct-section
+(defrule MAIN::construct-memory-manager
          (stage (current system-init))
-         ?f <- (make-section for ?mem ?)
-         (object (is-a iris64-encyclopedia)
-                 (name ?mem)
-                 (children $?children))
+         ?f <- (make memory-manager)
          =>
          (retract ?f)
-         ; have to do this outside the modify instance to keep performance up
-         (bind ?section
-               (make-section))
-         (modify-instance ?mem
-                          (children $?children
-                                    ?section)))
+         (make-instance of memory-manager
+                        (children)))
 
-
+(defrule MAIN::add-memory-block16
+         (stage (current system-init))
+         ?f <- (make memory-block16 count: ?x&:(> ?x 0))
+         ?m <- (object (is-a memory-manager)
+                       (children $?children))
+         =>
+         (retract ?f)
+         (assert (make memory-block16 count: (- ?x 1)))
+         (bind ?block
+               (make-instance of memory-block16))
+         (modify-instance ?m
+                          (children ?children
+                                    ?block)))
+(defrule MAIN::add-memory-block16:retract
+         (stage (current system-init))
+         ?f <- (make memory-block16 count ?a&:(<= ?a 0))
+         =>
+         (retract ?f))
 
 (defrule MAIN::add-memory-location-to-command
          (stage (current read))
          ?f <- (inspect action)
          ?k <- (action $?body)
-         (object (is-a iris64-encyclopedia)
-                 (name ?target))
+         (object (is-a memory-manager)
+                 (name ?manager))
          =>
-         (retract ?f ?k)
-         (assert (action ?body from ?target)))
+         (retract ?f 
+                  ?k)
+         (assert (action ?body from ?manager)))
 
 ; TODO: add support for restarting execution
 ;----------------------------------------------------------------
@@ -132,8 +118,6 @@
 (defrule MAIN::read-memory
          (stage (current dispatch))
          ?k <- (action read ?address callback ?callback from ?target)
-         (object (is-a iris64-encyclopedia)
-                 (name ?target))
          =>
          (retract ?k)
          (assert (command-writer (target ?callback)
@@ -144,8 +128,6 @@
 (defrule MAIN::write-memory
          (stage (current dispatch))
          ?k <- (action write ?address ?value callback ?callback from ?target)
-         (object (is-a iris64-encyclopedia)
-                 (name ?target))
          =>
          (retract ?k)
          (assert (command-writer (target ?callback)
@@ -153,6 +135,3 @@
                                                 write
                                                 ?address
                                                 ?value)))))
-
-;(deffacts MAIN::connection-info
-;          (setup connection /tmp/syn/memory))
