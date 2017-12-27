@@ -159,5 +159,5 @@
                                                 ?address
                                                 ?value)))))
 
-(deffacts MAIN::connection-info
-          (setup connection /tmp/syn/memory))
+;(deffacts MAIN::connection-info
+;          (setup connection /tmp/syn/memory))

@@ -33,18 +33,82 @@
 (batch* order.clp)
 
 (deffunction MAIN::setup
-             ()
+             (?device)
              (system (format nil
                              "mkdir /tmp/syn"))
              (system (format nil
-                             "rm -f /tmp/syn/frontend"))
-             (set-socket-name /tmp/syn/frontend)
-             (setup-connection))
+                             "rm -f %s" 
+                             ?device))
+             (set-socket-name ?device)
+             (setup-connection)
+             (printout t "Listening on socket " ?device crlf)
+             (printout t tab "Before exiting run (shutdown-connection)" crlf))
 (deffunction MAIN::stop-connection
              ()
              (shutdown-connection))
 
-(setup)
-(printout t "Listening on socket /tmp/syn/frontend" crlf)
-(printout t tab "Before exiting run (shutdown-connection)" crlf)
+(deffunction fake-dma-test
+             "seed memory with random numbers"
+             (?seed ?size ?rng ?device ?fdev)
+             ; first seed the rng
+             (write-command ?rng
+                            (format nil
+                                    "seed %d"
+                                    ?seed))
+             ; skip the first three
+             (write-command ?rng skip)
+             (write-command ?rng skip)
+             (write-command ?rng skip)
+             ; start at address zero
+             (bind ?read-rng
+                   (str-cat "read to " ?fdev))
+                
+             (loop-for-count (?i 0 ?size) do
+                             (write-command ?rng
+                                            ?read-rng)
+                             (bind ?k 
+                                   (explode$ (read-command)))
+                             (bind ?cmd
+                                   (str-cat "write " 
+                                            ?i
+                                            " "
+                                            (nth$ 1
+                                                  ?k)
+                                            " callback "
+                                            ?fdev))
+                             (write-command ?device
+                                            ?cmd)
+                             ; ditch the result
+                             (read-command)
+                             ; skip two random numbers
+                             (write-command ?rng
+                                            skip)
+                             (write-command ?rng
+                                            skip)))
 
+(deffunction fake-dma-test2
+             "seed memory with random numbers from local"
+             (?seed ?size ?device ?fdev)
+             ; first seed the rng
+             (seed ?seed)
+             ; skip the first three
+             (random)
+             (random)
+             (random)
+             ; start at address zero
+             (loop-for-count (?i 0 ?size) do
+                             (bind ?k
+                                   (integer (random)))
+                             (bind ?cmd
+                                   (format nil
+                                           "write %d %d callback %s"
+                                           ?i
+                                           (integer (random))
+                                           ?fdev))
+                             (write-command ?device
+                                            ?cmd)
+                             ; ditch the result
+                             (read-command)
+                             ; skip two random numbers
+                             (random)
+                             (random)))
