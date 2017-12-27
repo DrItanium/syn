@@ -36,20 +36,6 @@
                  (rest read
                        dispatch
                        restart)))
-(defrule MAIN::construct-section
-         (stage (current system-init))
-         ?f <- (make-section for ?mem ?)
-         (object (is-a iris64-encyclopedia)
-                 (name ?mem)
-                 (children $?children))
-         =>
-         (retract ?f)
-         ; have to do this outside the modify instance to keep performance up
-         (bind ?section
-               (make-section))
-         (modify-instance ?mem
-                          (children $?children
-                                    ?section)))
 
 (defrule MAIN::setup-device-connection
          (stage (current system-init))
