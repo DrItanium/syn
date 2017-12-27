@@ -269,3 +269,73 @@
                     (read-command)
                     (read-command)
                     (read-command)))
+(deffunction fake-dma-test6
+             "seed memory with random numbers from local writing multiple entries at a time compacted into one message"
+             (?seed ?size ?device ?fdev)
+             ; first seed the rng
+             (seed ?seed)
+             ; skip the first three
+             (random)
+             (random)
+             (random)
+             ; start at address zero
+             (bind ?i 
+                   0)
+             (while (< ?i ?size) do
+                    (write-command ?device
+                                   (set-write ?fdev
+                                              ?i (irandom)
+                                              (+ ?i 1) (irandom)
+                                              (+ ?i 2) (irandom)
+                                              (+ ?i 3) (irandom)
+                                              (+ ?i 4) (irandom)
+                                              (+ ?i 5) (irandom)
+                                              (+ ?i 6) (irandom)
+                                              (+ ?i 7) (irandom)))
+
+                    ; skip multiple random numbers
+                    (random) (random)
+                    (random) (random)
+                    (random) (random)
+                    (random) (random)
+                    (random) (random)
+                    (random) (random)
+                    (random) (random)
+                    (random) (random)
+                    (bind ?i
+                          (+ ?i 8))
+                    (read-command) (read-command) (read-command) (read-command)
+                    (read-command) (read-command) (read-command) (read-command)
+                    ))
+
+(deffunction fake-dma-test7
+             "seed memory with random numbers from local writing multiple entries at a time compacted into one message, tweakable"
+             (?seed ?size ?device ?fdev ?message-size)
+             ; first seed the rng
+             (seed ?seed)
+             ; skip the first three
+             (random)
+             (random)
+             (random)
+             ; start at address zero
+             (bind ?i 
+                   0)
+             (while (< ?i ?size) do
+                    (bind ?contents
+                          (create$))
+                    (loop-for-count (?j 0 (- ?message-size 1)) do
+                                    (bind ?contents
+                                          ?contents
+                                          (+ ?i ?j)
+                                          (irandom))
+                                    (random)
+                                    (random))
+                    (write-command ?device
+                                   (set-write ?fdev
+                                              ?contents))
+
+                    ; skip multiple random numbers
+                    (bind ?i
+                          (+ ?i 
+                             ?message-size))
+                    (loop-for-count (?j 1 ?message-size) do (read-command))))
