@@ -26,6 +26,10 @@
 
 #include "ClipsExtensions.h"
 #include "MemoryBlock.h"
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
 
 extern "C" {
 	#include "clips.h"
@@ -33,7 +37,32 @@ extern "C" {
 #ifdef PLATFORM_LINUX
     #include "AlsaMIDIExtensions.h"
 #endif // end PLATFORM_LINUX
+#include <string>
 
+bool socketNameSet = false;
+std::string socketName;
+
+bool serverSetup = false;
+sockaddr_un server;
+int socketId;
+
+void setServerSocket(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
+void getServerSocket(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
+void setupConnection(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
+void readCommand(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
+void writeCommand(Environment* env, UDFContext* context, UDFValue* ret) noexcept;
+void setupServerFunctions(Environment* env) noexcept {
+	socketNameSet = false;
+	socketName = "undefined";
+	serverSetup = false;
+	socketId = 0;
+	AddUDF(env, "set-socket-name", "b", 1, 1, "sy", setServerSocket, "setServerSocket", nullptr);
+	AddUDF(env, "get-socket-name", "sy", 0, 0, nullptr, getServerSocket, "getServerSocket", nullptr);
+	AddUDF(env, "setup-connection", "b", 0, 0, nullptr, setupConnection, "setupConnection", nullptr);
+	AddUDF(env, "read-command", "syb", 0, 0, nullptr, readCommand, "readCommand", nullptr);
+	//AddUDF(env, "write-command", "syb", 1, UNBOUNDED, "sy;sy;*", readCommand, "readCommand", nullptr);
+	//TODO: add shutdown connection
+}
 int main(int argc, char* argv[]) {
 	// make sure this is a common io bus
 	auto* mainEnv = CreateEnvironment();
@@ -43,8 +72,95 @@ int main(int argc, char* argv[]) {
 #ifdef PLATFORM_LINUX
     syn::installAlsaMIDIExtensions(mainEnv);
 #endif // end PLATFORM_LINUX
+	setupServerFunctions(mainEnv);
 	RerouteStdin(mainEnv, argc, argv);
 	CommandLoop(mainEnv);
 	DestroyEnvironment(mainEnv);
 	return -1;
+}
+
+void setServerSocket(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+	if (!socketNameSet) {
+		UDFValue name;
+		if (!UDFFirstArgument(context, LEXEME_BITS, &name)) {
+			syn::setBoolean(env, ret, false);
+			return;
+		}
+		socketName = syn::getLexeme(name);
+		socketNameSet = true;
+		syn::setBoolean(env, ret, true);
+	} else {
+		syn::setBoolean(env, ret, false);
+	}
+}
+
+void getServerSocket(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+	if (socketNameSet) {
+		syn::setString(env, ret, socketName);
+	} else {
+		syn::setString(env, ret, "undefined!");
+	}
+}
+
+void setupConnection(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+	if (socketNameSet && !serverSetup) {
+		socketId = socket(AF_UNIX, SOCK_STREAM, 0);
+		if (socketId < 0) {
+			clips::printRouter(env, STDERR, "Could not open stream socket!\n");
+			syn::setBoolean(env, ret, false);
+			return;
+		}
+		server.sun_family = AF_UNIX;
+		strcpy(server.sun_path, socketName.c_str());
+		if (bind(socketId, (sockaddr*)&server, sizeof(decltype(server)))) {
+			clips::printRouter(env, STDERR, "Could not bind stream socket!\n");
+			syn::setBoolean(env, ret, false);
+			return;
+		}
+		//TODO: add depth setting tracking
+		listen(socketId, 5);
+		serverSetup = true;
+		syn::setBoolean(env, ret, true);
+	} else {
+		syn::setBoolean(env, ret, false);
+	}
+}
+
+void readCommand(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+	if (!serverSetup) {
+		syn::setBoolean(env, ret, false);
+		return;
+	}
+	std::stringstream collector;
+	auto msgsock = accept(socketId, 0, 0);
+	if (msgsock == -1) {
+		clips::printRouter(env, STDERR, "error during accept!\n");
+		syn::setBoolean(env, ret, false);
+		return;
+	}
+	char buf[1024];
+	int rval = 0;
+	bool failed = false;
+	do {
+		bzero(buf, sizeof(buf));
+		rval = read(msgsock, buf, 1024);
+		if (rval < 0) {
+			clips::printRouter(env, STDERR, "error reading stream message");
+			syn::setBoolean(env, ret, false);
+			failed = true;
+			break;
+		} else if (rval == 0) {
+			break;
+		} else {
+			std::string tmp(buf);
+			collector << tmp;
+		}
+	} while (rval > 0);
+	close(msgsock);
+	if (failed) {
+		syn::setBoolean(env, ret, false);
+	} else {
+		auto str = collector.str();
+		syn::setString(env, ret, str);
+	}
 }
