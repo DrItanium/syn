@@ -118,58 +118,21 @@
                           (children $?children
                                     ?section)))
 
-(defrule MAIN::setup-device-connection
-         (stage (current system-init))
-         ?f <- (setup connection ?path)
-         (not (connection established to ?))
-         =>
-         (retract ?f)
-         (if (set-socket-name ?path) then
-           (printout t "Socket name is now " 
-                     (get-socket-name ) crlf)
-           (system (format nil 
-                           "rm -f %s"
-                           ?path))
-           (setup-connection)
-           (assert (connection established to ?path))))
-
-(defrule MAIN::terminate-execution-on-missing-connection
-         (declare (salience -1))
-         ?f <- (stage (current system-init))
-         (not (connection established to ?))
-         =>
-         (retract ?f)
-         (printout stderr
-                   "Connection not defined! Terminating Execution!" crlf))
 
 
-(defrule MAIN::read-input
+(defrule MAIN::add-memory-location-to-command
          (stage (current read))
+         ?f <- (inspect action)
+         ?k <- (action $?body)
          (object (is-a iris64-encyclopedia)
                  (name ?target))
-         (not (action $? from ?target))
          =>
-         (assert (action (explode$ (read-command)) from ?target)))
-
-(defrule MAIN::ignore-command
-         (declare (salience -1))
-         (stage (current dispatch))
-         ?f <- (action $?command)
-         =>
-         (printout t 
-                   "NOTE: Ignoring " ?command crlf)
-         (retract ?f))
+         (retract ?f ?k)
+         (assert (action ?body from ?target)))
 
 ; TODO: add support for restarting execution
 ;----------------------------------------------------------------
 ; Commands are - read, write, shutdown
-(defrule MAIN::terminate-execution
-         ?z <- (stage (current dispatch))
-         ?k <- (action EOF|shutdown from ?)
-         =>
-         (retract ?k
-                  ?z)
-         (shutdown-connection))
 
 (defrule MAIN::read-memory
          (stage (current dispatch))
@@ -178,10 +141,10 @@
                  (name ?target))
          =>
          (retract ?k)
-         (assert (write callback ?callback 
-                        command: (send ?target
-                                       read
-                                       ?address))))
+         (assert (command-writer (target ?callback)
+                                 (command (send ?target
+                                                read
+                                                ?address)))))
 
 (defrule MAIN::write-memory
          (stage (current dispatch))
@@ -190,23 +153,11 @@
                  (name ?target))
          =>
          (retract ?k)
-         (assert (write callback ?callback 
-                        command: (send ?target
-                                       write
-                                       ?address
-                                       ?value))))
-
-
-
-(defrule MAIN::perform-write
-         (stage (current dispatch))
-         ?f <- (write callback ?callback
-                      command: $?command)
-         =>
-         (retract ?f)
-         (write-command ?callback
-                        (implode$ ?command)))
-
+         (assert (command-writer (target ?callback)
+                                 (command (send ?target
+                                                write
+                                                ?address
+                                                ?value)))))
 
 (deffacts MAIN::connection-info
           (setup connection /tmp/syn/memory))

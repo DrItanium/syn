@@ -31,48 +31,20 @@
 (batch* MemoryBlock.clp)
 (batch* Paragraph.clp)
 (batch* order.clp)
-(batch* SimpleServer.clp)
 
+(deffunction MAIN::setup
+             ()
+             (system (format nil
+                             "mkdir /tmp/syn"))
+             (system (format nil
+                             "rm -f /tmp/syn/frontend"))
+             (set-socket-name /tmp/syn/frontend)
+             (setup-connection))
+(deffunction MAIN::stop-connection
+             ()
+             (shutdown-connection))
 
-(defrule MAIN::add-memory-location-to-command
-         (stage (current read))
-         ?f <- (inspect action)
-         ?k <- (action $?body)
-         (object (is-a iris64-encyclopedia)
-                 (name ?target))
-         =>
-         (retract ?f ?k)
-         (assert (action ?body from ?target)))
+(setup)
+(printout t "Listening on socket /tmp/syn/frontend" crlf)
+(printout t tab "Before exiting run (shutdown-connection)" crlf)
 
-; TODO: add support for restarting execution
-;----------------------------------------------------------------
-; Commands are - read, write, shutdown
-
-(defrule MAIN::read-memory
-         (stage (current dispatch))
-         ?k <- (action read ?address callback ?callback from ?target)
-         (object (is-a iris64-encyclopedia)
-                 (name ?target))
-         =>
-         (retract ?k)
-         (assert (write callback ?callback 
-                        command: (send ?target
-                                       read
-                                       ?address))))
-
-(defrule MAIN::write-memory
-         (stage (current dispatch))
-         ?k <- (action write ?address ?value callback ?callback from ?target)
-         (object (is-a iris64-encyclopedia)
-                 (name ?target))
-         =>
-         (retract ?k)
-         (assert (write callback ?callback 
-                        command: (send ?target
-                                       write
-                                       ?address
-                                       ?value))))
-
-
-(deffacts MAIN::connection-info
-          (setup connection /tmp/syn/memory))
