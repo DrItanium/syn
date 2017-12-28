@@ -104,6 +104,7 @@ namespace syn {
 				Decrement,
 				Increment,
 				Get,
+				MapWrite,
 				Count,
 			};
 			static std::tuple<MemoryBlockOp, int> getParameters(const std::string& op) noexcept {
@@ -117,6 +118,7 @@ namespace syn {
 					{ "decrement", std::make_tuple(MemoryBlockOp:: Decrement , 1) },
 					{ "increment", std::make_tuple(MemoryBlockOp:: Increment , 1) },
 					{ "read", std::make_tuple(MemoryBlockOp:: Get , 1) },
+					{ "map-write", std::make_tuple(MemoryBlockOp::MapWrite, 2) },
 				};
 				static std::tuple<MemoryBlockOp, int> bad;
 				static bool init = false;
@@ -320,6 +322,31 @@ namespace syn {
 				return true;
 
 				
+			}
+			bool mapWrite(Environment* env, UDFContext* context, UDFValue* ret) noexcept {
+				UDFValue startingAddress;
+				if (!extractInteger(context, startingAddress)) {
+					setBoolean(env, ret, false);
+					return false;
+				}
+				auto addr = static_cast<Address>(getInteger(startingAddress));
+				while(UDFHasNextArgument(context)) {
+					if (!legalAddress(addr)) {
+						setBoolean(env, ret, false);
+						return false;
+					}
+					UDFValue currentItem;
+					if (!extractInteger(context, currentItem)) {
+						setBoolean(env, ret, false);
+						return false;
+					}
+					auto data = static_cast<Word>(getInteger(currentItem));
+					this->setMemoryCell(addr, data);
+					++addr;
+				}
+				
+				setBoolean(env, ret, true);
+				return true;
 			}
 
 		private:

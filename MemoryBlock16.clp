@@ -45,8 +45,14 @@
   (slot capacity
         (source composite)
         (default ?*memory-block16-capacity*))
+  (message-handler map-write primary)
   (message-handler write primary)
   (message-handler read primary))
+(defmessage-handler MAIN::memory-block16 map-write primary
+                    (?address $?arguments)
+                    (override-next-handler (binary-and ?*memory-block16-mask*
+                                                       ?address)
+                                           ?arguments))
 (defmessage-handler MAIN::memory-block16 read primary
                     (?address)
                     (override-next-handler (binary-and ?*memory-block16-mask*
@@ -56,6 +62,7 @@
                     (override-next-handler (binary-and ?*memory-block16-mask*
                                                        ?address)
                                            ?value))
+
 
 (defclass MAIN::memory-manager
   (is-a encyclopedia-container)
@@ -150,19 +157,12 @@
          ?k <- (action write map: ?address $?values callback ?callback from ?target)
          =>
          (retract ?k)
-         (bind ?result
-               TRUE)
-         (progn$ (?value $?values)
-                 (bind ?result
-                       (and (send ?target
-                                  write
-                                  (+ ?address
-                                     (- ?value-index
-                                        1))
-                                  ?value)
-                            ?result)))
          (assert (command-writer (target ?callback)
-                                 (command ?result))))
+                                 (command (send ?target
+                                                map-write
+                                                ?address
+                                                (expand$ ?values))))))
+
 
 (defrule MAIN::write-memory-set:retract
          (stage (current dispatch))

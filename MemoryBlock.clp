@@ -39,6 +39,7 @@
         (visibility public)
         (default ?NONE))
   (message-handler init after)
+  (message-handler map-write primary)
   (message-handler read primary)
   (message-handler write primary)
   (message-handler populate primary)
@@ -47,6 +48,12 @@
   (message-handler size primary)
   (message-handler decrement primary)
   (message-handler increment primary))
+(defmessage-handler MAIN::memory-block map-write primary
+                    (?address $?args)
+                    (call (dynamic-get backing-store)
+                          map-write
+                          ?address
+                          (expand$ ?args)))
 
 (defmessage-handler MAIN::memory-block init after
                     ()

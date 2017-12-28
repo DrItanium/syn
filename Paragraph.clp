@@ -60,11 +60,15 @@
         (storage shared)
         (create-accessor read)
         (default ?*encyclopedia-sentence-size*))
+  (message-handler map-write primary)
   (message-handler read primary)
   (message-handler write primary))
 
 
-
+(defmessage-handler encyclopedia-sentence map-write primary
+                    (?address $?values)
+                    (override-next-handler (address->sentence-address ?address)
+                                           ?values))
 (defmessage-handler encyclopedia-sentence read primary
                     (?address)
                     (override-next-handler (address->sentence-address ?address)))
@@ -87,10 +91,23 @@
              (visibility public)
              (storage local)
              (default ?NONE))
+  (message-handler map-write primary)
   (message-handler select-child primary)
   (message-handler compute-child-address primary)
   (message-handler read primary)
   (message-handler write primary))
+(defmessage-handler encyclopedia-container map-write primary
+                    (?address $?values)
+                    (bind ?child
+                          (send ?self
+                                select-child
+                                ?address))
+                    ; TODO: add support for spanning multiple sections
+                    (if ?child then
+                      (send ?child
+                            map-write
+                            ?address
+                            ?values)))
 (defmessage-handler encyclopedia-container read primary
                     (?address)
                     (bind ?child
