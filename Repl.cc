@@ -154,12 +154,13 @@ void readCommand(Environment* env, UDFContext* context, UDFValue* ret) noexcept 
 		syn::setBoolean(env, ret, false);
 		return;
 	}
-	char buf[1024];
+	constexpr auto bufSize = 65535;
+	char buf[bufSize]; // 64k
 	int rval = 0;
 	bool failed = false;
 	do {
 		bzero(buf, sizeof(buf));
-		rval = read(msgsock, buf, 1024);
+		rval = read(msgsock, buf, bufSize);
 		if (rval < 0) {
 			clips::printRouter(env, STDERR, "error reading stream message");
 			syn::setBoolean(env, ret, false);

@@ -339,3 +339,11 @@
                           (+ ?i 
                              ?message-size))
                     (loop-for-count (?j 1 ?message-size) do (read-command))))
+
+(deffunction vliw-sendoff
+             (?size ?outdev ?callback)
+             (timer (fake-dma-test7 (irandom) 
+                                    (integer (- (** 2 24) 1)) 
+                                    ?outdev
+                                    ?callback
+                                    ?size)))
