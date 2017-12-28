@@ -145,6 +145,25 @@
          (assert (action write set: $?cmds callback ?callback from ?target)
                  (action write ?address ?value callback ?callback from ?target)))
 
+(defrule MAIN::write-memory-map
+         (stage (current dispatch))
+         ?k <- (action write map: ?address $?values callback ?callback from ?target)
+         =>
+         (retract ?k)
+         (bind ?result
+               TRUE)
+         (progn$ (?value $?values)
+                 (bind ?result
+                       (and (send ?target
+                                  write
+                                  (+ ?address
+                                     (- ?value-index
+                                        1))
+                                  ?value)
+                            ?result)))
+         (assert (command-writer (target ?callback)
+                                 (command ?result))))
+
 (defrule MAIN::write-memory-set:retract
          (stage (current dispatch))
          ?k <- (action write set: callback ? from ?)

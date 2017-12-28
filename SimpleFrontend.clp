@@ -231,6 +231,13 @@
                      "write set: %s callback %s"
                      (implode$ ?values)
                      ?callback))
+(deffunction MAIN::map-write
+             (?callback ?base-address $?values)
+             (format nil
+                     "write map: %d %s callback %s"
+                     ?base-address
+                     (implode$ ?values)
+                     ?callback))
 (deffunction MAIN::irandom
              ()
              (integer (random)))
@@ -347,3 +354,43 @@
                                     ?outdev
                                     ?callback
                                     ?size)))
+
+(deffunction fake-dma-test8
+             "seed memory with random numbers from local writing multiple entries at a time compacted into one message, tweakable and using the map command instead of set"
+             (?seed ?size ?device ?fdev ?message-size)
+             ; first seed the rng
+             (seed ?seed)
+             ; skip the first three
+             (random)
+             (random)
+             (random)
+             ; start at address zero
+             (bind ?i 
+                   0)
+             (while (< ?i ?size) do
+                    (bind ?contents
+                          (create$))
+                    (loop-for-count (?j 1 ?message-size) do
+                                    (bind ?contents
+                                          ?contents
+                                          (irandom))
+                                    (random)
+                                    (random))
+                    (write-command ?device
+                                   (map-write ?fdev
+                                              ?i
+                                              ?contents))
+
+                    ; skip multiple random numbers
+                    (bind ?i
+                          (+ ?i 
+                             ?message-size))
+                    (read-command)))
+(deffunction vliw-map-test
+             (?size ?outdev ?callback)
+             (timer (fake-dma-test8 (irandom)
+                                    (integer (- (** 2 24) 1))
+                                    ?outdev
+                                    ?callback
+                                    ?size)))
+
