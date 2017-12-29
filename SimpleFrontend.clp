@@ -393,4 +393,28 @@
                                     ?outdev
                                     ?callback
                                     ?size)))
+(defgeneric MAIN::list-commands)
+(defmethod MAIN::list-commands
+  ((?device LEXEME)
+   (?router SYMBOL))
+  (printout ?router
+            "List of supported commands for: " ?device crlf)
+  (if (write-command ?device
+                     (format nil
+                             "list-commands callback %s"
+                             (get-socket-name))) then
+    (progn$ (?a (explode$ (read-command))) do
+            (printout ?router
+                      tab "- " ?a crlf))
+    else
+    (printout ?router
+              "Unable to get list of supported commands!" crlf)))
+(defmethod MAIN::list-commands
+  ((?device LEXEME))
+  (list-commands ?device
+                 t))
 
+(deffunction MAIN::shutdown-device
+             (?device)
+             (write-command ?device
+                            shutdown))

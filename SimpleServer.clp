@@ -106,3 +106,15 @@
                  (current read)
                  (rest dispatch
                        restart)))
+(defgeneric MAIN::get-command-list)
+(defrule MAIN::list-commands
+         "Return a list of commands to the requester"
+         (stage (current dispatch))
+         ?f <- (action list-commands|commands callback ?callback $?)
+         =>
+         (retract ?f)
+         (assert (command-writer (target ?callback)
+                                 (command list-commands
+                                          commands
+                                          shutdown
+                                          (get-command-list)))))

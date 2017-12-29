@@ -169,3 +169,10 @@
          ?k <- (action write set: callback ? from ?)
          =>
          (retract ?k))
+
+(defmethod MAIN::get-command-list
+           ()
+           (create$ write
+                    read
+                    "write set:"
+                    "write map:"))
