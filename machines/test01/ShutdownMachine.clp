@@ -26,4 +26,4 @@
 (write-command /tmp/machines/test01/blu shutdown)
 (write-command /tmp/machines/test01/cmp shutdown)
 (write-command /tmp/machines/test01/mem shutdown)
-
+(write-command /tmp/machines/test01/gpr shutdown)
