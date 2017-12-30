@@ -419,16 +419,6 @@
              (write-command ?device
                             shutdown))
 
-(deffunction MAIN::alu-command
-             (?operation ?arg0 ?arg1)
-             (if (write-command /tmp/syn/alu 
-                                (format nil
-                                        "%s %d %d callback %s"
-                                        ?operation
-                                        ?arg0
-                                        ?arg1
-                                        (get-socket-name))) then
-               (explode$ (read-command))))
 (deffunction MAIN::memory-command
              ($?parameters)
              (if (write-command /tmp/syn/memory
@@ -491,3 +481,174 @@
              (?address)
              (nth$ 1 (gpr-command -- 
                                   ?address)))
+
+(deffunction MAIN::blu-command
+             ($?command)
+             (if (write-command /tmp/syn/blu
+                                (format nil
+                                        "%s callback %s"
+                                        (implode$ ?command)
+                                        (get-socket-name))) then 
+               (explode$ (read-command))))
+(deffunction MAIN::op:binary-and
+             (?a ?b)
+             (blu-command and 
+                          ?a
+                          ?b))
+(deffunction MAIN::op:binary-or
+             (?a ?b)
+             (blu-command or
+                          ?a
+                          ?b))
+(deffunction MAIN::op:binary-xor
+             (?a ?b)
+             (blu-command xor
+                          ?a
+                          ?b))
+(deffunction MAIN::op:binary-nor
+             (?a ?b)
+             (blu-command nor
+                          ?a
+                          ?b))
+(deffunction MAIN::op:binary-nand
+             (?a ?b)
+             (blu-command nand
+                          ?a
+                          ?b))
+(deffunction MAIN::op:binary-not
+             (?a)
+             (blu-command not
+                          ?a))
+
+
+(deffunction MAIN::alu-command
+             (?operation ?arg0 ?arg1)
+             (if (write-command /tmp/syn/alu 
+                                (format nil
+                                        "%s %d %d callback %s"
+                                        ?operation
+                                        ?arg0
+                                        ?arg1
+                                        (get-socket-name))) then
+               (explode$ (read-command))))
+
+(deffunction MAIN::op:add
+             (?a ?b)
+             (alu-command add
+                          ?a
+                          ?b))
+
+(deffunction MAIN::op:add3
+             (?a ?b ?c)
+             (op:add (op:add ?a
+                             ?b)
+                     ?c))
+
+(deffunction MAIN::op:sub
+             (?a ?b)
+             (alu-command sub
+                          ?a
+                          ?b))
+(deffunction MAIN::op:mul
+             (?a ?b)
+             (alu-command mul
+                          ?a
+                          ?b))
+(deffunction MAIN::op:div
+             (?a ?b)
+             ; TODO: add support for detecting divide by zero
+             (alu-command div
+                          ?a
+                          ?b))
+(deffunction MAIN::op:rem
+             (?a ?b)
+             ; TODO: add support for detecting rem by zero
+             (alu-command rem
+                          ?a
+                          ?b))
+(deffunction MAIN::op:shift-right
+             (?a ?b)
+             (alu-command shift-right
+                          ?a
+                          ?b))
+(deffunction MAIN::op:shift-left
+             (?a ?b)
+             (alu-command shift-left
+                          ?a
+                          ?b))
+(deffunction MAIN::op:incr
+             (?a)
+             (op:add ?a 
+                     1))
+
+(deffunction MAIN::op:decr
+             (?a)
+             (op:sub ?a
+                     1))
+(deffunction MAIN::op:double
+             (?a)
+             (op:shift-left ?a
+                            1))
+(deffunction MAIN::op:halve
+             (?a)
+             (op:shift-right ?a
+                             1))
+
+(deffunction MAIN::op:square
+             (?a)
+             (op:mul ?a
+                     ?a))
+
+(deffunction MAIN::op:cube
+             (?a)
+             (op:mul (op:mul ?a 
+                             ?a)
+                     ?a))
+; wrappers around different units
+(deffunction MAIN::op:generic-binary
+             (?operation ?v0 ?v1)
+             (funcall (sym-cat op:
+                               ?operation)
+                      ?v0
+                      ?v1))
+(deffunction MAIN::op:register-register
+             (?operation ?r0 ?r1)
+             (op:generic-binary ?operation
+                                (get-register ?r0)
+                                (get-register ?r1)))
+
+(deffunction MAIN::op:register-immediate
+             (?operation ?r0 ?imm)
+             (op:generic-binary ?operation
+                                (get-register ?r0)
+                                ?imm))
+
+(deffunction MAIN::op:immediate-immediate
+             (?operation ?imm0 ?imm1)
+             (op:generic-binary ?operation
+                                ?imm0
+                                ?imm1))
+
+(deffunction MAIN::op:generic-unary
+             (?operation ?v0)
+             (funcall (sym-cat op:
+                               ?operation)
+                      ?v0))
+(deffunction MAIN::op:immediate-unary
+             (?operation ?imm)
+             (op:generic-unary ?operation
+                               ?imm))
+(deffunction MAIN::op:register-unary
+             (?operation ?r0)
+             (op:generic-unary ?operation
+                               (get-register ?r0)))
+
+(deffunction MAIN::gpr->index
+             (?register)
+             (string-to-field (sub-string 2 
+                                          (str-length ?register)
+                                          ?register)))
+(deffunction MAIN::index->gpr
+             (?index)
+             (sym-cat r
+                      ?index))

@@ -97,8 +97,6 @@
            mul
            div
            rem
-           left-shift
-           shift-left
-           right-shift
-           shift-right))
+           left-shift shift-left
+           right-shift shift-right))
 
