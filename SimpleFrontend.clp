@@ -418,3 +418,49 @@
              (?device)
              (write-command ?device
                             shutdown))
+
+(deffunction MAIN::alu-command
+             (?operation ?arg0 ?arg1)
+             (if (write-command /tmp/syn/alu 
+                                (format nil
+                                        "%s %d %d callback %s"
+                                        ?operation
+                                        ?arg0
+                                        ?arg1
+                                        (get-socket-name))) then
+               (explode$ (read-command))))
+(deffunction MAIN::memory-command
+             ($?parameters)
+             (if (write-command /tmp/syn/memory
+                                (format nil
+                                        "%s callback %s"
+                                        (implode$ ?parameters)
+                                        (get-socket-name))) then
+               (explode$ (read-command))))
+
+(deffunction MAIN::read-memory
+             (?address)
+             (bind ?x
+                   (memory-command read
+                                   ?address))
+             (if (multifieldp ?x) then
+               (if (> (length$ ?x) 1) then
+                 ?x
+                 else
+                 (nth$ 1 
+                       ?x))
+               else
+               ?x))
+
+(deffunction MAIN::write-memory
+             (?address ?value)
+             (if (multifieldp (bind ?x
+                                    (memory-command write
+                                                    ?address
+                                                    ?value))) then
+               (if (> (length$ ?x) 1) then
+                 ?x
+                 else
+                 (nth$ 1 ?x))
+               else
+               ?x))
