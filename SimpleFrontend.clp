@@ -600,7 +600,7 @@
              (?operation $?values)
              (funcall (sym-cat op:
                                ?operation)
-              (expand$ ?values)))
+                      (expand$ ?values)))
 (deffunction MAIN::op:register-register
              (?operation ?r0 ?r1)
              (op:generic ?operation
@@ -626,7 +626,7 @@
 (deffunction MAIN::op:register-unary
              (?operation ?r0)
              (op:generic ?operation
-              (get-register ?r0)))
+                         (get-register ?r0)))
 
 (deffunction MAIN::gpr->index
              (?register)
@@ -659,3 +659,38 @@
                          (get-register ?r1)
                          ?imm))
 
+(deffunction MAIN::cmp-command 
+             ($?args)
+             (generic-command /tmp/syn/cmp
+                              ?args))
+
+(deffunction MAIN::op:neq
+             (?a ?b)
+             (cmp-command neq
+                          ?a 
+                          ?b))
+(deffunction MAIN::op:eq
+             (?a ?b)
+             (cmp-command eq
+                          ?a 
+                          ?b))
+(deffunction MAIN::op:lt
+             (?a ?b)
+             (cmp-command lt
+                          ?a
+                          ?b))
+(deffunction MAIN::op:gt
+             (?a ?b)
+             (cmp-command gt
+                          ?a 
+                          ?b))
+(deffunction MAIN::op:le
+             (?a ?b)
+             (cmp-command le
+                          ?a
+                          ?b))
+(deffunction MAIN::op:ge
+             (?a ?b)
+             (cmd-command ge
+                          ?a
+                          ?b))
