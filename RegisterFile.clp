@@ -31,9 +31,11 @@
 (batch* MemoryBlock.clp)
 (batch* order.clp)
 (batch* SimpleServer.clp)
+(defglobal MAIN
+           ?*register-file-capacity* = 256)
 (definstances MAIN::register-file
               (gpr of memory-block 
-                   (capacity 256)))
+                   (capacity ?*register-file-capacity*)))
 ;----------------------------------------------------------------
 ; commands are: add, sub, mul, div, rem, shift-left/left-shift, shift-right/right-shift, shutdown, list-commands
 ;----------------------------------------------------------------
@@ -43,7 +45,7 @@
          (stage (current dispatch))
          ?f <- (action load ?address callback ?callback)
          ?gpr <- (object (is-a memory-block)
-                         (name gpr))
+                         (name [gpr]))
          =>
          (retract ?f)
          (assert (command-writer (target ?callback)
@@ -55,7 +57,7 @@
          (stage (current dispatch))
          ?f <- (action store ?address ?value callback ?callback)
          ?gpr <- (object (is-a memory-block)
-                         (name gpr))
+                         (name [gpr]))
          =>
          (retract ?f)
          (assert (command-writer (target ?callback)
@@ -67,7 +69,7 @@
          (stage (current dispatch))
          ?f <- (action swap ?a ?b callback ?callback)
          ?gpr <- (object (is-a memory-block)
-                         (name gpr))
+                         (name [gpr]))
          =>
          (retract ?f)
          (assert (command-writer (target ?callback)
@@ -79,7 +81,7 @@
          (stage (current dispatch))
          ?f <- (action move ?from ?to callback ?callback)
          ?gpr <- (object (is-a memory-block)
-                         (name gpr))
+                         (name [gpr]))
          =>
          (retract ?f)
          (assert (command-writer (target ?callback)
@@ -91,7 +93,7 @@
          (stage (current dispatch))
          ?f <- (action increment|incr|++ ?address callback ?callback)
          ?gpr <- (object (is-a memory-block)
-                         (name gpr))
+                         (name [gpr]))
          =>
          (retract ?f)
          (assert (command-writer (target ?callback)
@@ -103,13 +105,21 @@
          (stage (current dispatch))
          ?f <- (action decrement|decr|-- ?address callback ?callback)
          ?gpr <- (object (is-a memory-block)
-                         (name gpr))
+                         (name [gpr]))
          =>
          (retract ?f)
          (assert (command-writer (target ?callback)
                                  (command (send ?gpr
                                                 decrement
                                                 ?address)))))
+(defrule MAIN::length
+         (stage (current dispatch))
+         ?f <- (action length callback ?callback)
+         =>
+         (retract ?f)
+         (assert (command-writer (target ?callback)
+                                 (command ?*register-file-capacity*))))
+
 
 
 (defmethod MAIN::get-command-list
@@ -119,4 +129,5 @@
            swap
            move
            increment incr ++
-           decrement decr --))
+           decrement decr --
+           length))

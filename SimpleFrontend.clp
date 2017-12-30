@@ -464,3 +464,31 @@
                  (nth$ 1 ?x))
                else
                ?x))
+
+(deffunction MAIN::gpr-command
+             ($?args)
+             (if (write-command /tmp/syn/gpr
+                                (format nil
+                                        "%s callback %s"
+                                        (implode$ ?args)
+                                        (get-socket-name))) then
+               (explode$ (read-command))))
+
+(deffunction MAIN::get-register
+             (?address)
+             (nth$ 1 (gpr-command load
+                                  ?address)))
+(deffunction MAIN::set-register
+             (?address ?value)
+             (nth$ 1 (gpr-command store
+                                  ?address
+                                  ?value)))
+(deffunction MAIN::increment-register
+             (?address)
+             (nth$ 1 (gpr-command ++
+                                  ?address)))
+(deffunction MAIN::decrement-register
+             (?address)
+             (nth$ 1 (gpr-command -- 
+                                  ?address)))
+
