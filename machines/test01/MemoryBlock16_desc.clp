@@ -25,7 +25,7 @@
 (batch* MemoryBlock16.clp)
 
 (deffacts MAIN::connection-information
-          (setup connection /tmp/machines/test01/gpr))
+          (setup connection /tmp/machines/test01/mem))
 
 (reset)
 (run)

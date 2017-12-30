@@ -27,3 +27,7 @@
 (write-command /tmp/machines/test01/cmp shutdown)
 (write-command /tmp/machines/test01/mem shutdown)
 (write-command /tmp/machines/test01/gpr shutdown)
+
+
+; always the last line
+(exit)
