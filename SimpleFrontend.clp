@@ -41,57 +41,6 @@
            ?*gpr-device* = /tmp/syn/gpr
            ?*blu-device* = /tmp/syn/blu
            ?*cmp-device* = /tmp/syn/cmp)
-(defrule MAIN::setup-connection
-         (stage (current init))
-         ?f <- (setup connection ?name)
-         =>
-         (retract ?f)
-         (setup (sym-cat /tmp/syn/ 
-                         ?name)))
-
-(defrule MAIN::populate-rng
-         (stage (current init))
-         ?f <- (setup rng ?path)
-         =>
-         (retract ?f)
-         (bind ?*rng-device*
-               ?path))
-
-(defrule MAIN::populate-memory
-         (stage (current init))
-         ?f <- (setup memory ?path)
-         =>
-         (retract ?f)
-         (bind ?*memory-device*
-               ?path))
-(defrule MAIN::populate-alu
-         (stage (current init))
-         ?f <- (setup alu ?path)
-         =>
-         (retract ?f)
-         (bind ?*alu-device*
-               ?path))
-(defrule MAIN::populate-gpr
-         (stage (current init))
-         ?f <- (setup gpr ?path)
-         =>
-         (retract ?f)
-         (bind ?*gpr-device*
-               ?path))
-(defrule MAIN::populate-blu
-         (stage (current init))
-         ?f <- (setup blu ?path)
-         =>
-         (retract ?f)
-         (bind ?*blu-device*
-               ?path))
-(defrule MAIN::populate-cmp
-         (stage (current init))
-         ?f <- (setup cmp ?path)
-         =>
-         (retract ?f)
-         (bind ?*cmp-device*
-               ?path))
 
 (deffunction MAIN::setup
              (?device)
@@ -752,6 +701,58 @@
                           ?b))
 (deffunction MAIN::op:ge
              (?a ?b)
-             (cmd-command ge
+             (cmp-command ge
                           ?a
                           ?b))
+
+(defrule MAIN::setup-connection
+         (stage (current init))
+         ?f <- (setup connection ?name)
+         =>
+         (retract ?f)
+         (setup (sym-cat /tmp/syn/ 
+                         ?name)))
+
+(defrule MAIN::populate-rng
+         (stage (current init))
+         ?f <- (setup rng ?path)
+         =>
+         (retract ?f)
+         (bind ?*rng-device*
+               ?path))
+
+(defrule MAIN::populate-memory
+         (stage (current init))
+         ?f <- (setup memory ?path)
+         =>
+         (retract ?f)
+         (bind ?*memory-device*
+               ?path))
+(defrule MAIN::populate-alu
+         (stage (current init))
+         ?f <- (setup alu ?path)
+         =>
+         (retract ?f)
+         (bind ?*alu-device*
+               ?path))
+(defrule MAIN::populate-gpr
+         (stage (current init))
+         ?f <- (setup gpr ?path)
+         =>
+         (retract ?f)
+         (bind ?*gpr-device*
+               ?path))
+(defrule MAIN::populate-blu
+         (stage (current init))
+         ?f <- (setup blu ?path)
+         =>
+         (retract ?f)
+         (bind ?*blu-device*
+               ?path))
+(defrule MAIN::populate-cmp
+         (stage (current init))
+         ?f <- (setup cmp ?path)
+         =>
+         (retract ?f)
+         (bind ?*cmp-device*
+               ?path))
