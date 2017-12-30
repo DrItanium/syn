@@ -31,7 +31,6 @@
 (batch* MemoryBlock.clp)
 (batch* Paragraph.clp)
 (batch* order.clp)
-
 (deffunction MAIN::setup
              (?device)
              (system (format nil
