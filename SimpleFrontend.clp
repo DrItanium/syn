@@ -31,6 +31,68 @@
 (batch* MemoryBlock.clp)
 (batch* Paragraph.clp)
 (batch* order.clp)
+(deffacts MAIN::initialization
+          (stage (current init)
+                 (rest)))
+(defglobal MAIN
+           ?*rng-device* = /tmp/syn/rng
+           ?*alu-device* = /tmp/syn/alu
+           ?*memory-device* = /tmp/syn/memory
+           ?*gpr-device* = /tmp/syn/gpr
+           ?*blu-device* = /tmp/syn/blu
+           ?*cmp-device* = /tmp/syn/cmp)
+(defrule MAIN::setup-connection
+         (stage (current init))
+         ?f <- (setup connection ?name)
+         =>
+         (retract ?f)
+         (setup (sym-cat /tmp/syn/ 
+                         ?name)))
+
+(defrule MAIN::populate-rng
+         (stage (current init))
+         ?f <- (setup rng ?path)
+         =>
+         (retract ?f)
+         (bind ?*rng-device*
+               ?path))
+
+(defrule MAIN::populate-memory
+         (stage (current init))
+         ?f <- (setup memory ?path)
+         =>
+         (retract ?f)
+         (bind ?*memory-device*
+               ?path))
+(defrule MAIN::populate-alu
+         (stage (current init))
+         ?f <- (setup alu ?path)
+         =>
+         (retract ?f)
+         (bind ?*alu-device*
+               ?path))
+(defrule MAIN::populate-gpr
+         (stage (current init))
+         ?f <- (setup gpr ?path)
+         =>
+         (retract ?f)
+         (bind ?*gpr-device*
+               ?path))
+(defrule MAIN::populate-blu
+         (stage (current init))
+         ?f <- (setup blu ?path)
+         =>
+         (retract ?f)
+         (bind ?*blu-device*
+               ?path))
+(defrule MAIN::populate-cmp
+         (stage (current init))
+         ?f <- (setup cmp ?path)
+         =>
+         (retract ?f)
+         (bind ?*cmp-device*
+               ?path))
+
 (deffunction MAIN::setup
              (?device)
              (system (format nil
@@ -429,7 +491,7 @@
 
 (deffunction MAIN::memory-command
              ($?parameters)
-             (generic-command /tmp/syn/memory
+             (generic-command ?*memory-device*
                               ?parameters))
 
 (deffunction MAIN::read-memory
@@ -461,7 +523,7 @@
 
 (deffunction MAIN::gpr-command
              ($?args)
-             (generic-command /tmp/syn/gpr
+             (generic-command ?*gpr-device*
                               ?args))
 
 (deffunction MAIN::get-register
@@ -484,7 +546,7 @@
 
 (deffunction MAIN::blu-command
              ($?command)
-             (generic-command /tmp/syn/blu
+             (generic-command ?*blu-device*
                               ?command))
 
 (deffunction MAIN::op:binary-and
@@ -519,7 +581,7 @@
 
 (deffunction MAIN::alu-command
              ($?args)
-             (generic-command /tmp/syn/alu
+             (generic-command ?*alu-device*
                               ?args))
 
 (deffunction MAIN::op:add
@@ -660,7 +722,7 @@
 
 (deffunction MAIN::cmp-command 
              ($?args)
-             (generic-command /tmp/syn/cmp
+             (generic-command ?*cmp-device*
                               ?args))
 
 (deffunction MAIN::op:neq

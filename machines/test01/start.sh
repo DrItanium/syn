@@ -3,7 +3,7 @@
 mkdir -p /tmp/machines/test01
 pushd $1
 make
-popd $1
+popd
 
 tmux -2 new-session -d -s test01_xu
 
