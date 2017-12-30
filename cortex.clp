@@ -161,7 +161,7 @@
 (deffunction cortex::number-list->bytes
              (?number-list)
              (map$ break-apart-number
-                  (expand$ ?number-list)))
+                   (expand$ ?number-list)))
 
 
 
@@ -236,3 +236,12 @@
 
 
 
+(deffunction cortex::make-range
+             (?start ?end)
+             (bind ?k
+                   (create$))
+             (loop-for-count (?i ?start ?end) do
+                             (bind ?k
+                                   ?k
+                                   ?i))
+             ?k)
