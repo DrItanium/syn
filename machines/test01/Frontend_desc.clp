@@ -26,11 +26,11 @@
 
 (deffacts MAIN::connection-information
           (setup connection test01_frontend)
-          (setup memory /tmp/machines/test0/mem)
-          (setup alu /tmp/machines/test0/alu)
-          (setup blu /tmp/machines/test0/blu)
-          (setup gpr /tmp/machines/test0/gpr)
-          (setup cmp /tmp/machines/test0/cmp))
+          (setup memory /tmp/machines/test01/mem)
+          (setup alu /tmp/machines/test01/alu)
+          (setup blu /tmp/machines/test01/blu)
+          (setup gpr /tmp/machines/test01/gpr)
+          (setup cmp /tmp/machines/test01/cmp))
 
 (reset)
 (run)
