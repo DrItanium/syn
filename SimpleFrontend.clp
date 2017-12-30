@@ -419,14 +419,19 @@
              (write-command ?device
                             shutdown))
 
-(deffunction MAIN::memory-command
-             ($?parameters)
-             (if (write-command /tmp/syn/memory
+(deffunction MAIN::generic-command
+             (?device $?args)
+             (if (write-command ?device
                                 (format nil
                                         "%s callback %s"
-                                        (implode$ ?parameters)
+                                        (implode$ ?args)
                                         (get-socket-name))) then
                (explode$ (read-command))))
+
+(deffunction MAIN::memory-command
+             ($?parameters)
+             (generic-command /tmp/syn/memory
+                              ?parameters))
 
 (deffunction MAIN::read-memory
              (?address)
@@ -457,12 +462,8 @@
 
 (deffunction MAIN::gpr-command
              ($?args)
-             (if (write-command /tmp/syn/gpr
-                                (format nil
-                                        "%s callback %s"
-                                        (implode$ ?args)
-                                        (get-socket-name))) then
-               (explode$ (read-command))))
+             (generic-command /tmp/syn/gpr
+                              ?args))
 
 (deffunction MAIN::get-register
              (?address)
@@ -484,12 +485,9 @@
 
 (deffunction MAIN::blu-command
              ($?command)
-             (if (write-command /tmp/syn/blu
-                                (format nil
-                                        "%s callback %s"
-                                        (implode$ ?command)
-                                        (get-socket-name))) then 
-               (explode$ (read-command))))
+             (generic-command /tmp/syn/blu
+                              ?command))
+
 (deffunction MAIN::op:binary-and
              (?a ?b)
              (blu-command and 
@@ -520,17 +518,10 @@
              (blu-command not
                           ?a))
 
-
 (deffunction MAIN::alu-command
-             (?operation ?arg0 ?arg1)
-             (if (write-command /tmp/syn/alu 
-                                (format nil
-                                        "%s %d %d callback %s"
-                                        ?operation
-                                        ?arg0
-                                        ?arg1
-                                        (get-socket-name))) then
-               (explode$ (read-command))))
+             ($?args)
+             (generic-command /tmp/syn/alu
+                              ?args))
 
 (deffunction MAIN::op:add
              (?a ?b)
@@ -605,43 +596,37 @@
                              ?a)
                      ?a))
 ; wrappers around different units
-(deffunction MAIN::op:generic-binary
-             (?operation ?v0 ?v1)
+(deffunction MAIN::op:generic
+             (?operation $?values)
              (funcall (sym-cat op:
                                ?operation)
-                      ?v0
-                      ?v1))
+              (expand$ ?values)))
 (deffunction MAIN::op:register-register
              (?operation ?r0 ?r1)
-             (op:generic-binary ?operation
-                                (get-register ?r0)
-                                (get-register ?r1)))
+             (op:generic ?operation
+                         (get-register ?r0)
+                         (get-register ?r1)))
 
 (deffunction MAIN::op:register-immediate
              (?operation ?r0 ?imm)
-             (op:generic-binary ?operation
-                                (get-register ?r0)
-                                ?imm))
+             (op:generic ?operation
+                         (get-register ?r0)
+                         ?imm))
 
 (deffunction MAIN::op:immediate-immediate
              (?operation ?imm0 ?imm1)
-             (op:generic-binary ?operation
-                                ?imm0
-                                ?imm1))
+             (op:generic ?operation
+                         ?imm0
+                         ?imm1))
 
-(deffunction MAIN::op:generic-unary
-             (?operation ?v0)
-             (funcall (sym-cat op:
-                               ?operation)
-                      ?v0))
 (deffunction MAIN::op:immediate-unary
              (?operation ?imm)
-             (op:generic-unary ?operation
-                               ?imm))
+             (op:generic ?operation
+                         ?imm))
 (deffunction MAIN::op:register-unary
              (?operation ?r0)
-             (op:generic-unary ?operation
-                               (get-register ?r0)))
+             (op:generic ?operation
+              (get-register ?r0)))
 
 (deffunction MAIN::gpr->index
              (?register)
@@ -652,3 +637,25 @@
              (?index)
              (sym-cat r
                       ?index))
+
+(deffunction MAIN::op:mac
+             (?a ?b ?c)
+             (op:add (op:mul ?a 
+                             ?b)
+                     ?c))
+
+(deffunction MAIN::op:register3
+             (?operation ?r0 ?r1 ?r2)
+             (op:generic ?operation
+                         (get-register ?r0)
+                         (get-register ?r1)
+                         (get-register ?r2)))
+
+
+(deffunction MAIN::op:register2-imm
+             (?operation ?r0 ?r1 ?imm)
+             (op:generic ?operation
+                         (get-register ?r0)
+                         (get-register ?r1)
+                         ?imm))
+
