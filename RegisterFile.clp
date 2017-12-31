@@ -39,95 +39,51 @@
 ;----------------------------------------------------------------
 ; commands are: add, sub, mul, div, rem, shift-left/left-shift, shift-right/right-shift, shutdown, list-commands
 ;----------------------------------------------------------------
+(deffunction MAIN::op-load
+             (?address)
+             (send [gpr]
+                   read
+                   ?address))
+(deffunction MAIN::op-store
+             (?address ?value)
+             (send [gpr]
+                   write 
+                   ?address
+                   ?value))
 
+(deffunction MAIN::op-swap
+             (?a ?b)
+             (send [gpr]
+                   swap
+                   ?a
+                   ?b))
+(deffunction MAIN::op-move
+             (?from ?to)
+             (send [gpr]
+                   move
+                   ?from
+                   ?to))
 
-(defrule MAIN::load
-         (stage (current dispatch))
-         ?f <- (action load ?address callback ?callback)
-         ?gpr <- (object (is-a memory-block)
-                         (name [gpr]))
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (send ?gpr
-                                                read
-                                                ?address)))))
+(deffunction MAIN::op-length
+             ()
+             ?*register-file-capacity*)
+(deffunction MAIN::op-increment
+             (?addr)
+             (send [gpr]
+                   increment
+                   ?addr))
 
-(defrule MAIN::store
-         (stage (current dispatch))
-         ?f <- (action store ?address ?value callback ?callback)
-         ?gpr <- (object (is-a memory-block)
-                         (name [gpr]))
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (send ?gpr
-                                                write
-                                                ?address
-                                                ?value)))))
-(defrule MAIN::swap
-         (stage (current dispatch))
-         ?f <- (action swap ?a ?b callback ?callback)
-         ?gpr <- (object (is-a memory-block)
-                         (name [gpr]))
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (send ?gpr
-                                                swap
-                                                ?a
-                                                ?b)))))
-(defrule MAIN::move
-         (stage (current dispatch))
-         ?f <- (action move ?from ?to callback ?callback)
-         ?gpr <- (object (is-a memory-block)
-                         (name [gpr]))
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (send ?gpr
-                                                move
-                                                ?from
-                                                ?to)))))
-(defrule MAIN::increment
-         (stage (current dispatch))
-         ?f <- (action increment|incr|++ ?address callback ?callback)
-         ?gpr <- (object (is-a memory-block)
-                         (name [gpr]))
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (send ?gpr
-                                                increment
-                                                ?address)))))
+(deffunction MAIN::op-decrement
+             (?addr)
+             (send [gpr]
+                   decrement
+                   ?addr))
 
-(defrule MAIN::decrement
-         (stage (current dispatch))
-         ?f <- (action decrement|decr|-- ?address callback ?callback)
-         ?gpr <- (object (is-a memory-block)
-                         (name [gpr]))
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (send ?gpr
-                                                decrement
-                                                ?address)))))
-(defrule MAIN::length
-         (stage (current dispatch))
-         ?f <- (action length callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command ?*register-file-capacity*))))
-
-
-
-(defmethod MAIN::get-command-list
-  ()
-  (create$ load
-           store
-           swap
-           move
-           increment incr ++
-           decrement decr --
-           length))
+(deffacts MAIN::gpr-commands
+          (make legal-commands length size -> op-length)
+          (make legal-commands move -> op-move)
+          (make legal-commands swap -> op-swap)
+          (make legal-commands load ld -> op-load)
+          (make legal-commands store st -> op-store)
+          (make legal-commands increment incr ++ -> op-increment)
+          (make legal-commands decrement decr -- -> op-decrement))

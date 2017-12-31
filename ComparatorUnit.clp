@@ -30,73 +30,10 @@
 (batch* SimpleServer.clp)
 ;----------------------------------------------------------------
 
-(defrule MAIN::convert-boolean-value
-         (declare (salience 1))
-         ?f <- (command-writer (command boolean ?value))
-         =>
-         (modify ?f
-                 (command (if ?value then 1 else 0))))
-
-(defrule MAIN::eq
-         (stage (current dispatch))
-         ?f <- (action eq|equals  ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command boolean 
-                                          (= ?v0 ?v1)))))
-
-(defrule MAIN::neq
-         (stage (current dispatch))
-         ?f <- (action not-equals|neq ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command boolean 
-                                          (<> ?v0 ?v1)))))
-(defrule MAIN::less-than
-         (stage (current dispatch))
-         ?f <- (action less-than|lt ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command boolean 
-                                          (< ?v0 ?v1)))))
-
-(defrule MAIN::greater-than
-         (stage (current dispatch))
-         ?f <- (action greater-than|gt ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command boolean 
-                                          (> ?v0 ?v1)))))
-
-(defrule MAIN::less-than-or-equal-to
-         (stage (current dispatch))
-         ?f <- (action less-than-or-equal-to|le ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command boolean 
-                                          (<= ?v0 ?v1)))))
-
-(defrule MAIN::greater-than-or-equal-to
-         (stage (current dispatch))
-         ?f <- (action greater-than-or-equal-to|ge ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command boolean 
-                                          (>= ?v0 ?v1)))))
-
-
-(defmethod MAIN::get-command-list
-  ()
-  (create$ eq equals
-           neq not-equals
-           lt less-than
-           gt greater-than
-           le less-than-or-equal-to
-           ge greater-than-or-equal-to))
-
+(deffacts MAIN::cmp-legal-commands
+          (make legal-commands eq equals -> =)
+          (make legal-commands neq not-equals -> <>)
+          (make legal-commands lt less-than -> <)
+          (make legal-commands gt greater-than -> >)
+          (make legal-commands le less-than-or-equal-to -> <=)
+          (make legal-commands ge greater-than-or-equal-to -> >=))

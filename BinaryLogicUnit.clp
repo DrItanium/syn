@@ -32,79 +32,12 @@
 ; commands are: add, sub, mul, div, rem, shift-left/left-shift, shift-right/right-shift, shutdown, list-commands
 ;----------------------------------------------------------------
 
-
-(defrule MAIN::and-result
-         (stage (current dispatch))
-         ?f <- (action and ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (binary-and ?v0 ?v1)))))
-
-(defrule MAIN::or-result
-         (stage (current dispatch))
-         ?f <- (action or ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (binary-or ?v0 ?v1)))))
-
-(defrule MAIN::nor-result
-         (stage (current dispatch))
-         ?f <- (action nor ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (binary-nor ?v0 ?v1)))))
-
-(defrule MAIN::nand-result
-         (stage (current dispatch))
-         ?f <- (action nand ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (binary-nand ?v0 ?v1)))))
-
-(defrule MAIN::xor-result
-         (stage (current dispatch))
-         ?f <- (action xor ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (binary-xor ?v0 ?v1)))))
-
-(defrule MAIN::shift-left-result
-         (stage (current dispatch))
-         ?f <- (action shift-left|left-shift ?value ?shift callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (integer (left-shift ?value
-                                                               ?shift))))))
-(defrule MAIN::shift-right-result
-         (stage (current dispatch))
-         ?f <- (action shift-right|right-shift ?value ?shift callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (integer (right-shift ?value
-                                                                ?shift))))))
-
-(defrule MAIN::not
-         (stage (current dispatch))
-         ?f <- (action not ?value callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (binary-not ?value)))))
-(defmethod MAIN::get-command-list
-  ()
-  (create$ or
-           and
-           xor
-           nor
-           nand
-           not
-           left-shift shift-left
-           right-shift shift-right))
-
+(deffacts MAIN::binary-logic-operations
+          (make legal-commands not binary-not unary-not -> binary-not)
+          (make legal-commands and binary-and -> binary-and)
+          (make legal-commands or binary-or -> binary-or)
+          (make legal-commands xor binary-xor -> binary-xor)
+          (make legal-commands nand binary-nand -> binary-nand)
+          (make legal-commands nor binary-nor -> binary-nor)
+          (make legal-commands >> right-shift shift-right -> right-shift)
+          (make legal-commands << left-shift shift-left -> left-shift))
