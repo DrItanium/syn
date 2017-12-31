@@ -31,72 +31,15 @@
 ;----------------------------------------------------------------
 ; commands are: add, sub, mul, div, rem, shift-left/left-shift, shift-right/right-shift, shutdown, list-commands
 ;----------------------------------------------------------------
+(deffunction MAIN::imod
+             (?a ?b)
+             (integer (mod ?a ?b)))
 
-
-(defrule MAIN::add-result
-         (stage (current dispatch))
-         ?f <- (action add ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (+ ?v0 ?v1)))))
-
-(defrule MAIN::sub-result
-         (stage (current dispatch))
-         ?f <- (action sub ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (- ?v0 ?v1)))))
-
-(defrule MAIN::mul-result
-         (stage (current dispatch))
-         ?f <- (action mul ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (* ?v0 ?v1)))))
-
-(defrule MAIN::div-result
-         (stage (current dispatch))
-         ?f <- (action div ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (/ ?v0 ?v1)))))
-
-(defrule MAIN::rem-result
-         (stage (current dispatch))
-         ?f <- (action rem ?v0 ?v1 callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (integer (mod ?v0 ?v1))))))
-
-(defrule MAIN::shift-left-result
-         (stage (current dispatch))
-         ?f <- (action shift-left|left-shift ?value ?shift callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (integer (left-shift ?value
-                                                               ?shift))))))
-(defrule MAIN::shift-right-result
-         (stage (current dispatch))
-         ?f <- (action shift-right|right-shift ?value ?shift callback ?callback)
-         =>
-         (retract ?f)
-         (assert (command-writer (target ?callback)
-                                 (command (integer (right-shift ?value
-                                                                ?shift))))))
-
-(defmethod MAIN::get-command-list
-  ()
-  (create$ add
-           sub
-           mul
-           div
-           rem
-           left-shift shift-left
-           right-shift shift-right))
-
+(deffacts MAIN::alu-commands
+          (make legal-commands add + -> +)
+          (make legal-commands sub - -> -)
+          (make legal-commands mul * -> *)
+          (make legal-commands div / -> div)
+          (make legal-commands rem mod % -> imod)
+          (make legal-commands >> right-shift shift-right -> right-shift)
+          (make legal-commands << left-shift shift-left -> left-shift))

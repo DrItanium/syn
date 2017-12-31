@@ -31,12 +31,38 @@
                    (default ?NONE))
              (multislot command
                         (default ?NONE)))
+(deftemplate MAIN::legal-command
+             (slot input-command
+                   (type LEXEME)
+                   (default ?NONE))
+             (slot output-command
+                   (type SYMBOL)
+                   (default ?NONE)))
+(defgeneric MAIN::get-command-list)
+(defmethod MAIN::get-command-list
+  ()
+  (bind ?collection
+        (create$))
+  (do-for-all-facts ((?a legal-command))
+                    TRUE
+                    (bind ?collection
+                          ?collection
+                          ?a:input-command))
+  ?collection)
 (deffacts MAIN::stage-order
           (stage (current system-init)
                  (rest read
                        dispatch
                        restart)))
 
+(defrule MAIN::make-legal-commands
+         (stage (current system-init))
+         ?f <- (make legal-commands $?inputs -> ?output)
+         =>
+         (retract ?f)
+         (progn$ (?input ?inputs)
+                 (assert (legal-command (input-command ?input)
+                                        (output-command ?output)))))
 (defrule MAIN::setup-device-connection
          (stage (current system-init))
          ?f <- (setup connection ?path)
@@ -106,15 +132,21 @@
                  (current read)
                  (rest dispatch
                        restart)))
-(defgeneric MAIN::get-command-list)
-(defrule MAIN::list-commands
-         "Return a list of commands to the requester"
+
+(defrule MAIN::dispatch-command
+         "Default rule for dispatching operations!"
          (stage (current dispatch))
-         ?f <- (action list-commands|commands callback ?callback $?)
+         ?f <- (action ?command
+                       $?args 
+                       callback ?callback)
+         (legal-command (input-command ?command)
+                        (output-command ?operation))
          =>
          (retract ?f)
          (assert (command-writer (target ?callback)
-                                 (command list-commands
-                                          commands
-                                          shutdown
-                                          (get-command-list)))))
+                                 (command (funcall ?operation
+                                                   (expand$ ?args))))))
+
+(deffacts MAIN::builtin-commands
+          (make legal-commands commands get-command-list list-commands -> get-command-list)
+          (make legal-commands shutdown EOF -> shutdown-connection))
