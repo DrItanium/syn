@@ -37,7 +37,11 @@
                    (default ?NONE))
              (slot output-command
                    (type SYMBOL)
-                   (default ?NONE)))
+                   (default ?NONE))
+             (slot custom-rule
+                   (type SYMBOL)
+                   (allowed-symbols FALSE
+                                    TRUE)))
 (defgeneric MAIN::get-command-list)
 (defmethod MAIN::get-command-list
   ()
@@ -63,6 +67,16 @@
          (progn$ (?input ?inputs)
                  (assert (legal-command (input-command ?input)
                                         (output-command ?output)))))
+(defrule MAIN::make-custom-legal-commands
+         (stage (current system-init))
+         ?f <- (make legal-commands $?inputs ->)
+         =>
+         (retract ?f)
+         (progn$ (?input $?inputs)
+                 (assert (legal-command (custom-rule TRUE)
+                                        (input-command ?input)
+                                        (output-command custom-rule)))))
+
 (defrule MAIN::setup-device-connection
          (stage (current system-init))
          ?f <- (setup connection ?path)
@@ -140,7 +154,8 @@
                        $?args 
                        callback ?callback)
          (legal-command (input-command ?command)
-                        (output-command ?operation))
+                        (output-command ?operation)
+                        (custom-rule FALSE))
          =>
          (retract ?f)
          (assert (command-writer (target ?callback)
