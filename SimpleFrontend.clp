@@ -31,6 +31,10 @@
 (batch* MemoryBlock.clp)
 (batch* Paragraph.clp)
 (batch* order.clp)
+
+(defgeneric MAIN::register)
+(defgeneric MAIN::list-commands)
+
 (deffacts MAIN::initialization
           (stage (current init)
                  (rest)))
@@ -53,6 +57,7 @@
              (setup-connection)
              (printout t "Listening on socket " ?device crlf)
              (printout t tab "Before exiting run (shutdown-connection)" crlf))
+
 (deffunction MAIN::stop-connection
              ()
              (shutdown-connection))
@@ -60,6 +65,7 @@
 (deffunction MAIN::irandom
              ()
              (integer (random)))
+
 (deffunction MAIN::generic-command
              (?device $?args)
              (if (write-command ?device
@@ -68,7 +74,25 @@
                                         (implode$ ?args)
                                         (get-socket-name))) then
                (explode$ (read-command))))
-(defgeneric MAIN::list-commands)
+
+(deffunction MAIN::gpr->index
+             (?register)
+             (string-to-field (sub-string 2 
+                                          (str-length ?register)
+                                          ?register)))
+(deffunction MAIN::index->gpr
+             (?index)
+             (sym-cat r
+                      ?index))
+
+(defmethod MAIN::register
+  ((?value SYMBOL))
+  (gpr->index ?value))
+
+(defmethod MAIN::register
+  ((?value INTEGER))
+  ?value)
+
 (defmethod MAIN::list-commands
   ((?device LEXEME)
    (?router SYMBOL))
@@ -93,7 +117,7 @@
 (deffunction MAIN::shutdown-device
              (?device)
              (generic-command ?device
-              shutdown))
+                              shutdown))
 
 (deffunction MAIN::memory-command
              ($?parameters)
@@ -131,24 +155,23 @@
              ($?args)
              (generic-command ?*gpr-device*
                               ?args))
-
 (deffunction MAIN::get-register
              (?address)
              (nth$ 1 (gpr-command load
-                                  ?address)))
+                                  (register ?address))))
 (deffunction MAIN::set-register
              (?address ?value)
              (nth$ 1 (gpr-command store
-                                  ?address
+                                  (register ?address)
                                   ?value)))
 (deffunction MAIN::increment-register
              (?address)
              (nth$ 1 (gpr-command ++
-                                  ?address)))
+                                  (register ?address))))
 (deffunction MAIN::decrement-register
              (?address)
              (nth$ 1 (gpr-command -- 
-                                  ?address)))
+                                  (register ?address))))
 
 (deffunction MAIN::blu-command
              ($?command)
@@ -295,15 +318,7 @@
              (op:generic ?operation
                          (get-register ?r0)))
 
-(deffunction MAIN::gpr->index
-             (?register)
-             (string-to-field (sub-string 2 
-                                          (str-length ?register)
-                                          ?register)))
-(deffunction MAIN::index->gpr
-             (?index)
-             (sym-cat r
-                      ?index))
+
 
 (deffunction MAIN::op:mac
              (?a ?b ?c)
@@ -361,7 +376,9 @@
              (cmp-command ge
                           ?a
                           ?b))
-
+;------------------------------------------------------------------------------
+; startup rules 
+;------------------------------------------------------------------------------
 (defrule MAIN::setup-connection
          (stage (current init))
          ?f <- (setup connection ?name)
@@ -413,3 +430,66 @@
          (retract ?f)
          (bind ?*cmp-device*
                ?path))
+;------------------------------------------------------------------------------
+; Combination of operations
+;------------------------------------------------------------------------------
+(deffunction MAIN::jump
+             (?register ?address)
+             (set-register ?register
+                           ?address))
+
+(deffunction MAIN::advance-pc
+             (?register)
+             (increment-register ?register))
+
+
+(deffunction MAIN::push-value
+             "Push a value onto the stack"
+             (?register ?value)
+             (increment-register ?register)
+             (write-memory (get-register ?register)
+                           ?value))
+
+(deffunction MAIN::pop-value
+             "Pop a value off the stack"
+             (?register)
+             (bind ?result
+                   (read-memory (get-register ?register)))
+             (decrement-register ?register)
+             ?result)
+
+(deffunction MAIN::indirect-load
+             "Perform an indirect load from memory (use the address stored at the provided address to load from memory)"
+             (?address)
+             (read-memory
+               (read-memory ?address)))
+
+(deffunction MAIN::indirect-store
+             "Perform in indirect store into memory (use the address stored at the provided address as the address to store to"
+             (?address ?value)
+             (write-memory (read-memory ?address)
+                           ?value))
+
+(deffunction MAIN::register-load
+             "Use the contents of the given register to load from main memory"
+             (?index)
+             (read-memory (get-register ?index)))
+
+(deffunction MAIN::register-store
+             "Use the contents of two registers to store into memory"
+             (?dest ?value)
+             (write-memory (get-register ?dest)
+                           (get-register ?value)))
+
+(deffunction MAIN::jump-and-link
+             (?address ?link ?pc)
+             (set-register ?link
+                           (+ (get-register ?pc)
+                              1))
+             (jump ?pc
+                   ?address))
+
+(deffunction MAIN::return
+             (?link ?pc)
+             (set-register ?pc
+                           (get-register ?link)))
