@@ -41,5 +41,5 @@
           (make legal-commands mul * -> *)
           (make legal-commands div / -> div)
           (make legal-commands rem mod % -> imod)
-          (make legal-commands >> right-shift shift-right -> right-shift)
-          (make legal-commands << left-shift shift-left -> left-shift))
+          (make legal-commands right-shift shift-right -> right-shift)
+          (make legal-commands left-shift shift-left -> left-shift))
