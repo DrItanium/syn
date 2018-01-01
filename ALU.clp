@@ -36,6 +36,8 @@
              (integer (mod ?a ?b)))
 
 (deffacts MAIN::alu-commands
+          (make legal-commands decode-bits -> decode-bits)
+          (make legal-commands encode-bits -> encode-bits)
           (make legal-commands add + -> +)
           (make legal-commands sub - -> -)
           (make legal-commands mul * -> *)
