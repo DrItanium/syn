@@ -34,6 +34,7 @@
 
 (defgeneric MAIN::register)
 (defgeneric MAIN::list-commands)
+(defgeneric MAIN::list-registers)
 
 (deffacts MAIN::initialization
           (stage (current init)
@@ -65,6 +66,13 @@
 (deffunction MAIN::irandom
              ()
              (integer (random)))
+
+(deffunction MAIN::irandom64
+             ()
+             (binary-or (left-shift (irandom)
+                                    32)
+                        (irandom)))
+
 
 (deffunction MAIN::generic-command
              (?device $?args)
@@ -172,6 +180,10 @@
              (?address)
              (nth$ 1 (gpr-command -- 
                                   (register ?address))))
+(deffunction MAIN::get-register-count
+             ()
+             (nth$ 1 (gpr-command size)))
+
 
 (deffunction MAIN::blu-command
              ($?command)
@@ -489,7 +501,37 @@
              (jump ?pc
                    ?address))
 
-(deffunction MAIN::return
+(deffunction MAIN::jump-to-register
              (?link ?pc)
              (set-register ?pc
                            (get-register ?link)))
+(deffunction MAIN::clear-register
+             (?register)
+             (set-register ?register
+                           0))
+;------------------------------------------------------------------------------
+; Print Register Contents
+;------------------------------------------------------------------------------
+(deffunction MAIN::print-register
+             (?index ?router)
+             (printout ?router
+                       tab (format nil
+                                   "r%d = 0x%x"
+                                   ?index
+                                   (get-register ?index))
+                       crlf))
+
+(defmethod MAIN::list-registers
+  ((?router SYMBOL))
+  (printout ?router
+            "Registers: " crlf)
+  (loop-for-count (?i 0 
+                      (- (get-register-count) 
+                         1)) do
+                  (print-register ?i
+                                  ?router)))
+
+(defmethod MAIN::list-registers
+  ()
+  (list-registers t))
+
