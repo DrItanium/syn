@@ -116,19 +116,13 @@
 (defrule MAIN::ignore-command
          (declare (salience -1))
          (stage (current dispatch))
-         ?f <- (action $?command)
+         ?f <- (action $?command callback ?callback)
          =>
          (printout t 
                    "NOTE: Ignoring " ?command crlf)
-         (retract ?f))
-
-(defrule MAIN::terminate-execution
-         ?z <- (stage (current dispatch))
-         ?k <- (action EOF|shutdown $?)
-         =>
-         (retract ?k
-                  ?z)
-         (shutdown-connection))
+         (retract ?f)
+         (assert (command-writer (target ?callback)
+                                 (command FALSE))))
 
 (defrule MAIN::perform-write
          (stage (current dispatch))
@@ -162,6 +156,47 @@
                                  (command (funcall ?operation
                                                    (expand$ ?args))))))
 
+(defrule MAIN::watch-command
+         (stage (current dispatch))
+         ?f <- (action watch ?submode callback ?callback)
+         (command watch ?submode)
+         =>
+         (retract ?f)
+         (watch ?submode)
+         (assert (command-writer (target ?callback)
+                                 (command TRUE))))
+
+(defrule MAIN::unwatch-command
+         (stage (current dispatch))
+         ?f <- (action unwatch ?submode callback ?callback)
+         (command unwatch ?submode)
+         =>
+         (retract ?f)
+         (unwatch ?submode)
+         (assert (command-writer (target ?callback)
+                                 (command TRUE))))
+
+(defrule MAIN::make-command-from-plurality
+         (stage (current system-init))
+         ?f <- (commands ?cmd $?submodes)
+         =>
+         (retract ?f)
+         (progn$ (?s ?submodes)
+                 (assert (command ?cmd ?s))))
+
+(defrule MAIN::terminate-execution
+         ?z <- (stage (current dispatch))
+         ?k <- (action EOF|shutdown callback ?callback) 
+         =>
+         (retract ?k
+                  ?z)
+         (write-command ?callback
+                        (shutdown-connection)))
+
 (deffacts MAIN::builtin-commands
+          (commands unwatch all rules facts activations)
+          (commands watch all rules facts activations)
+          (make legal-commands watch ->)
+          (make legal-commands unwatch ->)
           (make legal-commands commands get-command-list list-commands -> get-command-list)
-          (make legal-commands shutdown EOF -> shutdown-connection))
+          (make legal-commands shutdown EOF ->))

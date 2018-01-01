@@ -175,6 +175,8 @@ namespace syn {
 						return ptr->move(env, context, ret);
 					case MemoryBlockOp::Set:
 						return ptr->store(env, context, ret);
+					case MemoryBlockOp::MapWrite:
+						return ptr->mapWrite(env, context, ret);
 					default:
 						setBoolean(context, ret, false);
                     	//return Parent::callErrorMessageCode3(env, ret, str, "<- legal but unimplemented operation!");

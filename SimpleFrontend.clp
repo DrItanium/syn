@@ -60,6 +60,14 @@
 (deffunction MAIN::irandom
              ()
              (integer (random)))
+(deffunction MAIN::generic-command
+             (?device $?args)
+             (if (write-command ?device
+                                (format nil
+                                        "%s callback %s"
+                                        (implode$ ?args)
+                                        (get-socket-name))) then
+               (explode$ (read-command))))
 (defgeneric MAIN::list-commands)
 (defmethod MAIN::list-commands
   ((?device LEXEME)
@@ -81,19 +89,11 @@
   (list-commands ?device
                  t))
 
+
 (deffunction MAIN::shutdown-device
              (?device)
-             (write-command ?device
-                            shutdown))
-
-(deffunction MAIN::generic-command
-             (?device $?args)
-             (if (write-command ?device
-                                (format nil
-                                        "%s callback %s"
-                                        (implode$ ?args)
-                                        (get-socket-name))) then
-               (explode$ (read-command))))
+             (generic-command ?device
+              shutdown))
 
 (deffunction MAIN::memory-command
              ($?parameters)

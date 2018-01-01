@@ -48,10 +48,14 @@
         (default ?NONE))
   (slot start-address
         (type INTEGER)
+        (visibility public)
+        (storage local)
         (range 0 ?VARIABLE)
         (default ?NONE))
   (slot end-address
         (type INTEGER)
+        (visibility public)
+        (storage local)
         (range 0 ?VARIABLE)
         (default ?NONE))
   (message-handler visible-to-internal primary)
@@ -64,14 +68,14 @@
                     ?address)
 (defmessage-handler memory-map-entry read primary
                     (?address)
-                    (send ?self:backing-store
+                    (send (dynamic-get backing-store)
                           read
                           (send ?self
                                 visible-to-internal
                                 ?address)))
 (defmessage-handler memory-map-entry write primary
                     (?address ?value)
-                    (send ?self:backing-store
+                    (send (dynamic-get backing-store)
                           write
                           (send ?self
                                 visible-to-internal
@@ -97,6 +101,7 @@
   (is-a memory-map-entry)
   (slot backing-store
         (source composite)
+        (storage local)
         (allowed-classes memory-block))
   (slot internal-start-address
         (type INTEGER)
@@ -113,7 +118,9 @@
                     (?start $?values)
                     (send (dynamic-get backing-store)
                           map-write
-                          ?start
+                          (send ?self
+                                visible-to-internal
+                                ?start)
                           (expand$ ?values)))
 
 (defmessage-handler memory-map-entry:memory-block visible-to-internal primary
@@ -141,21 +148,21 @@
                   (backing-store [mem1])
                   (start-address ?*memory-block16-capacity*)
                   (end-address (+ ?*memory-block16-capacity*
-                                          ?*memory-block16-mask*))
+                                  ?*memory-block16-mask*))
                   (internal-start-address 0)
                   (internal-end-address ?*memory-block16-mask*))
               (of memory-map-entry:memory-block 
                   (backing-store [mem2])
                   (start-address (* 2 ?*memory-block16-capacity*))
                   (end-address (+ (* 2 ?*memory-block16-capacity*)
-                                          ?*memory-block16-mask*))
+                                  ?*memory-block16-mask*))
                   (internal-start-address 0)
                   (internal-end-address ?*memory-block16-mask*))
               (of memory-map-entry:memory-block 
                   (backing-store [mem3])
                   (start-address (* 3 ?*memory-block16-capacity*))
                   (end-address (+ (* 3 ?*memory-block16-capacity*)
-                                          ?*memory-block16-mask*))
+                                  ?*memory-block16-mask*))
                   (internal-start-address 0)
                   (internal-end-address ?*memory-block16-mask*)))
 
@@ -250,7 +257,7 @@
          ; off into a separate fact
          ; need to compute the end position of our collection
          (bind ?sub-section-length
-               (- ?a-end
+               (- (+ ?a-end 1)
                   ?address))
          (if (send ?start
                    map-write
@@ -258,15 +265,15 @@
                    (subseq$ ?values
                             1
                             ?sub-section-length)) then
-          (assert (action write 
-                          map: (+ ?a-end 1) 
-                          (subseq$ ?values
-                                   (+ ?sub-section-length 1)
-                                   (length$ ?values))
-                          callback ?callback))
-          else
-          (assert (command-writer (target ?callback)
-                                  (command FALSE)))))
+           (assert (action write 
+                           map: (+ ?a-end 1) 
+                           (subseq$ ?values
+                                    (+ ?sub-section-length 1)
+                                    (length$ ?values))
+                           callback ?callback))
+           else
+           (assert (command-writer (target ?callback)
+                                   (command FALSE)))))
 
 
 (deffacts MAIN::legal-commands
@@ -274,3 +281,4 @@
           (make legal-commands write
                 "write set:"
                 "write map:" ->))
+
