@@ -31,7 +31,7 @@
 ;----------------------------------------------------------------
 
 (deffacts MAIN::cmp-legal-commands
-          (make legal-commands eq equals -> =)
+          (make legal-commands eq equals -> (sym-cat =))
           (make legal-commands neq not-equals -> <>)
           (make legal-commands lt less-than -> <)
           (make legal-commands gt greater-than -> >)
