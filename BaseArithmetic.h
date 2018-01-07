@@ -215,6 +215,9 @@ constexpr T twosComplement(T value) noexcept {
     return onesComplement<T>(value) + numeralOne<T>;
 }
 
+constexpr uint16_t computeX86SegmentAddress(uint16_t segmentSelector, uint16_t offset) noexcept {
+   return (segmentSelector << 4) + offset;
+}
 
 } // end namespace syn
 
